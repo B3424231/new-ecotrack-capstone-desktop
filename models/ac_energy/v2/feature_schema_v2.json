@@ -1,0 +1,35 @@
+{
+    "target": "power_kw",
+    "output_unit": "kW",
+    "numeric_features": [
+        "tonnage",
+        "people",
+        "static_heat_load_btu",
+        "runtime_minutes",
+        "room_temp_c",
+        "outdoor_temp_c",
+        "humidity",
+        "room_temp_change_10m",
+        "indoor_outdoor_temp_diff",
+        "hour",
+        "day_of_week",
+        "month",
+        "is_weekend"
+    ],
+    "categorical_features": [
+        "environment_type",
+        "activity_schedule"
+    ],
+    "excluded_features": [
+        "ac_id",
+        "Current",
+        "voltage",
+        "Power_Factor",
+        "unit_consumption"
+    ],
+    "energy_formula": "energy_kwh = predicted_power_kw * elapsed_hours",
+    "deployment": {
+        "ac_off": "Return 0 kW.",
+        "ac_on": "Use XGBoost to estimate average operating power."
+    }
+}

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="./js/app-mode.js?v=6"></script>
+  <title>Analytics - EcoTrack</title>
+  <script src="./vendor/tailwindcss.js"></script><script>tailwind.config={darkMode:'class'};</script>
+  <link rel="stylesheet" href="./styles.css?v=62"><link rel="stylesheet" href="./css/sensor-workspace.css?v=9">
+  <script defer src="./vendor/chart.umd.js"></script>
+  <script defer src="./vendor/jspdf.umd.min.js"></script><script defer src="./vendor/jspdf.plugin.autotable.min.js"></script><script defer src="./vendor/exceljs.min.js"></script>
+  <script defer src="./js/sidebar.js"></script><script defer src="./js/sidebar-loader.js?v=25"></script>
+  <script defer src="./js/supabase.umd.js"></script><script defer src="./js/supabase-client.js"></script><script defer src="./js/shared.js"></script>
+  <script defer src="./js/skeletons.js?v=2"></script>
+  <link rel="stylesheet" href="./css/ac-power-history.css?v=1">
+  <script defer src="./js/ac-power-history.js?v=3"></script>
+  <script defer src="./js/sensor-workspace.js?v=20"></script>
+  <link rel="stylesheet" href="./css/sensor-forecast.css?v=7">
+</head>
+<body class="app-shell" data-sensor-page="analytics">
+  <div class="flex h-screen overflow-hidden">
+    <main class="sensor-main">
+      <header class="sensor-header sensor-forecast-header">
+        <div class="sensor-forecast-header-top">
+          <div class="sensor-forecast-title"><button type="button" class="sensor-button sensor-menu" id="sensorMenu" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><span class="sensor-forecast-dot" aria-hidden="true"></span><h1>Analytics</h1><span class="sensor-badge">SENSOR</span></div>
+          <div class="sensor-actions sensor-analytics-actions"><span class="sr-only" id="sensorConnection" role="status">Connecting to local readings…</span><button id="openAcPowerHistoryBtn" type="button" class="aph-launch" data-power-history-source="monitoring" aria-haspopup="dialog" aria-controls="acPowerHistoryDialog"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>ON/OFF History</span></button><button type="button" class="sensor-button sensor-forecast-refresh" id="sensorRefresh" aria-label="Refresh sensor readings" title="Refresh sensor readings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6.1 7a7 7 0 0 1 11.5-2L20 8M4 16l2.4 3A7 7 0 0 0 18 17"/></svg></button></div>
+        </div>
+        <div class="sensor-forecast-filters" data-sidebar-divider="top">
+          <div class="sensor-forecast-field"><label for="sensorSelect"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12h8M12 8v8"/></svg>Filter Sensor:</label><select id="sensorSelect" class="header-filter-pill-select"><option value="">All Sensors</option></select></div>
+          <div class="sensor-forecast-field"><label for="sensorFrom"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>From:</label><input id="sensorFrom" type="date" class="header-filter-pill-select" required aria-label="From date"></div>
+          <div class="sensor-forecast-field"><label for="sensorThrough"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>Through:</label><input id="sensorThrough" type="date" class="header-filter-pill-select" required aria-label="Through date"></div>
+        </div>
+      </header>
+      <div class="sensor-content"><div class="sensor-content-inner"><div id="sensorError" class="sensor-error" role="alert" hidden></div><div id="sensorApp" aria-busy="true"><div class="sensor-empty"><strong>Loading local sensor records</strong><p>Reading recorded measurements.</p></div></div></div></div>
+    </main>
+  </div>
+  <button type="button" class="sensor-backdrop" id="sensorBackdrop" aria-label="Close navigation"></button><div id="sensorDialogs"></div>
+</body>
+</html>

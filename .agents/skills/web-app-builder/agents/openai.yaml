@@ -1,0 +1,6 @@
+interface:
+  display_name: "Web App Builder"
+  short_description: "Build and modify full-stack web apps safely"
+  default_prompt: "Inspect the existing app first, then implement the requested functionality with minimal safe changes."
+policy:
+  allow_implicit_invocation: true

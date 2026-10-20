@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <script src="./js/app-mode.js?v=6"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notifications - EcoTrack</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
+  <link rel="stylesheet" href="./styles.css?v=62">
+  <style>
+    .notifications-table thead,
+    .notifications-table thead tr,
+    .notifications-table thead th,
+    .notifications-table th {
+      color: #ffffff !important;
+      background-color: #0b291d !important;
+    }
+
+    .notification-filter-btn.active,
+    .notification-filter-btn.active .filter-btn-text {
+      color: #ffffff !important;
+    }
+
+    @keyframes pulse-wave {
+      0% {
+        r: 10;
+        opacity: 1;
+      }
+
+      100% {
+        r: 20;
+        opacity: 0;
+      }
+    }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .pulse-icon circle {
+      animation: pulse-wave 2s ease-out infinite;
+    }
+
+    .spin-icon {
+      animation: spin 1s linear;
+    }
+  </style>
+  <script src="./js/sidebar.js"></script>
+  <script src="./js/sidebar-loader.js?v=25"></script>
+  <script src="./js/icons.js"></script>
+  <script src="./js/eco-network.js"></script>
+  <script src="./js/eco-data-bus.js"></script>
+  <script src="./js/skeletons.js"></script>
+  <script src="./js/maintenance-modal.js?v=72"></script>
+  <link rel="stylesheet" href="./css/location-cabinet.css?v=1">
+</head>
+
+<body class="app-shell bg-gray-50 dark:bg-[#0a0f1d] transition-colors duration-200">
+  <div class="flex h-screen">
+    <!-- Sidebar will be injected here by sidebar-loader.js -->
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+      <header
+        class="bg-white dark:bg-[#0c1328] border-b-[2px] border-[#10b981] dark:border-[#10b981]/25 px-6 py-4 flex justify-between items-center z-10 shadow-sm relative">
+        <h2 class="eco-primary-text text-2xl font-bold text-[#18392B] dark:text-cyan-400 flex items-center gap-2"><svg
+            viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5"
+            class="text-[#10b981]">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>Notifications</h2>
+
+      </header>
+
+      <div class="eco-location-layout flex-1 flex overflow-hidden gap-4 p-4">
+
+        <!-- LEFT PANEL: Room Cabinet -->
+        <div
+          class="eco-location-panel w-[280px] bg-white dark:bg-[#0c1328]/70 dark:backdrop-blur-md border-[2px] border-[#10b981] dark:border-[#10b981]/25 rounded-3xl p-6 flex flex-col overflow-hidden shrink-0">
+          <h3 class="eco-location-title eco-primary-text text-xl font-bold text-[#18392B] dark:text-cyan-400 mb-4 flex items-center gap-2"><svg
+              viewBox="0 0 24 24" width="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+              stroke-linejoin="round" class="text-[#10b981]">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>Location</h3>
+          <div id="roomsList" class="eco-location-tree flex-1 overflow-y-auto space-y-3 pt-2 pr-2">
+            <!-- Rooms will be added dynamically here -->
+          </div>
+        </div>
+
+        <!-- RIGHT PANEL: Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden gap-4">
+
+          <p id="installationAvailabilityNotice" role="status" class="hidden text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-xl p-3"></p>
+
+          <!-- NOTIFICATIONS SECTION - Bottom Section -->
+          <div
+            class="eco-data-panel flex-1 bg-white dark:bg-[#0c1328]/70 rounded-3xl overflow-hidden flex flex-col">
+            <div class="eco-table-toolbar p-6 flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+              <h3 class="eco-primary-text text-xl font-bold text-[#18392B] dark:text-cyan-400 flex items-center gap-2"><svg
+                  viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"
+                  class="text-[#10b981]">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>Notifications</h3>
+              <div class="notification-header-tools flex flex-col sm:flex-row sm:items-center gap-3">
+                <div class="flex gap-2 items-center flex-wrap sm:flex-nowrap">
+                  <button id="notificationFilterAllBtn" type="button" data-filter="all"
+                    class="notification-filter-btn active h-10 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider whitespace-nowrap inline-flex items-center justify-center bg-[#10b981] hover:bg-emerald-600 text-white transition-all cursor-pointer border-[2px] border-[#10b981] shadow-md shadow-emerald-500/25"
+                    >
+                    <span class="filter-btn-text" style="color: #ffffff !important;">All</span>
+                  </button>
+                  <button id="notificationFilterUnreadBtn" type="button" data-filter="unread"
+                    class="notification-filter-btn h-10 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider whitespace-nowrap inline-flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border-[2px] border-gray-200 dark:border-white/10 hover:border-[#10b981] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all cursor-pointer shadow-xs">
+                    <span class="filter-btn-text">Unread</span> <span id="unreadFilterDot" class="w-2 h-2 rounded-full bg-red-500 hidden"></span>
+                  </button>
+                  <button id="notificationFilterReadBtn" type="button" data-filter="read"
+                    class="notification-filter-btn h-10 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider whitespace-nowrap inline-flex items-center justify-center bg-white dark:bg-slate-900 border-[2px] border-gray-200 dark:border-white/10 hover:border-[#10b981] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all cursor-pointer shadow-xs">
+                    <span class="filter-btn-text">Read</span>
+                  </button>
+                  <button id="notificationFilterScheduleBtn" type="button" data-filter="schedule"
+                    class="notification-filter-btn h-10 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider whitespace-nowrap inline-flex items-center justify-center bg-white dark:bg-slate-900 border-[2px] border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-200 cursor-pointer">
+                    <span class="filter-btn-text">Wake / Sleep Schedules</span>
+                  </button>
+                </div>
+                <button id="clearAllMessagesBtn"
+                  class="h-10 px-4 py-2 text-xs font-bold uppercase tracking-wider whitespace-nowrap inline-flex items-center justify-center gap-2 transition-colors bg-white dark:bg-slate-900 border border-red-500 dark:border-red-800/40 text-red-500 dark:text-red-400 rounded-xl hover:bg-red-50 dark:hover:bg-slate-800/20 cursor-pointer shadow-xs">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75">
+                    <path d="M3 6h18" />
+                    <path d="M8 6V4h8v2" />
+                    <path d="M6 6l1 14h10l1-14" />
+                  </svg>
+                  Clear All
+                </button>
+              </div>
+            </div>
+
+            <!-- Notifications Content: Messages Table (Full Width) -->
+            <div id="messagesTableContainer"
+              class="flex-1 min-h-0 flex flex-col overflow-hidden">
+              <div class="eco-table-frame overflow-x-auto overflow-y-auto flex-1 eco-slim-scrollbar">
+                <table class="eco-data-table w-full text-left border-collapse notifications-table">
+                  <thead class="sticky top-0 z-10 shadow-sm bg-[#0b291d] dark:bg-[#081a14]">
+                    <tr class="text-left text-xs font-bold uppercase tracking-wider text-white">
+                      <th scope="col" class="px-6 py-4 whitespace-nowrap text-white font-bold">TIME</th>
+                      <th scope="col" class="px-6 py-4 whitespace-nowrap text-white font-bold">DATE</th>
+                      <th scope="col" class="px-6 py-4 whitespace-nowrap text-white font-bold">AC CONTROLS</th>
+                      <th scope="col" class="px-6 py-4 whitespace-nowrap text-white font-bold">ATTACHED AIRCON TYPE</th>
+                      <th scope="col" class="px-6 py-4 min-w-[220px] text-white font-bold">MESSAGE</th>
+                      <th scope="col" class="px-6 py-4 whitespace-nowrap text-center text-white font-bold">STATUS</th>
+                      <th scope="col" class="px-6 py-4 whitespace-nowrap text-white font-bold">ACTIONS</th>
+                    </tr>
+                  </thead>
+                  <tbody id="messagesTableBody"
+                    class="divide-y divide-gray-100 dark:divide-white/5 text-gray-800 dark:text-gray-200">
+                    <tr class="text-sm text-gray-500 dark:text-gray-400">
+                      <td colspan="7" class="px-4 py-8 text-center">No messages scheduled</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Messages Pagination Controls (20 items per page) -->
+              <div class="eco-table-footer p-3 border-t-[2px] border-[#10b981]/30 dark:border-white/5 flex flex-col sm:flex-row justify-between items-center gap-3 bg-white dark:bg-[#0c1328]">
+                <span id="messagesPageInfo" class="text-xs font-bold text-gray-600 dark:text-gray-300">Showing 0 of 0 messages</span>
+                <div class="flex items-center gap-2">
+                  <button id="messagesPrevBtn" disabled class="px-3 py-1 bg-white dark:bg-slate-900 border border-[#10b981]/40 rounded-lg text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer">Previous</button>
+                  <span id="messagesPaginationPages" class="text-xs font-bold px-1 text-gray-700 dark:text-gray-300">Page 1 of 1</span>
+                  <button id="messagesNextBtn" disabled class="px-3 py-1 bg-[#10b981] border border-[#10b981] rounded-lg text-xs font-bold text-white hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer">Next</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL: View Message Details -->
+  <div id="viewMessageModal"
+    style="display: none; position: fixed; inset: 0; background-color: rgba(7, 13, 26, 0.72); z-index: 50;"
+    class="flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+    <div
+      class="bg-white dark:bg-[#0c1328] rounded-[24px] shadow-2xl border-[2px] border-[#10b981] dark:border-[#10b981]/40 w-full max-w-2xl p-8 transform transition-all">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="eco-primary-text text-2xl font-black text-[#18392B] dark:text-cyan-400 flex items-center gap-3">
+          <div class="p-2 bg-[#10b981]/10 dark:bg-[#081a14] rounded-xl text-[#10b981]">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+          </div>
+          Message Details
+        </h3>
+        <button id="closeViewMessageModal"
+          class="text-gray-400 hover:text-[#ef4444] dark:hover:text-red-400 bg-gray-50 dark:bg-slate-900 hover:bg-red-50 dark:hover:bg-red-950/20 p-2 rounded-full border border-gray-200 dark:border-white/5 transition-colors cursor-pointer">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Combined Notification Content Display -->
+      <div id="viewMessageCombined" class="w-full mb-6"></div>
+
+      <!-- Buttons -->
+      <div class="flex gap-3">
+        <button id="dismissViewModalBtn" type="button"
+          class="flex-1 px-4 py-3.5 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-bold border border-gray-200 dark:border-white/10 shadow-sm transition-all cursor-pointer flex justify-center items-center gap-2">
+          Close
+        </button>
+        <button id="closeViewModalBtn" type="button"
+          class="flex-1 px-4 py-3.5 bg-[#ef4444] hover:bg-red-600 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transform transition-all active:scale-95 flex justify-center items-center gap-2 border-0 cursor-pointer">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M3 6h18"></path>
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+          </svg>
+          Remove Message
+        </button>
+      </div>
+    </div>
+  </div>
+
+  </div>
+  </div>
+  </div>
+
+  <!-- GLOBAL NOTIFICATION POPUP DIALOG -->
+  <div id="globalNotificationDialog"
+    style="display: none; position: fixed; top: 1.25rem; left: 1.25rem; background: transparent !important; background-color: transparent !important; z-index: 99999; pointer-events: none; max-width: 28rem; width: calc(100% - 2.5rem);"
+    class="flex flex-col">
+    <div
+      class="bg-white dark:bg-[#0c1328] border-2 border-[#10b981] dark:border-[#10b981]/50 rounded-2xl shadow-2xl p-5 w-full max-w-md backdrop-blur-md pointer-events-auto">
+      <div class="flex items-center gap-3 mb-3">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"
+          class="text-rose-500">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+        <h3 class="eco-primary-text text-xl font-bold text-[#18392B] dark:text-cyan-400">New Notification!</h3>
+      </div>
+      <p id="globalNotificationMessage"
+        class="text-gray-700 dark:text-gray-200 text-sm font-medium mb-5 leading-relaxed">A scheduled message has been
+        triggered.</p>
+      <div class="flex gap-3">
+        <button id="goToNotificationsBtn"
+          class="flex-1 px-4 py-2 bg-[#10b981] hover:bg-emerald-400 text-white font-bold rounded-xl text-sm transition-colors border-0 cursor-pointer shadow-md">
+          View Notifications
+        </button>
+        <button id="dismissNotificationBtn"
+          class="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 font-bold rounded-xl text-sm transition-colors border-0 cursor-pointer">
+          Dismiss
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Confirm Deletion -->
+  <div id="confirmDeleteModal"
+    class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 transition-opacity duration-200">
+    <div
+      class="bg-white dark:bg-[#0c1328] border-2 border-[#10b981] dark:border-[#10b981]/40 rounded-2xl shadow-2xl p-6 w-full max-w-sm transform transition-all duration-200 scale-100">
+      <!-- Icon -->
+      <div class="flex justify-center mb-4">
+        <div class="p-3 bg-red-500/10 rounded-full">
+          <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2"
+            class="text-red-500">
+            <path d="M12 9v2m0 4v2m-9-9h18a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" />
+            <path d="M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 0 0-2 0" />
+          </svg>
+        </div>
+      </div>
+      <!-- Title -->
+      <h3 class="eco-primary-text text-xl font-bold text-[#18392B] dark:text-cyan-400 text-center mb-2">Confirm Deletion</h3>
+      <!-- Message -->
+      <p id="deleteConfirmMessage" class="text-gray-600 dark:text-gray-300 text-center text-sm mb-6">
+        Are you sure you want to delete this message? This action cannot be undone.
+      </p>
+      <!-- Buttons -->
+      <div class="flex gap-3">
+        <button id="confirmDeleteBtn"
+          class="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all border-0 cursor-pointer">
+          Delete Message
+        </button>
+        <button id="cancelDeleteBtn"
+          class="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-slate-900 hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-700 dark:text-gray-200 font-bold border border-gray-200 dark:border-white/10 rounded-xl transition-all cursor-pointer">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Clear All Notifications Confirmation -->
+  <div id="clearAllModal"
+    style="display: none;"
+    class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 transition-opacity duration-200">
+    <div
+      class="bg-white dark:bg-[#0c1328] border-2 border-[#10b981] dark:border-[#10b981]/40 rounded-2xl shadow-2xl p-6 w-full max-w-sm transform transition-all duration-200 scale-95">
+      <div class="flex justify-center mb-4">
+        <div class="p-3 bg-amber-500/10 rounded-full">
+          <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2"
+            class="text-amber-500">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+      </div>
+      <h3 class="eco-primary-text text-xl font-bold text-[#18392B] dark:text-[#a7f3d0] text-center mb-2">Clear All Notifications</h3>
+      <p id="clearAllConfirmMessage" class="text-gray-600 dark:text-gray-300 text-center text-sm mb-6">
+        Are you sure you want to clear all notifications for this room? This action cannot be undone.
+      </p>
+      <div class="flex gap-3">
+        <button id="confirmClearAllBtn"
+          class="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all border-0 cursor-pointer">
+          Clear All
+        </button>
+        <button id="cancelClearAllBtn"
+          class="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-slate-900 hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-700 dark:text-gray-200 font-bold border border-gray-200 dark:border-white/10 rounded-xl transition-all cursor-pointer">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Cloud Database Engine (Supabase) -->
+  <script src="./js/supabase.umd.js"></script>
+  <script>
+    if (!window.supabase) {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"><\/script>');
+    }
+  </script>
+  <script src="./js/supabase-client.js"></script>
+  <script src="./js/shared.js"></script>
+  <script src="./js/global-notifications.js"></script>
+  <script src="./js/sidebar.js"></script>
+  <script src="./js/installation-notifications.js?v=1"></script>
+  <script src="./js/notifications.js?v=14"></script>
+</body>
+
+</html>

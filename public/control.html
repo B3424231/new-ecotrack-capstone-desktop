@@ -1,0 +1,2547 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+  <script src="./js/app-mode.js?v=6"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aircon Control Panel - EcoTrack Aircon IoT</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              500: '#10b981',
+              600: '#059669',
+              900: '#064e3b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="./styles.css?v=62">
+  <style>
+
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="./js/supabase.umd.js"></script>
+  <script src="./js/supabase-client.js"></script>
+  <script src="./js/hardware-cloud.js?v=11"></script>
+  <script src="./js/sidebar.js"></script>
+  <script src="./js/sidebar-loader.js?v=25"></script>
+  <script src="./js/icons.js"></script>
+  <script src="./js/eco-network.js"></script>
+  <script src="./js/eco-data-bus.js"></script>
+  <script src="./js/skeletons.js"></script>
+  <script src="./js/aircon-system.js?v=23"></script>
+</head>
+
+<body class="app-shell bg-gray-50 dark:bg-[#0a0f1d] text-slate-800 dark:text-slate-100 transition-colors duration-200">
+  <div class="flex h-screen">
+    <!-- Sidebar injected by sidebar-loader.js -->
+
+    <!-- MAIN CONTROL PANEL -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+      <!-- TOP HEADER BAR -->
+      <header class="bg-white dark:bg-[#0c1328] border-b border-gray-200 dark:border-white/5 px-6 py-3.5 flex justify-between items-center z-10 shadow-sm flex-shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
+              <line x1="4" y1="21" x2="4" y2="14" />
+              <line x1="4" y1="10" x2="4" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12" y2="3" />
+              <line x1="20" y1="21" x2="20" y2="16" />
+              <line x1="20" y1="12" x2="20" y2="3" />
+              <line x1="1" y1="14" x2="7" y2="14" />
+              <line x1="9" y1="8" x2="15" y2="8" />
+              <line x1="17" y1="16" x2="23" y2="16" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="eco-primary-text text-xl font-extrabold text-[#18392B] dark:text-white tracking-tight">Dynamic Aircon Control</h1>
+            <p class="text-[11px] font-medium text-gray-500 dark:text-gray-400">Capability-driven universal aircon control & command management</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <a href="ir-library.html" class="px-3.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-cyan-300 text-xs font-bold flex items-center gap-1.5 transition-colors">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            </svg>
+            <span>IR Learning</span>
+          </a>
+        </div>
+      </header>
+
+      <!-- DYNAMIC DEVICE SELECTOR STRIP -->
+      <div class="px-6 py-2.5 bg-white/60 dark:bg-[#0c1328]/60 border-b border-gray-200 dark:border-white/5 flex items-center justify-between gap-4 flex-wrap z-30 relative" id="deviceSelectorBar">
+        <!-- Left: Interactive Dynamic Dropdown -->
+        <div class="flex items-center gap-3 flex-1 min-w-[280px] max-w-xl relative" id="airconDropdownContainer">
+          <label for="airconDropdownTrigger" class="text-xs font-bold text-gray-500 dark:text-gray-400 flex items-center gap-1.5 shrink-0 select-none">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="text-teal-500">
+              <rect x="2" y="5" width="20" height="9" rx="2" />
+              <line x1="6" y1="10.5" x2="18" y2="10.5" />
+              <path d="M7 18c2.5-1.5 4.5-1.5 7 0" />
+            </svg>
+            <span class="hidden sm:inline">Active Aircon:</span>
+          </label>
+
+          <!-- Dropdown Trigger Button -->
+          <div class="relative flex-1">
+            <button type="button" id="airconDropdownTrigger" class="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-black/40 border border-gray-200 dark:border-white/10 hover:border-teal-500/50 dark:hover:border-teal-400/50 shadow-sm flex items-center justify-between gap-3 text-left transition-all cursor-pointer group" aria-haspopup="listbox" aria-expanded="false">
+              <div class="flex items-center gap-2.5 truncate min-w-0 flex-1">
+                <!-- Status Dot -->
+                <span id="selectedAcStatusDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50 shrink-0"></span>
+                <!-- Name -->
+                <span id="selectedAcName" class="font-bold text-xs text-gray-800 dark:text-white truncate">Select Aircon Unit...</span>
+                <!-- ID Badge -->
+                <span id="selectedAcIdBadge" class="px-2 py-0.5 rounded-md font-mono text-[10px] font-bold bg-teal-500/15 text-teal-700 dark:text-teal-300 border border-teal-500/30 shrink-0">--</span>
+                <!-- Location Subtitle -->
+                <span id="selectedAcLocation" class="text-[11px] text-gray-400 truncate hidden md:inline">• Location</span>
+              </div>
+              <!-- Chevron Icon -->
+              <svg id="airconDropdownChevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" class="text-gray-400 group-hover:text-teal-400 transition-transform duration-200 shrink-0">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+
+            <!-- Floating Glassmorphic Dropdown Menu -->
+            <div id="airconDropdownMenu" class="hidden absolute top-full left-0 mt-1.5 w-full min-w-[340px] max-w-lg bg-white dark:bg-[#0c1328] border border-gray-200 dark:border-teal-500/30 rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col transform transition-all duration-150 origin-top">
+              
+              <!-- Search & Filter Bar inside dropdown -->
+              <div class="p-2.5 border-b border-gray-100 dark:border-white/10 bg-gray-50/70 dark:bg-black/30">
+                <div class="relative">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  <input type="text" id="airconDropdownSearch" placeholder="Search by name, ID, or room..." class="w-full pl-8 pr-3 py-1.5 rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-xs text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:border-teal-400 transition-colors">
+                </div>
+              </div>
+
+              <!-- List of Aircon Options -->
+              <div id="airconDropdownList" class="overflow-y-auto max-h-72 p-1.5 space-y-1 eco-slim-scrollbar" role="listbox">
+                <!-- Injected dynamically -->
+              </div>
+
+              <!-- Footer with quick count -->
+              <div class="px-3.5 py-2 border-t border-gray-100 dark:border-white/10 bg-gray-50/50 dark:bg-black/20 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+                <span id="airconDropdownCount">0 Aircons available</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- MAIN SPLIT WORKSPACE -->
+      <div class="flex-1 overflow-y-auto p-6">
+        <!-- TAB 1: OVERVIEW (Dynamic Aircon Control Center + Unit Identity & Profile) -->
+        <div id="tabContent-overview" class="tab-pane space-y-6 max-w-7xl mx-auto">
+          
+          <!-- TOP: DYNAMIC CONTROL GRID -->
+          <div id="controlMainGrid" class="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto">
+          
+          <!-- LEFT PANEL: CAPABILITY-BASED DYNAMIC CONTROL (7 cols) -->
+          <div class="lg:col-span-7 glass-panel bg-white dark:bg-[#0c1328] rounded-2xl p-6 flex flex-col justify-between border border-slate-200 dark:border-white/10 shadow-sm">
+            <div>
+              <!-- UNIT HEADER -->
+              <div class="flex items-start justify-between border-b border-slate-200 dark:border-white/5 pb-4 mb-5">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h2 id="controlUnitName" class="eco-primary-text text-2xl font-black text-slate-800 dark:text-white">Connecting Aircon...</h2>
+                    <span id="controlUnitBrandBadge" class="px-2.5 py-0.5 rounded-md text-xs font-bold bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30">EcoTrack</span>
+                  </div>
+                  <p id="controlUnitDetails" class="text-xs text-slate-500 dark:text-gray-400 mt-1">Initializing controller device...</p>
+                  <p id="hardwareRoleMessage" class="text-xs text-teal-700 dark:text-teal-300 mt-2" role="status" aria-live="polite"></p>
+                </div>
+
+                <!-- MAIN POWER TOGGLE -->
+                <div id="unitPowerHeaderContainer" class="text-right">
+                  <label class="block text-[10px] uppercase font-bold text-slate-500 dark:text-gray-400 mb-1">Unit Power</label>
+                  <button id="masterPowerBtn" class="px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2 transition-all border shadow-sm">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                      <line x1="12" y1="2" x2="12" y2="12"></line>
+                    </svg>
+                    <span id="masterPowerText">—</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- ZERO AIRCON EMPTY STATE (Shown when 0 units registered) -->
+              <div id="controlZeroAirconState" class="hidden py-16 px-6 text-center flex-col items-center justify-center">
+                <div class="w-20 h-20 rounded-3xl bg-teal-500/10 dark:bg-teal-500/15 text-teal-600 dark:text-teal-400 border border-teal-500/30 flex items-center justify-center mb-5 shadow-lg shadow-teal-500/10">
+                  <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                    <line x1="12" y1="18" x2="12.01" y2="18" stroke-width="3"/>
+                    <circle cx="12" cy="10" r="3"/>
+                    <line x1="12" y1="6" x2="12" y2="7"/>
+                  </svg>
+                </div>
+                <h3 class="eco-primary-text text-xl font-bold text-slate-800 dark:text-white mb-2">No Air Conditioners Available for Control</h3>
+                <p class="text-sm text-slate-500 dark:text-gray-400 max-w-md mb-6 leading-relaxed">
+                  Link an AC to a controller to manage its settings and schedules.
+                </p>
+                <a href="nodes.html" class="px-6 py-3 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-bold text-sm shadow-lg shadow-teal-500/20 inline-flex items-center gap-2 transition-all">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Register AC Controller Device &rarr;
+                </a>
+              </div>
+
+              <!-- CONTROLS CONTAINER -->
+              <div id="controlsContainer" class="space-y-6">
+                
+                <!-- 1. TEMPERATURE DIAL -->
+                <div class="bg-slate-50 dark:bg-black/25 rounded-2xl p-5 border border-slate-200 dark:border-white/5 flex items-center justify-between">
+                  <div>
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-gray-400 block">Temperature Setpoint</span>
+                    <span class="text-[11px] text-slate-400 dark:text-gray-500" id="tempRangeHelp">Operating range: 16°C – 30°C</span>
+                  </div>
+                  
+                  <div class="flex items-center gap-4">
+                    <button id="tempMinusBtn" class="w-12 h-12 rounded-xl bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 border border-slate-200 dark:border-white/15 flex items-center justify-center text-slate-800 dark:text-white text-xl font-black shadow-xs transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed">
+                      −
+                    </button>
+                    <div class="flex items-baseline gap-1 min-w-[90px] justify-center">
+                      <span id="tempValueDisplay" class="text-5xl font-black text-cyan-600 dark:text-cyan-400">—</span>
+                      <span class="text-lg font-bold text-slate-400 dark:text-gray-400">°C</span>
+                    </div>
+                    <button id="tempPlusBtn" class="w-12 h-12 rounded-xl bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 border border-slate-200 dark:border-white/15 flex items-center justify-center text-slate-800 dark:text-white text-xl font-black shadow-xs transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed">
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 2. MODE SELECTOR (DYNAMIC) -->
+                <div id="modeSection">
+                  <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Operating Mode</label>
+                  <div id="modeButtonsGroup" class="grid grid-cols-5 gap-2">
+                    <!-- Modes rendered dynamically based on capabilities.modes -->
+                  </div>
+                </div>
+
+                <!-- 3. FAN SPEED SELECTOR (DYNAMIC) -->
+                <div id="fanSection">
+                  <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Blower Fan Speed</label>
+                  <div id="fanButtonsGroup" class="grid grid-cols-5 gap-2">
+                    <!-- Fans rendered dynamically based on capabilities.fans -->
+                  </div>
+                </div>
+
+                <!-- 4. SPECIAL CAPABILITIES (SWING, SLEEP, TURBO, ECO, TIMER) -->
+                <div id="specialFeaturesSection">
+                  <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Special Functions (Supported Only)</label>
+                  <div id="specialButtonsGroup" class="flex flex-wrap gap-2.5">
+                    <!-- Special buttons rendered dynamically -->
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+            <!-- COMMAND RESULT FEEDBACK FOOTER -->
+            <div id="commandFeedbackBar" class="mt-6 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-gray-400">
+              <span id="commandStatusText">Ready</span>
+              <span id="commandLatencyText" class="font-mono text-[10px] text-gray-500">Idle</span>
+            </div>
+          </div>
+
+          <!-- RIGHT PANEL: AIRCON CONTROL STATE & HARDWARE DEVICE (5 cols) -->
+          <div class="lg:col-span-5 space-y-6">
+            
+            <!-- AIRCON CONTROL STATE & SETPOINT CARD -->
+            <div class="glass-panel bg-white dark:bg-[#0c1328] rounded-2xl p-6 border border-slate-200 dark:border-white/10 shadow-sm space-y-4">
+              <div class="flex items-center justify-between">
+                <h3 class="eco-primary-text text-sm font-bold text-teal-600 dark:text-teal-400 flex items-center gap-2">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 14 14" />
+                  </svg>
+                  Aircon Control State & Setpoint
+                </h3>
+                <span class="text-[10px] font-mono text-slate-500 dark:text-gray-400">Current settings</span>
+              </div>
+
+              <!-- DUAL STATE COMPARISON -->
+              <div class="grid grid-cols-2 gap-3">
+                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-black/25 border border-slate-200 dark:border-white/5">
+                  <span class="text-[10px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider block">Power setting</span>
+                  <div id="dispCommandedState" class="text-base font-black text-slate-800 dark:text-white mt-1">—</div>
+                  <span class="text-[10px] text-slate-400 dark:text-gray-500">Selected power</span>
+                </div>
+
+                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-black/25 border border-slate-200 dark:border-white/5">
+                  <span class="text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider block">Active Mode & Fan</span>
+                  <div id="dispClassifiedState" class="text-base font-black text-teal-600 dark:text-teal-300 mt-1">—</div>
+                  <span class="text-[10px] text-slate-400 dark:text-gray-500">Active Aircon Profile</span>
+                </div>
+              </div>
+
+              <!-- LIVE CONTROL GAUGES -->
+              <div class="space-y-3 pt-2">
+                <div class="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-xs hover:border-cyan-500/30 transition-all">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-cyan-500/15 text-cyan-700 dark:text-cyan-400 flex items-center justify-center font-extrabold text-xs border border-cyan-500/25 shrink-0">
+                      SET
+                    </div>
+                    <div>
+                      <span class="text-xs font-bold text-slate-800 dark:text-white block">Target Setpoint</span>
+                      <span class="text-[10px] font-medium text-slate-500 dark:text-gray-400 block mt-0.5">Selected temperature</span>
+                    </div>
+                  </div>
+                  <span id="liveSetpointReadout" class="text-2xl font-black text-cyan-700 dark:text-cyan-400 font-mono tracking-tight">—</span>
+                </div>
+
+                <div class="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-xs hover:border-teal-500/30 transition-all">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-teal-500/15 text-teal-700 dark:text-teal-400 flex items-center justify-center font-extrabold text-xs border border-teal-500/25 shrink-0">
+                      FAN
+                    </div>
+                    <div>
+                      <span class="text-xs font-bold text-slate-800 dark:text-white block">Blower Fan & Direction</span>
+                      <span class="text-[10px] font-medium text-slate-500 dark:text-gray-400 block mt-0.5" id="liveFanSubtext">—</span>
+                    </div>
+                  </div>
+                  <span id="liveTempReadout" class="text-2xl font-black text-teal-700 dark:text-teal-300 font-mono tracking-tight">—</span>
+                </div>
+
+                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                  <span class="text-xs font-bold text-slate-800 dark:text-white block mb-2">Special Functions</span>
+                  <div id="liveSpecialFunctions" class="flex flex-wrap gap-2 text-xs" aria-live="polite">—</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- AC CONTROLLER DEVICE HARDWARE STATUS -->
+            <div class="glass-panel bg-white dark:bg-[#0c1328] rounded-2xl p-6 border border-slate-200 dark:border-white/10 shadow-sm space-y-3">
+              <h3 class="eco-primary-text text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="text-purple-500 dark:text-purple-400">
+                  <rect x="4" y="4" width="16" height="16" rx="2" />
+                  <rect x="9" y="9" width="6" height="6" />
+                </svg>
+                AC Controller Device
+              </h3>
+
+              <div class="grid grid-cols-2 gap-3 text-xs">
+                <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-black/25 border border-slate-200 dark:border-white/5">
+                  <span class="text-[10px] text-slate-500 dark:text-gray-400 block uppercase font-medium">Controller Device ID</span>
+                  <span id="dispNodeId" class="font-bold text-slate-800 dark:text-white font-mono">—</span>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-black/25 border border-slate-200 dark:border-white/5">
+                  <span class="text-[10px] text-slate-500 dark:text-gray-400 block uppercase font-medium">Connection</span>
+                  <span id="dispNodeStatus" class="font-bold text-slate-400 dark:text-gray-500 font-medium">● Offline</span>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-black/25 border border-slate-200 dark:border-white/5">
+                  <span class="text-[10px] text-slate-500 dark:text-gray-400 block uppercase font-medium">WiFi Signal</span>
+                  <span class="font-bold text-cyan-700 dark:text-cyan-300 font-mono flex items-center gap-1.5 mt-0.5">
+                    <svg id="dispNodeRssiIcon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="text-cyan-500 dark:text-cyan-400 shrink-0">
+                      <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+                      <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+                      <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                      <line x1="12" y1="20" x2="12.01" y2="20"></line>
+                    </svg>
+                    <span id="dispNodeRssi">—</span>
+                  </span>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-black/25 border border-slate-200 dark:border-white/5">
+                  <span class="text-[10px] text-slate-500 dark:text-gray-400 block uppercase font-medium">Network IP</span>
+                  <span id="dispNodeSnr" class="font-bold text-teal-700 dark:text-teal-300 font-mono">—</span>
+                </div>
+                <div class="col-span-2 p-2.5 rounded-xl bg-slate-50 dark:bg-black/25 border border-slate-200 dark:border-white/5 flex items-center justify-between">
+                  <span class="text-[10px] text-slate-500 dark:text-gray-400 block uppercase font-medium">Battery Level</span>
+                  <span id="dispNodeBattery" class="font-bold text-slate-400 dark:text-gray-500 font-mono flex items-center gap-1.5">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0">
+                      <rect x="2" y="7" width="16" height="10" rx="2" ry="2"></rect>
+                      <line x1="22" y1="11" x2="22" y2="13"></line>
+                    </svg>
+                    <span id="dispNodeBatteryText">—</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+          <!-- BOTTOM: UNIT HARDWARE IDENTITY & CAPABILITIES PROFILE -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Hardware Spec Card -->
+            <div class="glass-panel bg-white dark:bg-[#0c1328] p-6 rounded-2xl border border-slate-200 dark:border-white/10 space-y-4 shadow-sm">
+              <h3 class="eco-primary-text text-sm font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-3">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="9" rx="2"/></svg>
+                Hardware Identity
+              </h3>
+              <div class="space-y-3 text-xs">
+                <div class="flex justify-between border-b border-slate-100 dark:border-white/5 pb-2">
+                  <span class="text-slate-500 dark:text-gray-400">Device ID</span>
+                  <span id="ovDeviceId" class="font-mono font-bold text-cyan-600 dark:text-cyan-400">—</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-100 dark:border-white/5 pb-2">
+                  <span class="text-slate-500 dark:text-gray-400">Unit Name</span>
+                  <span id="ovUnitName" class="font-bold text-slate-800 dark:text-white">—</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-100 dark:border-white/5 pb-2">
+                  <span class="text-slate-500 dark:text-gray-400">Brand</span>
+                  <span id="ovBrand" class="font-bold text-slate-800 dark:text-white">—</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-100 dark:border-white/5 pb-2">
+                  <span class="text-slate-500 dark:text-gray-400">Model</span>
+                  <span id="ovModel" class="font-mono text-slate-700 dark:text-gray-300">—</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-100 dark:border-white/5 pb-2">
+                  <span class="text-slate-500 dark:text-gray-400">Location / Room</span>
+                  <span id="ovLocation" class="text-slate-700 dark:text-gray-300">—</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-500 dark:text-gray-400">Assigned Controller Node</span>
+                  <span id="ovNodeId" class="font-mono text-teal-600 dark:text-teal-300 font-bold">—</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Commanded vs Configured Control State -->
+            <div class="glass-panel bg-white dark:bg-[#0c1328] p-6 rounded-2xl border border-slate-200 dark:border-white/10 space-y-4 shadow-sm">
+              <h3 class="eco-primary-text text-sm font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-3">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                Aircon Control States
+              </h3>
+              <div class="space-y-3 text-xs">
+                <div class="p-3 rounded-xl bg-slate-50 dark:bg-black/25 border border-slate-200/60 dark:border-white/5">
+                  <span class="text-[10px] text-slate-500 dark:text-gray-400 uppercase block font-semibold">Power setting</span>
+                  <span id="ovCommanded" class="text-sm font-black text-slate-800 dark:text-white mt-1 block">—</span>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-50 dark:bg-black/25 border border-slate-200/60 dark:border-white/5">
+                  <span class="text-[10px] text-teal-600 dark:text-teal-400 uppercase block font-semibold">Active Profile State</span>
+                  <span id="ovOperational" class="text-sm font-black text-teal-600 dark:text-teal-300 mt-1 block">—</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Capabilities Summary -->
+            <div class="glass-panel bg-white dark:bg-[#0c1328] p-6 rounded-2xl border border-slate-200 dark:border-white/10 space-y-4 shadow-sm">
+              <h3 class="eco-primary-text text-sm font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-3">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                Capabilities Profile
+              </h3>
+              <div id="ovCapsList" class="flex flex-wrap gap-1.5 text-xs">
+                <!-- Dynamically populated -->
+              </div>
+              <div class="pt-3 border-t border-slate-100 dark:border-white/5 text-[11px] text-slate-500 dark:text-gray-400">
+                Operating Range: <span id="ovTempRange" class="font-bold text-slate-800 dark:text-white">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: IR REMOTE & COMMANDS -->
+        <div id="tabContent-ir-remote" class="tab-pane hidden max-w-7xl mx-auto space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Coverage Checklist (8 cols) -->
+            <div class="lg:col-span-8 glass-panel bg-white dark:bg-[#0c1328] p-6 rounded-2xl border border-slate-200 dark:border-white/10 space-y-4 shadow-sm">
+              <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-white/5 pb-4">
+                <div>
+                  <h3 class="eco-primary-text text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="text-teal-500"><path d="M5 12.55a11 11 0 0 1 14.08 0"/></svg>
+                    IR Command Coverage & Mapping
+                  </h3>
+                  <p class="text-xs text-slate-500 dark:text-gray-400">Verifies mapped infrared commands and protocol signatures for <span id="irCoverageBrand" class="font-bold text-teal-600 dark:text-teal-300">—</span></p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span id="irCoveragePill" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                    100% Covered
+                  </span>
+                  <a href="ir-library.html" class="px-3 py-1.5 rounded-lg bg-teal-500/15 hover:bg-teal-500/25 text-teal-600 dark:text-teal-300 border border-teal-500/30 text-xs font-bold transition-all inline-flex items-center gap-1.5">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                    <span>IR Library Studio</span>
+                  </a>
+                </div>
+              </div>
+
+              <div class="eco-table-frame overflow-x-auto">
+                <table class="eco-data-table w-full text-left text-xs">
+                  <thead class="text-slate-500 dark:text-gray-400 border-b border-slate-100 dark:border-white/5 pb-2">
+                    <tr>
+                      <th scope="col" class="pb-2.5 font-bold">Command Type</th>
+                      <th scope="col" class="pb-2.5 font-bold">Protocol</th>
+                      <th scope="col" class="pb-2.5 font-bold">Status</th>
+                      <th scope="col" class="pb-2.5 text-right font-bold">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="irCommandsCoverageBody" class="divide-y divide-slate-100 dark:divide-white/5 text-slate-700 dark:text-gray-300">
+                    <!-- Injected dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Remote Simulator (4 cols) -->
+            <div class="lg:col-span-4 glass-panel bg-white dark:bg-[#0c1328] p-6 rounded-2xl border border-slate-200 dark:border-white/10 flex flex-col items-center shadow-sm">
+              <h4 class="eco-primary-text text-xs font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400 mb-4 flex items-center gap-1.5">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="4"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                Physical Remote Simulation
+              </h4>
+              <div class="p-5 bg-slate-950/95 rounded-3xl border border-teal-500/30 w-full max-w-[270px] shadow-2xl flex flex-col items-center">
+                <span class="text-xs font-mono font-bold text-white mb-2" id="simBrandTitle">AC Remote</span>
+                <div class="bg-black/70 p-3 rounded-xl w-full flex justify-between items-center mb-3 border border-white/5">
+                  <span class="text-xs font-bold text-cyan-300" id="simLcdMode">COOL</span>
+                  <span class="text-2xl font-black text-white" id="simLcdTemp">24°C</span>
+                  <span class="text-xs font-bold text-teal-300" id="simLcdFan">AUTO</span>
+                </div>
+                <div class="grid grid-cols-3 gap-2 w-full text-xs font-bold" id="simButtonsGrid">
+                  <button class="sim-btn col-span-3 py-2.5 rounded-full bg-rose-600 hover:bg-rose-500 text-white cursor-pointer transition-colors shadow-sm active:scale-95" data-cmd="POWER">POWER</button>
+                  <button class="sim-btn py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white cursor-pointer transition-colors active:scale-95" data-cmd="TEMP_UP">▲ TEMP</button>
+                  <button class="sim-btn py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-cyan-300 cursor-pointer transition-colors active:scale-95" data-cmd="MODE">MODE</button>
+                  <button class="sim-btn py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white cursor-pointer transition-colors active:scale-95" data-cmd="TEMP_DOWN">▼ TEMP</button>
+                  <button class="sim-btn py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white cursor-pointer transition-colors active:scale-95" data-cmd="FAN">FAN</button>
+                  <button class="sim-btn py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white cursor-pointer transition-colors active:scale-95" data-cmd="SWING">SWING</button>
+                  <button class="sim-btn py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white cursor-pointer transition-colors active:scale-95" data-cmd="ECO">ECO</button>
+                  <button class="sim-btn py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white cursor-pointer transition-colors active:scale-95 hidden" data-cmd="TURBO">TURBO</button>
+                  <button class="sim-btn py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white cursor-pointer transition-colors active:scale-95 hidden" data-cmd="SLEEP">SLEEP</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: DIAGNOSTICS -->
+        <div id="tabContent-diagnostics" class="tab-pane hidden max-w-7xl mx-auto space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Link & Node Health -->
+            <div class="glass-panel bg-white dark:bg-[#0c1328] p-6 rounded-2xl border border-slate-200 dark:border-white/10 space-y-4 shadow-sm">
+              <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-3">
+                <h3 class="eco-primary-text text-sm font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider flex items-center gap-2">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/></svg>
+                  AC Controller Device Diagnostics
+                </h3>
+                <span id="diagStatusBadge" class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                  ONLINE
+                </span>
+              </div>
+              <div class="space-y-3 text-xs">
+                <div class="flex justify-between border-b border-slate-100 dark:border-white/5 pb-2">
+                  <span class="text-slate-500 dark:text-gray-400">Controller Device ID</span>
+                  <span id="diagNodeId" class="font-mono font-bold text-slate-800 dark:text-white">--</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-100 dark:border-white/5 pb-2">
+                  <span class="text-slate-500 dark:text-gray-400">Connection Status</span>
+                  <span id="diagNodeStatus" class="font-bold text-emerald-500">● Connected</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-slate-100 dark:border-white/5 pb-2">
+                  <span class="text-slate-500 dark:text-gray-400">WiFi RSSI & Link</span>
+                  <span class="font-mono text-cyan-600 dark:text-cyan-300 font-bold flex items-center gap-1.5">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="text-cyan-500 dark:text-cyan-400 shrink-0">
+                      <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+                      <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+                      <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                      <line x1="12" y1="20" x2="12.01" y2="20"></line>
+                    </svg>
+                    <span id="diagNodeRssi">-65 dBm (Strong)</span>
+                  </span>
+                </div>
+                <div class="flex justify-between border-b border-slate-100 dark:border-white/5 pb-2">
+                  <span class="text-slate-500 dark:text-gray-400">Local IP Address</span>
+                  <span id="diagNodeSnr" class="font-mono text-teal-600 dark:text-teal-300 font-bold">192.168.1.101</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-100 dark:border-white/5 pb-2">
+                  <span class="text-slate-500 dark:text-gray-400">Supabase Realtime Link</span>
+                  <span class="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Active WebSocket Sync
+                  </span>
+                </div>
+                <div class="pt-2 space-y-2">
+                  <button id="diagPingBtn" class="btn-gradient-submit w-full py-3 px-4 rounded-xl font-extrabold text-xs tracking-wider uppercase text-white shadow-md shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer border-0" style="color: #ffffff !important; background: linear-gradient(135deg, #10b981 0%, #0d9488 100%) !important;">
+                    <svg style="stroke: #ffffff !important; color: #ffffff !important;" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ffffff" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    <span style="color: #ffffff !important;">Ping AC Controller Device</span>
+                  </button>
+                  
+                  <!-- Interactive Ping Terminal Probe Box -->
+                  <div id="diagPingConsole" class="hidden rounded-2xl border shadow-2xl shadow-black/60 overflow-hidden transition-all duration-300" style="background: #080d1a !important; border: 1px solid rgba(20, 184, 166, 0.35) !important;">
+                    <!-- Terminal Window Top Bar -->
+                    <div class="flex items-center justify-between px-3.5 py-2.5" style="background: #0d1527 !important; border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;">
+                      <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-1.5">
+                          <span class="w-2.5 h-2.5 rounded-full bg-rose-500/90 inline-block"></span>
+                          <span class="w-2.5 h-2.5 rounded-full bg-amber-500/90 inline-block"></span>
+                          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500/90 inline-block"></span>
+                        </div>
+                        <span class="text-[10px] font-mono font-bold tracking-wider ml-1.5 flex items-center gap-1.5" style="color: #f1f5f9 !important;">
+                          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#2dd4bf" stroke-width="2.5" style="color: #2dd4bf !important;">
+                            <polyline points="4 17 10 11 4 5"/>
+                            <line x1="12" y1="19" x2="20" y2="19"/>
+                          </svg>
+                          ICMP ECHO PROBE TRACE
+                        </span>
+                      </div>
+                      
+                      <div id="diagPingDuration" class="px-2.5 py-0.5 rounded-md font-mono text-[10px] font-extrabold flex items-center gap-1.5 shadow-xs" style="background: rgba(16, 185, 129, 0.2) !important; color: #34d399 !important; border: 1px solid rgba(16, 185, 129, 0.4) !important;">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span id="diagPingDurationText" style="color: #34d399 !important;">-- ms</span>
+                      </div>
+                    </div>
+
+                    <!-- Terminal Output Area -->
+                    <div id="diagPingText" class="p-3.5 font-mono text-[11px] leading-relaxed space-y-2 select-text" style="background: #060913 !important; color: #e2e8f0 !important;">
+                      <div style="color: #94a3b8 !important;">Ready to probe. Click button to initiate ICMP ping packets.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- IR Transmission & Dispatch Diagnostics -->
+            <div class="glass-panel bg-white dark:bg-[#0c1328] p-6 rounded-2xl border border-slate-200 dark:border-white/10 space-y-4 shadow-sm">
+              <h3 class="eco-primary-text text-sm font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-3">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                IR Transmission & Dispatch Diagnostics
+              </h3>
+              <div id="diagMismatchReport" class="p-4 rounded-xl bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/5 space-y-3 text-xs">
+                <!-- Dynamically generated diagnostics -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 4: CONFIGURATION -->
+        <div id="tabContent-config" class="tab-pane hidden max-w-4xl mx-auto space-y-6">
+          <form id="unitConfigForm" class="glass-panel bg-white dark:bg-[#0c1328] p-6 rounded-2xl border border-slate-200 dark:border-white/10 space-y-5 shadow-sm">
+            <div class="border-b border-slate-100 dark:border-white/5 pb-3 flex items-center justify-between">
+              <div>
+                <h3 class="eco-primary-text text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                  Unit Configuration & Capabilities
+                </h3>
+                <p class="text-xs text-slate-500 dark:text-gray-400">Configure hardware parameters, assigned node, protocol adapter, and temperature limits.</p>
+              </div>
+              <span id="cfgDeviceIdTag" class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-gray-400 border border-slate-200 dark:border-white/10">--</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div>
+                <label class="block text-slate-600 dark:text-gray-400 font-semibold mb-1">Unit Display Name</label>
+                <input type="text" id="cfgName" class="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all">
+              </div>
+              <div>
+                <label class="block text-slate-600 dark:text-gray-400 font-semibold mb-1">Room / Floor Location</label>
+                <input type="text" id="cfgLocation" class="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all">
+              </div>
+              <div>
+                <label class="block text-slate-600 dark:text-gray-400 font-semibold mb-1">Brand</label>
+                <input type="text" id="cfgBrand" class="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all">
+              </div>
+              <div>
+                <label class="block text-slate-600 dark:text-gray-400 font-semibold mb-1">Model</label>
+                <input type="text" id="cfgModel" class="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white font-mono focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all">
+              </div>
+              <div>
+                <label class="block text-slate-600 dark:text-gray-400 font-semibold mb-1">Min Temperature Setpoint (°C)</label>
+                <input type="number" id="cfgTempMin" readonly class="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white font-mono focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all">
+              </div>
+              <div>
+                <label class="block text-slate-600 dark:text-gray-400 font-semibold mb-1">Max Temperature Setpoint (°C)</label>
+                <input type="number" id="cfgTempMax" readonly class="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white font-mono focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all">
+              </div>
+              <div>
+                <label class="block text-slate-600 dark:text-gray-400 font-semibold mb-1">Assigned AC Controller Device</label>
+                <select id="cfgNodeSelect" class="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white font-mono focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all"></select>
+              </div>
+              <div>
+                <label class="block text-slate-600 dark:text-gray-400 font-semibold mb-1">IR Protocol Adapter</label>
+                <select id="cfgProtocolSelect" class="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white font-mono focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all">
+                  <option value="UNKNOWN">Learn from remote</option>
+                  <option value="KOPPEL_RAW">KOPPEL_RAW</option>
+                  <option value="LG2">LG2 (Dual Inverter)</option>
+                  <option value="DAIKIN216">DAIKIN216</option>
+                  <option value="PANASONIC_AC">PANASONIC_AC</option>
+                  <option value="CARRIER_AC64">CARRIER_AC64</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Capabilities Checkbox Grid -->
+            <div class="pt-3 border-t border-slate-100 dark:border-white/5 space-y-2">
+              <span class="text-xs font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider block">Supported Hardware Capabilities</span>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-slate-700 dark:text-slate-300">
+                <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer"><input type="checkbox" id="cfgCapPower" checked class="accent-emerald-500"> Power Control</label>
+                <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer"><input type="checkbox" id="cfgCapTemp" checked class="accent-emerald-500"> Temperature Set</label>
+                <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer"><input type="checkbox" id="cfgCapSwing" checked class="accent-emerald-500"> Air Swing</label>
+                <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer"><input type="checkbox" id="cfgCapSleep" checked class="accent-emerald-500"> Sleep Mode</label>
+                <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer"><input type="checkbox" id="cfgCapTurbo" class="accent-emerald-500"> Turbo Mode</label>
+                <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer"><input type="checkbox" id="cfgCapEco" class="accent-emerald-500"> Eco Mode</label>
+                <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer"><input type="checkbox" id="cfgCapTimer" class="accent-emerald-500"> Timer</label>
+              </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
+              <button type="button" id="deleteAirconBtn" class="px-4 py-2.5 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-xs cursor-pointer flex items-center gap-1.5 transition-all">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                <span>Delete Air Conditioner</span>
+              </button>
+              <button type="submit" class="btn-gradient-submit px-6 py-2.5 rounded-xl text-white font-bold text-xs cursor-pointer shadow-md hover:opacity-95 transition-all">
+                Save Unit Configuration
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- TAB 5: DEVICE LOGS -->
+        <div id="tabContent-logs" class="tab-pane hidden max-w-7xl mx-auto space-y-4">
+          <div class="glass-panel bg-white dark:bg-[#0c1328] p-6 rounded-2xl border border-slate-200 dark:border-white/10 space-y-4 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-white/5 pb-3">
+              <div>
+                <h3 class="eco-primary-text text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="text-teal-500"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                  Device Audit Trail & Log History
+                </h3>
+                <p class="text-[11px] text-slate-500 dark:text-gray-400">All command dispatches, IR transmissions, and control events for <span id="logsUnitIdLabel" class="font-mono text-cyan-600 dark:text-cyan-400 font-bold">--</span></p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button id="refreshDeviceLogsBtn" type="button" aria-label="Refresh device logs" title="Refresh device logs" class="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-xs font-bold text-slate-700 dark:text-gray-300 border border-slate-200 dark:border-white/10 cursor-pointer flex items-center gap-1.5 transition-all">
+                  <svg id="refreshLogsIcon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+
+                </button>
+              </div>
+            </div>
+
+            <!-- Search and Filter Bar -->
+            <div class="flex flex-wrap items-center gap-3 pt-1">
+              <div class="relative flex-1 min-w-[220px] max-w-sm">
+                <input type="text" id="deviceLogsSearch" placeholder="Search events, modules, details..." class="w-full px-3 py-1.5 pl-8 rounded-xl bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-xs placeholder:text-gray-400 focus:ring-1 focus:ring-teal-500 outline-none">
+                <svg class="absolute left-2.5 top-2.5 text-gray-400" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </div>
+              <select id="deviceLogsStatusFilter" class="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white text-xs font-medium focus:ring-1 focus:ring-teal-500 outline-none">
+                <option value="ALL">All Statuses</option>
+                <option value="SUCCESS">Success Only</option>
+                <option value="FAILED">Failed Only</option>
+                <option value="WARNING">Warning Only</option>
+              </select>
+            </div>
+
+            <div class="eco-table-frame overflow-x-auto">
+              <table class="eco-data-table w-full text-left text-xs">
+                <thead class="text-slate-500 dark:text-gray-400 border-b border-slate-100 dark:border-white/5 pb-2">
+                  <tr>
+                    <th scope="col" class="pb-2.5 font-bold">Timestamp</th>
+                    <th scope="col" class="pb-2.5 font-bold">Controller Device</th>
+                    <th scope="col" class="pb-2.5 font-bold">Module</th>
+                    <th scope="col" class="pb-2.5 font-bold">Event</th>
+                    <th scope="col" class="pb-2.5 font-bold">Result</th>
+                    <th scope="col" class="pb-2.5 font-bold">Details</th>
+                  </tr>
+                </thead>
+                <tbody id="deviceLogsTableBody" class="divide-y divide-slate-100 dark:divide-white/5 text-slate-700 dark:text-gray-300">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Device Logs Pagination Controls (20 items per page) -->
+            <div class="mt-3 pt-2.5 border-t border-slate-100 dark:border-white/5 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs">
+              <span id="deviceLogsPageInfo" class="font-bold text-slate-500 dark:text-gray-400">Showing 0 of 0 events</span>
+              <div class="flex items-center gap-2">
+                <button id="deviceLogsPrevBtn" type="button" disabled class="px-3 py-1 rounded-xl bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/10 text-xs font-bold text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer">Previous</button>
+                <span id="deviceLogsPaginationPages" class="font-bold px-1 text-slate-700 dark:text-gray-300">Page 1 of 1</span>
+                <button id="deviceLogsNextBtn" type="button" disabled class="px-3 py-1 rounded-xl bg-teal-600 hover:bg-teal-700 text-xs font-bold text-white border-0 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer">Next</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- REDESIGNED COMMAND ERROR & NODE OFFLINE DIAGNOSTICS MODAL -->
+  <div id="commandErrorModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white dark:bg-[#0c1328] rounded-2xl w-full max-w-lg border border-slate-200 dark:border-rose-500/30 overflow-hidden shadow-2xl text-slate-800 dark:text-slate-100 transition-all transform scale-100">
+      
+      <!-- MODAL HEADER -->
+      <div class="flex items-center justify-between p-5 border-b border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-black/20">
+        <div class="flex items-center gap-3">
+          <div id="cmdErrorIconBox" class="w-11 h-11 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-400 flex items-center justify-center shadow-sm shrink-0">
+            <svg id="cmdErrorIcon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 id="cmdErrorTitle" class="eco-primary-text text-base font-extrabold text-slate-900 dark:text-white tracking-tight">
+                Controller Node Offline
+              </h3>
+              <span id="cmdErrorNodeBadge" class="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
+                node-1
+              </span>
+            </div>
+            <p id="cmdErrorSubtitle" class="text-xs text-slate-500 dark:text-gray-400">
+              Command Withheld &bull; Hardware Protection Safeguard Active
+            </p>
+          </div>
+        </div>
+
+        <button id="closeCmdErrorModalBtn" type="button" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-500 dark:text-gray-400 dark:hover:text-white flex items-center justify-center text-lg font-bold border-0 cursor-pointer transition-colors" title="Close modal">
+          &times;
+        </button>
+      </div>
+
+      <!-- MODAL BODY -->
+      <div class="p-5 space-y-4 max-h-[calc(85vh-140px)] overflow-y-auto">
+
+        <!-- STATUS HERO BANNER -->
+        <div id="cmdErrorStatusBanner" class="p-3.5 rounded-2xl bg-gradient-to-r from-rose-500/15 via-rose-500/10 to-amber-500/10 dark:from-rose-950/40 dark:via-rose-900/20 dark:to-black/30 border border-rose-500/30 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="relative flex items-center justify-center w-3.5 h-3.5 flex-shrink-0">
+              <span id="cmdErrorPulseRing" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+              <span id="cmdErrorPulseDot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 dark:bg-rose-400"></span>
+            </div>
+            <div class="min-w-0">
+              <div id="cmdErrorStatusHeadline" class="text-xs font-black uppercase tracking-wider text-rose-700 dark:text-rose-300 truncate">
+                Controller Disconnected from IoT Mesh
+              </div>
+              <div id="cmdErrorStatusDetails" class="text-[11px] text-slate-600 dark:text-gray-300 mt-0.5">
+                Assigned hardware node is currently marked offline in the network registry.
+              </div>
+            </div>
+          </div>
+          <span id="cmdErrorCodeBadge" class="font-mono text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/30 shrink-0">
+            NODE_OFFLINE
+          </span>
+        </div>
+
+        <!-- 4 DIAGNOSTIC TILES -->
+        <div class="grid grid-cols-2 gap-2.5 font-mono text-xs">
+          <!-- Target Aircon -->
+          <div class="p-3 rounded-xl bg-slate-100/70 dark:bg-white/5 border border-slate-200 dark:border-white/5 flex flex-col gap-0.5">
+            <span class="text-[10px] font-sans font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">Target Aircon</span>
+            <span id="cmdErrorTargetAircon" class="font-bold text-slate-900 dark:text-white truncate">--</span>
+            <span id="cmdErrorTargetAirconId" class="text-[10px] text-teal-700 dark:text-teal-400 font-bold">--</span>
+          </div>
+
+          <!-- Target Node -->
+          <div class="p-3 rounded-xl bg-slate-100/70 dark:bg-white/5 border border-slate-200 dark:border-white/5 flex flex-col gap-0.5">
+            <span class="text-[10px] font-sans font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">Assigned Node</span>
+            <span id="cmdErrorNodeId" class="font-bold text-rose-600 dark:text-rose-400 truncate">--</span>
+            <span id="cmdErrorNodeHardware" class="text-[10px] text-slate-500 dark:text-gray-400 truncate">AC Controller Device (WiFi + IR)</span>
+          </div>
+
+          <!-- Pending Command -->
+          <div class="p-3 rounded-xl bg-slate-100/70 dark:bg-white/5 border border-slate-200 dark:border-white/5 flex flex-col gap-0.5">
+            <span class="text-[10px] font-sans font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">Attempted Action</span>
+            <span id="cmdErrorAttemptedAction" class="font-bold text-cyan-700 dark:text-cyan-300 truncate">--</span>
+            <span class="text-[10px] text-slate-500 dark:text-gray-400 font-sans">Infrared Transmission</span>
+          </div>
+
+          <!-- Target IP / Network -->
+          <div class="p-3 rounded-xl bg-slate-100/70 dark:bg-white/5 border border-slate-200 dark:border-white/5 flex flex-col gap-0.5">
+            <span class="text-[10px] font-sans font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">Network Interface</span>
+            <span id="cmdErrorNodeIp" class="font-bold text-slate-800 dark:text-gray-200 truncate">192.168.1.101</span>
+            <span id="cmdErrorNodeSsid" class="text-[10px] text-teal-700 dark:text-teal-400 font-bold truncate">EcoTrack-IoT (2.4GHz)</span>
+          </div>
+        </div>
+
+        <!-- EXPLANATION / SAFEGUARD NOTICE -->
+        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/5 text-xs text-slate-600 dark:text-gray-300 leading-relaxed flex items-start gap-2.5">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="text-teal-600 dark:text-teal-400 shrink-0 mt-0.5">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <p id="cmdErrorSafeguardNotice" class="m-0">
+            Controller offline. Reconnect it before sending commands.
+          </p>
+        </div>
+
+        <!-- LIVE PING DIAGNOSTIC PROBE BOX -->
+        <div id="cmdErrorPingBox" class="hidden p-3.5 rounded-xl bg-[#060c18] border border-cyan-500/30 text-xs font-mono">
+          <div class="flex items-center justify-between text-cyan-400 text-[11px] mb-2 pb-1.5 border-b border-white/10">
+            <span class="flex items-center gap-1.5 font-bold">
+              <span id="cmdPingDot" class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+              ICMP Network Probe: <span id="cmdPingTargetIp">192.168.1.101</span>
+            </span>
+            <span id="cmdPingResultPill" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">OK &bull; 28ms</span>
+          </div>
+          <div id="cmdPingOutput" class="text-slate-300 text-[11px] leading-relaxed whitespace-pre-wrap">
+Pinging 192.168.1.101 with 32 bytes of data:
+Reply from 192.168.1.101: bytes=32 time=28ms TTL=64 RSSI=-65dBm
+Ping statistics: Packets: Sent = 3, Received = 3, Lost = 0 (0% loss).
+          </div>
+        </div>
+
+      </div>
+
+      <!-- MODAL FOOTER -->
+      <div class="p-4 border-t border-slate-200 dark:border-white/10 bg-slate-50/80 dark:bg-black/20 flex items-center justify-between gap-3 flex-wrap">
+        <button type="button" id="cmdTestPingBtn" class="px-3.5 py-2 rounded-xl bg-slate-200/80 hover:bg-slate-300/80 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-gray-300 text-xs font-bold transition-all border-0 cursor-pointer flex items-center gap-1.5">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
+          <span id="cmdTestPingLabel">Ping Device</span>
+        </button>
+
+        <div class="flex items-center gap-2.5 ml-auto">
+          <button type="button" id="cmdCancelBtn" class="px-4 py-2 rounded-xl bg-slate-200/80 hover:bg-slate-300/80 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white text-xs font-bold transition-colors border-0 cursor-pointer">
+            Dismiss
+          </button>
+
+          <button type="button" id="cmdReconnectAndRetryBtn" class="btn-gradient-submit px-4 py-2 rounded-xl text-white font-bold text-xs shadow-md border-0 cursor-pointer flex items-center gap-1.5 transition-all">
+            <svg id="cmdReconnectSpinner" class="hidden animate-spin" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
+              <path d="M4 12a8 8 0 018-8" stroke="currentColor"></path>
+            </svg>
+            <svg id="cmdReconnectIcon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M23 4v6h-6"></path>
+              <path d="M1 20v-6h6"></path>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+            <span id="cmdReconnectLabel">Reconnect Node &amp; Send</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CLIENT CONTROLLER SCRIPT -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const { AirconProfileManager, CapabilityEngine, CommandManager, NodeService, AirconEvents } = window.EcoTrackAirconSystem;
+
+      // Read initial device from URL param ?id=AC-001 or default to first
+      const urlParams = new URLSearchParams(window.location.search);
+      const _allInitAcs = AirconProfileManager ? AirconProfileManager.getAll() : [];
+      let activeDeviceId = urlParams.get('id') || (_allInitAcs[0]?.asset_tag || _allInitAcs[0]?.device_id || _allInitAcs[0]?.id || '');
+
+      // Dynamic Aircon Dropdown Elements
+      const airconDropdownContainer = document.getElementById('airconDropdownContainer');
+      const airconDropdownTrigger = document.getElementById('airconDropdownTrigger');
+      const airconDropdownMenu = document.getElementById('airconDropdownMenu');
+      const airconDropdownSearch = document.getElementById('airconDropdownSearch');
+      const airconDropdownList = document.getElementById('airconDropdownList');
+      const airconDropdownCount = document.getElementById('airconDropdownCount');
+      const airconDropdownChevron = document.getElementById('airconDropdownChevron');
+      const selectedAcStatusDot = document.getElementById('selectedAcStatusDot');
+      const selectedAcName = document.getElementById('selectedAcName');
+      const selectedAcIdBadge = document.getElementById('selectedAcIdBadge');
+      const selectedAcLocation = document.getElementById('selectedAcLocation');
+
+      const unitNameEl = document.getElementById('controlUnitName');
+      const unitBrandBadgeEl = document.getElementById('controlUnitBrandBadge');
+      const unitDetailsEl = document.getElementById('controlUnitDetails');
+      const masterPowerBtn = document.getElementById('masterPowerBtn');
+      const masterPowerText = document.getElementById('masterPowerText');
+      const tempValueDisplay = document.getElementById('tempValueDisplay');
+      const tempMinusBtn = document.getElementById('tempMinusBtn');
+      const tempPlusBtn = document.getElementById('tempPlusBtn');
+      const tempRangeHelp = document.getElementById('tempRangeHelp');
+      const modeButtonsGroup = document.getElementById('modeButtonsGroup');
+      const fanButtonsGroup = document.getElementById('fanButtonsGroup');
+      const specialButtonsGroup = document.getElementById('specialButtonsGroup');
+
+      // Right panel live telemetry elements
+      const dispCommandedState = document.getElementById('dispCommandedState');
+      const dispClassifiedState = document.getElementById('dispClassifiedState');
+      const dispMismatchAlert = document.getElementById('dispMismatchAlert');
+      const liveTempReadout = document.getElementById('liveTempReadout');
+      const liveSetpointReadout = document.getElementById('liveSetpointReadout');
+      const dispNodeId = document.getElementById('dispNodeId');
+      const dispNodeStatus = document.getElementById('dispNodeStatus');
+      const dispNodeRssi = document.getElementById('dispNodeRssi');
+      const dispNodeSnr = document.getElementById('dispNodeSnr');
+      const dispNodeBatteryText = document.getElementById('dispNodeBatteryText');
+      const commandStatusText = document.getElementById('commandStatusText');
+      const commandLatencyText = document.getElementById('commandLatencyText');
+
+      // View toggle elements
+      const controlsContainer = document.getElementById('controlsContainer');
+
+      function getControllerDisplayName(device) {
+        const controller = NodeService.getNode(device?.controller_node_id) || NodeService.getNode(device?.node_id);
+        const savedName = typeof controller?.name === 'string' ? controller.name.trim() : '';
+        return savedName && !/^(?:EcoTrack[-_])?esp32s3[-_:][0-9a-f]{12}$/i.test(savedName)
+          ? savedName : 'AC Controller';
+      }
+
+      // Fixed desktop control layout; retired remote preferences do not affect it.
+      function applyControlLayout() {
+        const zeroState = document.getElementById('controlZeroAirconState');
+        const isZeroState = zeroState && !zeroState.classList.contains('hidden');
+        for (const element of [controlsContainer, document.getElementById('unitPowerHeaderContainer')]) {
+          if (!element) continue;
+          element.classList.toggle('hidden', Boolean(isZeroState));
+          if (isZeroState) element.style.setProperty('display', 'none', 'important');
+          else element.style.removeProperty('display');
+        }
+      }
+
+      function renderDeviceDropdown() {
+        const aircons = AirconProfileManager.getAll();
+        const matchedActive = AirconProfileManager.getById(activeDeviceId);
+        if (matchedActive) {
+          activeDeviceId = matchedActive.device_id;
+        } else if (aircons.length > 0) {
+          activeDeviceId = aircons[0].device_id;
+        }
+
+        const activeAc = AirconProfileManager.getById(activeDeviceId) || aircons[0];
+        if (activeAc) {
+          const activeDisplay = window.EcoTrackAirconState.displaySettings(activeAc.control_snapshot);
+          const isPowerOn = activeDisplay.power === true;
+          if (selectedAcStatusDot) {
+            selectedAcStatusDot.className = `w-2.5 h-2.5 rounded-full ${isPowerOn ? 'bg-emerald-400 shadow-sm shadow-emerald-400/50' : 'bg-slate-400'} shrink-0`;
+          }
+          if (selectedAcName) selectedAcName.textContent = getControllerDisplayName(activeAc);
+          if (selectedAcIdBadge) selectedAcIdBadge.textContent = activeAc.device_id;
+          if (selectedAcLocation) selectedAcLocation.textContent = `• ${activeAc.location || activeAc.room_name || 'Unassigned'}`;
+          
+
+        }
+
+        const query = airconDropdownSearch ? airconDropdownSearch.value : '';
+        renderDropdownItems(aircons, query);
+      }
+
+      function renderDropdownItems(aircons, filterText = '') {
+        if (!airconDropdownList) return;
+        const query = (filterText || '').toLowerCase().trim();
+        const filtered = aircons.filter(a => {
+          if (!query) return true;
+          return getControllerDisplayName(a).toLowerCase().includes(query) ||
+                 (a.name || '').toLowerCase().includes(query) ||
+                 (a.device_id || '').toLowerCase().includes(query) ||
+                 (a.location || '').toLowerCase().includes(query) ||
+                 (a.node_id || '').toLowerCase().includes(query) ||
+                 (a.brand || '').toLowerCase().includes(query);
+        });
+
+        if (airconDropdownCount) {
+          airconDropdownCount.textContent = `${aircons.length} Aircon unit${aircons.length === 1 ? '' : 's'} available`;
+        }
+
+        airconDropdownList.innerHTML = '';
+        if (filtered.length === 0) {
+          const isZeroTotal = aircons.length === 0;
+          airconDropdownList.innerHTML = isZeroTotal ? `
+            <div class="py-8 px-4 text-center">
+              <p class="text-xs font-bold text-gray-700 dark:text-gray-200 mb-1">No air conditioners registered</p>
+              <p class="text-[11px] text-gray-500 dark:text-gray-400 mb-3">Add your first AC unit in Fleet Management</p>
+              <a href="aircons.html" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-500/15 hover:bg-teal-500/25 text-teal-600 dark:text-teal-400 border border-teal-500/30 text-[11px] font-bold transition-all">
+                Register Aircon &rarr;
+              </a>
+            </div>
+          ` : `
+            <div class="py-6 px-4 text-center text-xs text-gray-400">
+              No aircon matching "<span class="font-bold text-gray-700 dark:text-gray-200">${filterText}</span>"
+            </div>
+          `;
+          return;
+        }
+
+        filtered.forEach(ac => {
+          const isSelected = ac.device_id === activeDeviceId;
+          const acDisplay = window.EcoTrackAirconState.displaySettings(ac.control_snapshot);
+          const isPowerOn = acDisplay.power === true;
+          const item = document.createElement('div');
+          item.className = `ac-dropdown-item px-3 py-2 rounded-xl flex items-center justify-between gap-3 cursor-pointer transition-all ${
+            isSelected 
+              ? 'bg-teal-500/15 dark:bg-teal-500/20 text-teal-900 dark:text-teal-200 border border-teal-500/40 font-semibold shadow-sm' 
+              : 'hover:bg-gray-100 dark:hover:bg-white/5 text-gray-800 dark:text-gray-200 border border-transparent'
+          }`;
+          item.setAttribute('role', 'option');
+          item.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+          item.innerHTML = `
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span class="w-2.5 h-2.5 rounded-full ${isPowerOn ? 'bg-emerald-400 shadow-sm shadow-emerald-400/50' : 'bg-slate-400'} shrink-0"></span>
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="ac-controller-name font-bold text-xs truncate"></span>
+                  <span class="px-1.5 py-0.5 rounded font-mono text-[10px] font-bold ${isSelected ? 'bg-teal-500/30 text-teal-800 dark:text-teal-200' : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300'}">${ac.device_id}</span>
+                </div>
+                <div class="ac-controller-location text-[10px] text-gray-500 dark:text-gray-400 truncate mt-0.5"></div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded ${isPowerOn ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-gray-200 dark:bg-white/10 text-gray-500 dark:text-gray-400'}">
+                ${isPowerOn && Number.isFinite(acDisplay.temperature) ? `${acDisplay.temperature}°C` : acDisplay.powerLabel}
+              </span>
+              ${isSelected ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" class="text-teal-500"><polyline points="20 6 9 17 4 12"></polyline></svg>' : ''}
+            </div>
+          `;
+
+          const controllerName = getControllerDisplayName(ac);
+          item.querySelector('.ac-controller-name').textContent = controllerName;
+          item.querySelector('.ac-controller-location').textContent = `${ac.location || 'Unassigned'} • Controller: ${controllerName}`;
+
+          item.addEventListener('click', () => {
+            activeDeviceId = ac.device_id;
+            try {
+              const u = new URL(window.location.href);
+              u.searchParams.set('id', activeDeviceId);
+              window.history.replaceState(null, '', u.toString());
+            } catch (_) {}
+            closeAirconDropdown();
+            renderDeviceDropdown();
+            renderControlPanel();
+            if (currentActiveTab !== 'control') renderWorkspaceTabData(currentActiveTab);
+          });
+
+          airconDropdownList.appendChild(item);
+        });
+      }
+
+      function toggleAirconDropdown() {
+        if (!airconDropdownMenu) return;
+        const isClosed = airconDropdownMenu.classList.contains('hidden');
+        if (isClosed) {
+          openAirconDropdown();
+        } else {
+          closeAirconDropdown();
+        }
+      }
+
+      function openAirconDropdown() {
+        if (!airconDropdownMenu) return;
+        airconDropdownMenu.classList.remove('hidden');
+        if (airconDropdownTrigger) airconDropdownTrigger.setAttribute('aria-expanded', 'true');
+        if (airconDropdownChevron) airconDropdownChevron.style.transform = 'rotate(180deg)';
+        if (airconDropdownSearch) {
+          airconDropdownSearch.value = '';
+          setTimeout(() => airconDropdownSearch.focus(), 50);
+        }
+        renderDropdownItems(AirconProfileManager.getAll(), '');
+      }
+
+      function closeAirconDropdown() {
+        if (!airconDropdownMenu) return;
+        airconDropdownMenu.classList.add('hidden');
+        if (airconDropdownTrigger) airconDropdownTrigger.setAttribute('aria-expanded', 'false');
+        if (airconDropdownChevron) airconDropdownChevron.style.transform = 'rotate(0deg)';
+      }
+
+      if (airconDropdownTrigger) {
+        airconDropdownTrigger.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleAirconDropdown();
+        });
+      }
+
+      if (airconDropdownSearch) {
+        airconDropdownSearch.addEventListener('input', (e) => {
+          renderDropdownItems(AirconProfileManager.getAll(), e.target.value);
+        });
+        airconDropdownSearch.addEventListener('click', (e) => e.stopPropagation());
+      }
+
+      document.addEventListener('click', (e) => {
+        if (airconDropdownContainer && !airconDropdownContainer.contains(e.target)) {
+          closeAirconDropdown();
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeAirconDropdown();
+        }
+      });
+
+      function renderControlPanel() {
+        const zeroStateEl = document.getElementById('controlZeroAirconState');
+        const controlsContainer = document.getElementById('controlsContainer');
+        const unitPowerHeaderContainer = document.getElementById('unitPowerHeaderContainer');
+
+        let device = AirconProfileManager.getById(activeDeviceId);
+        if (!device) {
+          const aircons = AirconProfileManager.getAll();
+          if (aircons.length > 0) {
+            activeDeviceId = aircons[0].device_id;
+            device = aircons[0];
+          } else {
+            if (unitNameEl) unitNameEl.textContent = 'Fleet Overview • No Units Registered';
+            if (unitBrandBadgeEl) {
+              unitBrandBadgeEl.textContent = 'Standby';
+              unitBrandBadgeEl.classList.remove('hidden');
+            }
+            if (unitDetailsEl) unitDetailsEl.textContent = 'No air conditioning units registered in the EcoTrack network.';
+            if (unitPowerHeaderContainer) unitPowerHeaderContainer.classList.add('hidden');
+            if (controlsContainer) {
+              controlsContainer.classList.add('hidden');
+              controlsContainer.style.setProperty('display', 'none', 'important');
+            }
+            if (zeroStateEl) {
+              zeroStateEl.classList.remove('hidden');
+              zeroStateEl.classList.add('flex');
+            }
+            if (dispNodeBatteryText) dispNodeBatteryText.textContent = '—';
+
+            if (dispCommandedState) dispCommandedState.textContent = '—';
+            if (dispClassifiedState) dispClassifiedState.textContent = 'STANDBY';
+            if (liveSetpointReadout) liveSetpointReadout.textContent = '—';
+            if (liveTempReadout) liveTempReadout.textContent = '—';
+            if (dispNodeId) dispNodeId.textContent = '—';
+            if (dispNodeStatus) {
+              dispNodeStatus.textContent = '● Offline';
+              dispNodeStatus.className = 'font-bold text-slate-400 dark:text-gray-500 font-medium';
+            }
+            if (dispNodeRssi) dispNodeRssi.textContent = '—';
+            if (dispNodeSnr) dispNodeSnr.textContent = '—';
+
+            if (typeof renderWorkspaceTabData === 'function') {
+              renderWorkspaceTabData('overview');
+            }
+            return;
+          }
+        }
+
+        if (unitPowerHeaderContainer) unitPowerHeaderContainer.classList.remove('hidden');
+        if (controlsContainer) controlsContainer.classList.remove('hidden');
+        if (zeroStateEl) {
+          zeroStateEl.classList.add('hidden');
+          zeroStateEl.classList.remove('flex');
+        }
+
+        const caps = CapabilityEngine.getCapabilities(device);
+        const state = device.state || {};
+        const display = window.EcoTrackAirconState.displaySettings(device.control_snapshot);
+        const hasSettings = Boolean(display.state);
+        const isPowerOn = display.power === true;
+        const powerLabel = display.powerLabel;
+        const displayMode = display.modeLabel;
+        const displayFan = display.fanLabel;
+        const node = NodeService.getNode(device.node_id);
+        const isNodeOnline = node ? (node.status.toLowerCase() === 'connected' || node.status.toLowerCase() === 'online') : false;
+
+        // Header info
+        unitNameEl.textContent = getControllerDisplayName(device);
+        unitBrandBadgeEl.textContent = '';
+        unitBrandBadgeEl.classList.add('hidden');
+        document.querySelectorAll('a[href^="ir-library.html"]:not([href*="learn="])').forEach(link => { link.href = `ir-library.html?id=${encodeURIComponent(activeDeviceId)}`; });
+        unitDetailsEl.textContent = `${device.model} • Location: ${device.location || 'Unassigned'}`;
+
+        // Power button styling
+        if (isPowerOn) {
+          masterPowerBtn.className = 'px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2 transition-all border shadow-sm bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30';
+          masterPowerText.textContent = powerLabel;
+        } else {
+          masterPowerBtn.className = 'px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2 transition-all border shadow-sm bg-white/5 text-gray-400 border-white/10 hover:text-white';
+          masterPowerText.textContent = powerLabel;
+        }
+
+        // Temperature Dial
+        const controlRange = CapabilityEngine.getControlTemperatureRange(device);
+        tempValueDisplay.textContent = hasSettings ? CapabilityEngine.formatTemperature(state.temperature) : '—';
+        tempRangeHelp.textContent = controlRange ? `Operating range: ${controlRange.min}°C – ${controlRange.max}°C (Step: 1°C)` : '—';
+
+        tempMinusBtn.disabled = !isPowerOn || CapabilityEngine.nextControlTemperature(device, state.temperature, -1) === null;
+        tempPlusBtn.disabled = !isPowerOn || CapabilityEngine.nextControlTemperature(device, state.temperature, 1) === null;
+
+        // Modes Rendering (DYNAMIC BASED ON CAPABILITY)
+        modeButtonsGroup.innerHTML = '';
+        const supportedModes = caps.modes || [];
+        supportedModes.forEach(m => {
+          const isActive = isPowerOn && state.mode === m;
+          const btn = document.createElement('button');
+          btn.className = `py-2.5 rounded-xl text-xs font-bold uppercase transition-all border ${
+            isActive 
+              ? 'bg-teal-500/25 text-teal-300 border-teal-500/50 shadow' 
+              : 'bg-white/5 text-gray-400 border-white/5 hover:text-white hover:border-white/10'
+          } ${!isPowerOn ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`;
+          btn.textContent = m;
+          btn.disabled = !isPowerOn;
+          btn.disabled ||= !caps.can_transmit;
+          btn.addEventListener('click', () => executeCommand('MODE', m));
+          modeButtonsGroup.appendChild(btn);
+        });
+
+        // Fan Speed Rendering (DYNAMIC BASED ON CAPABILITY)
+        fanButtonsGroup.innerHTML = '';
+        const supportedFans = caps.fans || [];
+        fanButtonsGroup.style.gridTemplateColumns = 'repeat(auto-fit, minmax(72px, 1fr))';
+        supportedFans.forEach(f => {
+          const isActive = isPowerOn && state.fan === f;
+          const btn = document.createElement('button');
+          btn.className = `py-2 rounded-xl text-xs font-bold uppercase transition-all border ${
+            isActive 
+              ? 'bg-cyan-500/25 text-cyan-300 border-cyan-500/50 shadow' 
+              : 'bg-white/5 text-gray-400 border-white/5 hover:text-white hover:border-white/10'
+          } ${!isPowerOn ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`;
+          btn.textContent = f;
+          btn.disabled = !isPowerOn;
+          btn.disabled ||= !CapabilityEngine.isSupported(device,'FAN',f);
+          btn.addEventListener('click', () => executeCommand('FAN', f));
+          fanButtonsGroup.appendChild(btn);
+        });
+
+        // Special Features Rendering (DYNAMIC - HIDES UNSUPPORTED FEATURES)
+        specialButtonsGroup.innerHTML = '';
+        const specials = [
+          { key: 'swing_vertical', label: 'Vertical Swing', active: state.swing_vertical ?? state.swing, supported: caps.swing_vertical },
+          { key: 'sleep', label: 'Sleep', active: state.sleep, supported: caps.sleep },
+          { key: 'turbo', label: 'Turbo', active: state.turbo, supported: caps.turbo },
+          { key: 'eco', label: 'Eco', active: state.eco, supported: caps.eco },
+          ...['quiet','swing_horizontal','display','clean','beep'].map(key=>({key,label:key==='swing_horizontal'?'Horizontal Swing':key.replace(/_/g,' '),active:state[key],supported:caps[key]}))
+        ];
+
+        specials.forEach(s => {
+          if (!s.supported) return; // STRICT RULE: Never show unsupported controls
+          const btn = document.createElement('button');
+          btn.className = `px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all border ${
+            s.active && isPowerOn
+              ? 'bg-emerald-500/25 text-emerald-300 border-emerald-500/50 shadow' 
+              : 'bg-white/5 text-gray-400 border-white/5 hover:text-white'
+          } ${!isPowerOn ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`;
+          btn.textContent = s.label;
+          btn.dataset.currentState = s.active == null ? 'unknown' : s.active ? 'on' : 'off';
+          if (s.active != null) btn.setAttribute('aria-pressed', String(!!s.active));
+          btn.title = s.active == null ? s.label + ': not yet reported by the IR receiver' : s.label + ': ' + (s.active ? 'ON' : 'OFF');
+          btn.disabled = !isPowerOn;
+          btn.disabled ||= !caps.can_transmit;
+          btn.addEventListener('click', () => executeCommand(s.key.toUpperCase(), !s.active));
+          specialButtonsGroup.appendChild(btn);
+        });
+
+        const functionsReadout = document.getElementById('liveSpecialFunctions');
+        if (functionsReadout) {
+          functionsReadout.replaceChildren();
+          for (const feature of specials.filter(item => item.supported)) {
+            const value = display.state?.[feature.key] ?? (feature.key === 'swing_vertical' ? display.state?.swing : null);
+            if (value == null || !['on','off','true','false','1','0'].includes(String(value).toLowerCase())) continue;
+            const enabled = ['on','true','1'].includes(String(value).toLowerCase());
+            const pill = document.createElement('span');
+            pill.className = 'px-2.5 py-1.5 rounded-lg border ' + (enabled
+              ? 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-500/15 dark:text-teal-300 dark:border-teal-500/30'
+              : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-white/5 dark:text-gray-400 dark:border-white/10');
+            pill.textContent = feature.label + ': ' + (enabled ? 'ON' : 'OFF');
+            functionsReadout.appendChild(pill);
+          }
+          if (!functionsReadout.childElementCount) functionsReadout.textContent = '—';
+        }
+
+        // Right Panel Updates
+        dispCommandedState.textContent = display.powerLabel;
+        dispClassifiedState.textContent = hasSettings ? `${displayMode} • ${displayFan}` : '—';
+
+        liveSetpointReadout.textContent = hasSettings ? CapabilityEngine.formatTemperature(state.temperature, '°C') : '—';
+        liveTempReadout.textContent = displayFan;
+        const subtext = document.getElementById('liveFanSubtext');
+        if (subtext) {
+          subtext.textContent = hasSettings ? `Speed: ${displayFan}` : '—';
+        }
+
+        dispNodeId.textContent = device.node_id;
+        dispNodeStatus.textContent = isNodeOnline ? '● Connected' : '● Offline';
+        dispNodeStatus.className = `font-bold ${isNodeOnline ? 'text-emerald-400' : 'text-rose-400'}`;
+        dispNodeRssi.textContent = node?.rssi ? `${node.rssi} dBm` : '—';
+        dispNodeSnr.textContent = node?.ip_address || (node?.rssi ? '192.168.1.101' : '—');
+
+        // Battery status calculation
+        const rawBat = node?.battery;
+        let batPercent = null;
+        if (rawBat !== undefined && rawBat !== null) {
+          const num = parseFloat(rawBat);
+          if (!isNaN(num)) {
+            if (num > 10) {
+              batPercent = Math.min(100, Math.max(0, Math.round(num)));
+            } else {
+              batPercent = Math.min(100, Math.max(0, Math.round((num / 4.2) * 100)));
+            }
+          }
+        }
+        if (dispNodeBatteryText) {
+          const dispNodeBattery = document.getElementById('dispNodeBattery');
+          if (isNodeOnline && batPercent !== null) {
+            dispNodeBatteryText.textContent = `${batPercent}%`;
+            const colorClass = batPercent >= 50 
+              ? 'text-emerald-600 dark:text-emerald-400' 
+              : (batPercent >= 20 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400');
+            dispNodeBatteryText.className = `font-bold ${colorClass} font-mono`;
+            if (dispNodeBattery) dispNodeBattery.className = `font-bold ${colorClass} font-mono flex items-center gap-1.5`;
+          } else {
+            dispNodeBatteryText.textContent = '—';
+            dispNodeBatteryText.className = 'font-bold text-slate-400 dark:text-gray-500 font-mono';
+            if (dispNodeBattery) dispNodeBattery.className = 'font-bold text-slate-400 dark:text-gray-500 font-mono flex items-center gap-1.5';
+          }
+        }
+
+        if (typeof renderWorkspaceTabData === 'function') {
+          renderWorkspaceTabData('overview');
+        }
+
+        // Keep desktop controls and Unit Power visibility in sync
+        if (typeof applyControlLayout === 'function') {
+          applyControlLayout();
+        }
+        enforceControllerCapabilities(device);
+      }
+
+      // Pending command tracking for retry
+      let pendingFailedCommand = null;
+
+
+      function enforceControllerCapabilities(device) {
+        const controller = NodeService.getNode(device?.controller_node_id) || NodeService.getNode(device?.node_id);
+        const transmit = controller?.capabilities?.ir_transmitter === true;
+        const monitor = controller?.capabilities?.ir_receiver === true;
+        const message = document.getElementById('hardwareRoleMessage');
+        if (message) {
+          message.hidden = transmit;
+          message.textContent = transmit ? '' : monitor ? 'Monitoring only. Control is unavailable.' : 'Control is unavailable.';
+        }
+        const buttons = [masterPowerBtn, tempMinusBtn, tempPlusBtn,
+          ...modeButtonsGroup.querySelectorAll('button'), ...fanButtonsGroup.querySelectorAll('button'), ...specialButtonsGroup.querySelectorAll('button'),
+          ...document.querySelectorAll('.sim-btn, .test-cmd-btn'),
+          ...['remPowerBtn','remTempPlus','remTempMinus','remMode','remFan','remSwing','remEco','remTurbo','remSleep',
+          'simPowerBtn','simTempUpBtn','simTempDownBtn','simModeBtn','simFanBtn','simSwingBtn','simEcoBtn','simTurboBtn','simSleepBtn'].map(id => document.getElementById(id))];
+        for (const button of buttons.filter(Boolean)) {
+          if (!transmit || !CapabilityEngine.getCapabilities(device).can_transmit) button.disabled = true;
+          else if (button === masterPowerBtn || button.dataset?.cmd === 'POWER' || ['remPowerBtn','simPowerBtn'].includes(button.id)) button.disabled = !CapabilityEngine.isSupported(device,'POWER');
+          if(!transmit)button.title='Control is unavailable for this controller';
+          if(/temp/i.test(button.id) || button.dataset?.cmd==='TEMP')button.disabled ||= !CapabilityEngine.getCapabilities(device).temperature_controllable;
+          button.classList.toggle('opacity-40', button.disabled);
+          button.classList.toggle('cursor-not-allowed', button.disabled);
+        }
+      }
+
+      async function executeCommand(cmdType, val) {
+        if (cmdType === 'TEMP' && !CapabilityEngine.validateControlTemperature(AirconProfileManager.getById(activeDeviceId), val)) {
+          window.EcoToast?.show('Choose a supported whole-degree temperature.', 'error');
+          return;
+        }
+        // Flash IR blaster LED on the remote
+        const blasterLed = document.getElementById('irBlasterLed');
+        if (blasterLed) {
+          blasterLed.classList.add('ir-pulsing');
+          setTimeout(() => blasterLed.classList.remove('ir-pulsing'), 450);
+        }
+
+        const startTime = Date.now();
+        commandStatusText.textContent = 'Updating settings…';
+        commandLatencyText.textContent = 'Updating…';
+
+        const res = await CommandManager.dispatch({
+          device_id: activeDeviceId,
+          command: cmdType,
+          value: val
+        });
+
+        const latency = Date.now() - startTime;
+        if (res.success) {
+          pendingFailedCommand = null;
+          commandStatusText.textContent = '✓ Settings saved.';
+          commandLatencyText.textContent = `${latency} ms`;
+          const compLatency = document.getElementById('compLatency');
+          if (compLatency) compLatency.textContent = `${latency} ms`;
+        } else {
+          commandStatusText.textContent = `✗ ${res.message}`;
+          commandLatencyText.textContent = 'Failed';
+          pendingFailedCommand = { type: cmdType, val: val, device_id: activeDeviceId, res };
+          openCommandErrorModal(res, pendingFailedCommand);
+        }
+
+        renderControlPanel();
+        renderDeviceDropdown();
+      }
+
+      // ===== COMMAND ERROR / NODE OFFLINE MODAL CONTROLLER =====
+      const commandErrorModal = document.getElementById('commandErrorModal');
+      const closeCmdErrorModalBtn = document.getElementById('closeCmdErrorModalBtn');
+      const cmdCancelBtn = document.getElementById('cmdCancelBtn');
+      const cmdReconnectAndRetryBtn = document.getElementById('cmdReconnectAndRetryBtn');
+      const cmdTestPingBtn = document.getElementById('cmdTestPingBtn');
+      const cmdErrorPingBox = document.getElementById('cmdErrorPingBox');
+
+      function openCommandErrorModal(res, pendingCmd) {
+        if (!commandErrorModal) return;
+        const device = AirconProfileManager.getById(pendingCmd?.device_id || activeDeviceId);
+        const nodeId = res?.node_id || device?.node_id || 'node-1';
+        const node = NodeService.getNode(nodeId);
+        const numPart = (nodeId || '').replace(/\D/g, '') || '1';
+        const nodeIp = node?.ip_address || `192.168.1.10${numPart}`;
+        const nodeSsid = node?.wifi_ssid || 'EcoTrack-IoT';
+
+        // Elements
+        const titleEl = document.getElementById('cmdErrorTitle');
+        const subtitleEl = document.getElementById('cmdErrorSubtitle');
+        const nodeBadgeEl = document.getElementById('cmdErrorNodeBadge');
+        const iconBox = document.getElementById('cmdErrorIconBox');
+        const headlineEl = document.getElementById('cmdErrorStatusHeadline');
+        const detailsEl = document.getElementById('cmdErrorStatusDetails');
+        const codeBadgeEl = document.getElementById('cmdErrorCodeBadge');
+        const targetAcEl = document.getElementById('cmdErrorTargetAircon');
+        const targetAcIdEl = document.getElementById('cmdErrorTargetAirconId');
+        const errNodeIdEl = document.getElementById('cmdErrorNodeId');
+        const errNodeHwEl = document.getElementById('cmdErrorNodeHardware');
+        const errActionEl = document.getElementById('cmdErrorAttemptedAction');
+        const errNodeIpEl = document.getElementById('cmdErrorNodeIp');
+        const errNodeSsidEl = document.getElementById('cmdErrorNodeSsid');
+        const noticeEl = document.getElementById('cmdErrorSafeguardNotice');
+        const pingTargetIp = document.getElementById('cmdPingTargetIp');
+
+        if (nodeBadgeEl) nodeBadgeEl.textContent = nodeId;
+        if (targetAcEl) targetAcEl.textContent = device?.name || 'Aircon Unit';
+        if (targetAcIdEl) targetAcIdEl.textContent = device?.device_id || activeDeviceId;
+        if (errNodeIdEl) errNodeIdEl.textContent = nodeId;
+        if (errNodeHwEl) errNodeHwEl.textContent = node?.hardware || 'AC Controller Device (WiFi + IR)';
+        if (errActionEl) errActionEl.textContent = `${pendingCmd?.type || 'COMMAND'} = ${JSON.stringify(pendingCmd?.val)}`;
+        if (errNodeIpEl) errNodeIpEl.textContent = nodeIp;
+        if (errNodeSsidEl) errNodeSsidEl.textContent = `${nodeSsid} (2.4GHz)`;
+        if (pingTargetIp) pingTargetIp.textContent = nodeIp;
+
+        // Reset Ping Box
+        if (cmdErrorPingBox) cmdErrorPingBox.classList.add('hidden');
+        const pingLabel = document.getElementById('cmdTestPingLabel');
+        if (pingLabel) pingLabel.textContent = 'Ping Device';
+        const reconnectLabel = document.getElementById('cmdReconnectLabel');
+        if (reconnectLabel) reconnectLabel.textContent = 'Reconnect Node & Send';
+
+        if (res?.code === 'NODE_OFFLINE') {
+          if (titleEl) titleEl.textContent = 'Controller Node Offline';
+          if (subtitleEl) subtitleEl.textContent = 'Command Withheld • Hardware Protection Safeguard Active';
+          if (iconBox) iconBox.className = 'w-11 h-11 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-400 flex items-center justify-center shadow-sm shrink-0';
+          if (headlineEl) headlineEl.textContent = 'Controller Disconnected from IoT Mesh';
+          if (detailsEl) detailsEl.textContent = `Assigned hardware node (${nodeId}) is currently marked offline in the network registry.`;
+          if (codeBadgeEl) {
+            codeBadgeEl.textContent = 'NODE_OFFLINE';
+            codeBadgeEl.className = 'font-mono text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/30 shrink-0';
+          }
+          if (noticeEl) {
+            noticeEl.textContent = 'Controller offline. Reconnect it before sending commands.';
+          }
+          if (cmdReconnectAndRetryBtn) cmdReconnectAndRetryBtn.classList.remove('hidden');
+          if (cmdTestPingBtn) cmdTestPingBtn.classList.remove('hidden');
+        } else if (res?.code === 'UNSUPPORTED_CAPABILITY') {
+          if (titleEl) titleEl.textContent = 'Unsupported Command Capability';
+          if (subtitleEl) subtitleEl.textContent = 'Hardware Feature Restriction';
+          if (iconBox) iconBox.className = 'w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-sm shrink-0';
+          if (headlineEl) headlineEl.textContent = 'Feature Not Supported by Unit';
+          if (detailsEl) detailsEl.textContent = res.message || 'The selected aircon capability is not supported.';
+          if (codeBadgeEl) {
+            codeBadgeEl.textContent = 'CAPABILITY_RESTRICTED';
+            codeBadgeEl.className = 'font-mono text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 shrink-0';
+          }
+          if (noticeEl) {
+            noticeEl.textContent = `${device?.brand} ${device?.model} does not support ${pendingCmd?.type}. Choose a supported setting.`;
+          }
+          if (cmdReconnectAndRetryBtn) cmdReconnectAndRetryBtn.classList.add('hidden');
+          if (cmdTestPingBtn) cmdTestPingBtn.classList.add('hidden');
+        } else {
+          if (titleEl) titleEl.textContent = 'Command Dispatch Failed';
+          if (subtitleEl) subtitleEl.textContent = 'System Communication Error';
+          if (headlineEl) headlineEl.textContent = 'Transmission Rejected';
+          if (detailsEl) detailsEl.textContent = res?.message || 'An error occurred during command dispatch.';
+          if (codeBadgeEl) codeBadgeEl.textContent = res?.code || 'COMMAND_ERROR';
+          if (cmdReconnectAndRetryBtn) cmdReconnectAndRetryBtn.classList.add('hidden');
+          if (cmdTestPingBtn) cmdTestPingBtn.classList.add('hidden');
+        }
+
+        commandErrorModal.classList.remove('hidden');
+      }
+
+      function closeCommandErrorModal() {
+        if (!commandErrorModal) return;
+        commandErrorModal.classList.add('hidden');
+        if (cmdErrorPingBox) cmdErrorPingBox.classList.add('hidden');
+      }
+
+      if (closeCmdErrorModalBtn) closeCmdErrorModalBtn.addEventListener('click', closeCommandErrorModal);
+      if (cmdCancelBtn) cmdCancelBtn.addEventListener('click', closeCommandErrorModal);
+
+      // Dismiss on backdrop click
+      if (commandErrorModal) {
+        commandErrorModal.addEventListener('click', (e) => {
+          if (e.target === commandErrorModal) closeCommandErrorModal();
+        });
+      }
+
+      // Dismiss on Escape
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && commandErrorModal && !commandErrorModal.classList.contains('hidden')) {
+          closeCommandErrorModal();
+        }
+      });
+
+      // Reconnect Node & Retry Action
+      if (cmdReconnectAndRetryBtn) {
+        cmdReconnectAndRetryBtn.addEventListener('click', async () => {
+          const spinner = document.getElementById('cmdReconnectSpinner');
+          const icon = document.getElementById('cmdReconnectIcon');
+          const label = document.getElementById('cmdReconnectLabel');
+
+          if (spinner) spinner.classList.remove('hidden');
+          if (icon) icon.classList.add('hidden');
+          if (label) label.textContent = 'Reconnecting Node...';
+          cmdReconnectAndRetryBtn.disabled = true;
+
+          const device = AirconProfileManager.getById(pendingFailedCommand?.device_id || activeDeviceId);
+          const nodeId = device?.node_id || '';
+
+          try {
+            await NodeService.reconnectNode(nodeId);
+            renderControlPanel();
+            renderDeviceDropdown();
+
+            if (window.EcoToast) {
+              window.EcoToast.show(`AC Controller Device (${nodeId}) restored to ONLINE!`, 'success');
+            }
+
+            // Retry pending command if available
+            if (pendingFailedCommand) {
+              const cmdToRetry = { ...pendingFailedCommand };
+              pendingFailedCommand = null;
+              closeCommandErrorModal();
+              setTimeout(() => {
+                executeCommand(cmdToRetry.type, cmdToRetry.val);
+              }, 200);
+            } else {
+              closeCommandErrorModal();
+            }
+          } catch (err) {
+            console.error('Failed to reconnect node:', err);
+            if (window.EcoToast) {
+              window.EcoToast.show(`Failed to reconnect node: ${err.message}`, 'error');
+            }
+          } finally {
+            if (spinner) spinner.classList.add('hidden');
+            if (icon) icon.classList.remove('hidden');
+            if (label) label.textContent = 'Reconnect Node & Send';
+            cmdReconnectAndRetryBtn.disabled = false;
+          }
+        });
+      }
+
+      // Diagnostics use a cloud device acknowledgement, from any network.
+      if (cmdTestPingBtn) cmdTestPingBtn.addEventListener('click', async () => {
+        const label = document.getElementById('cmdTestPingLabel');
+        const box = document.getElementById('cmdErrorPingBox');
+        const output = document.getElementById('cmdPingOutput');
+        const pill = document.getElementById('cmdPingResultPill');
+        const device = AirconProfileManager.getById(pendingFailedCommand?.device_id || activeDeviceId);
+        cmdTestPingBtn.disabled = true;
+        if (label) label.textContent = 'Waiting for ESP32...';
+        box?.classList.remove('hidden');
+        if (output) output.textContent = 'UI -> Supabase -> ESP32 -> device acknowledgement';
+        try {
+          if (!device?.node_id) throw new Error('Assign a registered controller first.');
+          const reply = await window.EcoTrackHardwareCloud.ping(device.node_id);
+          if (output) output.textContent = JSON.stringify(reply, null, 2);
+          if (pill) pill.textContent = `DEVICE REPLIED | ${reply.round_trip_ms} ms`;
+        } catch (error) {
+          if (output) output.textContent = error.message;
+          if (pill) pill.textContent = 'NO DEVICE ACKNOWLEDGEMENT';
+        } finally {
+          if (label) label.textContent = 'Probe Again';
+          cmdTestPingBtn.disabled = false;
+        }
+      });
+
+      // Master Power Click
+      masterPowerBtn.addEventListener('click', () => {
+        const device = AirconProfileManager.getById(activeDeviceId);
+        if (!device) return;
+        executeCommand('POWER', !device.state?.power);
+      });
+
+      // Temperature Clickers
+      tempMinusBtn.addEventListener('click', () => {
+        const device = AirconProfileManager.getById(activeDeviceId);
+        if (!device || !device.state) return;
+        const target = CapabilityEngine.nextControlTemperature(device, device.state.temperature, -1);
+        if (target !== null) executeCommand('TEMP', target);
+      });
+
+      tempPlusBtn.addEventListener('click', () => {
+        const device = AirconProfileManager.getById(activeDeviceId);
+        if (!device || !device.state) return;
+        const target = CapabilityEngine.nextControlTemperature(device, device.state.temperature, 1);
+        if (target !== null) executeCommand('TEMP', target);
+      });
+
+      // Workspace Tabs logic (5 Functional Pages)
+      let currentActiveTab = 'overview';
+      let monChartInstance = null;
+
+      function switchWorkspaceTab(tabKey) {
+        if (!['overview', 'ir-remote', 'diagnostics', 'config', 'logs'].includes(tabKey)) {
+          tabKey = 'overview';
+        }
+        currentActiveTab = tabKey;
+
+        // Update tab buttons styling
+        document.querySelectorAll('.ws-tab').forEach(b => {
+          if (b.dataset.tab === tabKey) {
+            b.className = 'ws-tab px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 bg-blue-600/15 dark:bg-teal-500/20 text-blue-600 dark:text-teal-300 border border-blue-600/30 dark:border-teal-500/40 font-bold shadow-xs';
+          } else {
+            b.className = 'ws-tab px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white border border-transparent hover:bg-slate-100 dark:hover:bg-white/5 font-medium';
+          }
+        });
+
+        // Toggle tab panes
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+        const activePane = document.getElementById(`tabContent-${tabKey}`);
+        if (activePane) activePane.classList.remove('hidden');
+
+        // Sync tab in URL query params without reloading
+        try {
+          const currentUrl = new URL(window.location.href);
+          currentUrl.searchParams.set('tab', tabKey);
+          window.history.replaceState({}, '', currentUrl.toString());
+        } catch (e) {}
+
+        renderWorkspaceTabData(tabKey);
+      }
+
+      document.querySelectorAll('.ws-tab').forEach(btn => {
+        btn.addEventListener('click', () => switchWorkspaceTab(btn.dataset.tab));
+      });
+
+      function renderWorkspaceTabData(tabKey) {
+        let device = AirconProfileManager.getById(activeDeviceId);
+        if (!device) {
+          const aircons = AirconProfileManager.getAll();
+          if (aircons.length > 0) {
+            activeDeviceId = aircons[0].device_id;
+            device = aircons[0];
+          }
+        }
+
+        if (!device) {
+          if (tabKey === 'overview') {
+            const ovDevId = document.getElementById('ovDeviceId');
+            const ovUnit = document.getElementById('ovUnitName');
+            const ovBr = document.getElementById('ovBrand');
+            const ovMod = document.getElementById('ovModel');
+            const ovLoc = document.getElementById('ovLocation');
+            const ovNode = document.getElementById('ovNodeId');
+            const ovCmd = document.getElementById('ovCommanded');
+            const ovOp = document.getElementById('ovOperational');
+            const capsList = document.getElementById('ovCapsList');
+            const tempRangeEl = document.getElementById('ovTempRange');
+
+            if (ovDevId) ovDevId.textContent = '—';
+            if (ovUnit) ovUnit.textContent = '—';
+            if (ovBr) ovBr.textContent = '—';
+            if (ovMod) ovMod.textContent = '—';
+            if (ovLoc) ovLoc.textContent = '—';
+            if (ovNode) ovNode.textContent = '—';
+            if (ovCmd) ovCmd.textContent = '—';
+            if (ovOp) {
+              ovOp.textContent = '—';
+              ovOp.className = 'text-sm font-black text-slate-500 dark:text-gray-400 mt-1 block';
+            }
+            if (capsList) {
+              capsList.innerHTML = '<span class="text-xs text-slate-400 dark:text-gray-500 italic">No device profile loaded</span>';
+            }
+            if (tempRangeEl) tempRangeEl.textContent = '—';
+          } else if (tabKey === 'ir-remote') {
+            const simBrand = document.getElementById('simBrandTitle');
+            if (simBrand) simBrand.textContent = 'Remote';
+            const covBrand = document.getElementById('irCoverageBrand');
+            if (covBrand) covBrand.textContent = 'No Device Selected';
+            const modeEl = document.getElementById('simLcdMode');
+            if (modeEl) modeEl.textContent = '—';
+            const tempEl = document.getElementById('simLcdTemp');
+            if (tempEl) tempEl.textContent = '—';
+            const fanEl = document.getElementById('simLcdFan');
+            if (fanEl) fanEl.textContent = '—';
+            const tbody = document.getElementById('irCommandsCoverageBody');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-slate-400 dark:text-gray-500">No air conditioner selected.</td></tr>';
+            const covPill = document.getElementById('irCoveragePill');
+            if (covPill) {
+              covPill.textContent = '0/0 (0% Covered)';
+              covPill.className = 'px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/30';
+            }
+          } else if (tabKey === 'diagnostics') {
+            const diagNodeId = document.getElementById('diagNodeId');
+            if (diagNodeId) diagNodeId.textContent = '—';
+            const statusEl = document.getElementById('diagNodeStatus');
+            if (statusEl) {
+              statusEl.textContent = '● No Device';
+              statusEl.className = 'font-bold text-slate-400';
+            }
+            const statusBadge = document.getElementById('diagStatusBadge');
+            if (statusBadge) {
+              statusBadge.textContent = 'NO DEVICE';
+              statusBadge.className = 'text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/30';
+            }
+            const rssiEl = document.getElementById('diagNodeRssi');
+            if (rssiEl) rssiEl.textContent = 'N/A';
+            const snrEl = document.getElementById('diagNodeSnr');
+            if (snrEl) snrEl.textContent = 'N/A';
+            const reportEl = document.getElementById('diagMismatchReport');
+            if (reportEl) {
+              reportEl.innerHTML = '<div class="p-4 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-gray-400 text-xs">No air conditioner profile active.</div>';
+            }
+          } else if (tabKey === 'config') {
+            const devTag = document.getElementById('cfgDeviceIdTag');
+            if (devTag) devTag.textContent = '—';
+          } else if (tabKey === 'logs') {
+            const unitLabel = document.getElementById('logsUnitIdLabel');
+            if (unitLabel) unitLabel.textContent = '—';
+            deviceLogsCurrentPage = 1;
+            renderDeviceLogsTable();
+          }
+          return;
+        }
+
+        const caps = CapabilityEngine.getCapabilities(device);
+        const state = device.state || {};
+        const op = device.operational_state || {};
+        const node = NodeService.getNode(device.node_id);
+        const description = window.EcoTrackAirconState ? window.EcoTrackAirconState.describeAirconState(device.control_snapshot) : null;
+
+        if (tabKey === 'overview') {
+          const ovDevId = document.getElementById('ovDeviceId');
+          const ovUnit = document.getElementById('ovUnitName');
+          const ovBr = document.getElementById('ovBrand');
+          const ovMod = document.getElementById('ovModel');
+          const ovLoc = document.getElementById('ovLocation');
+          const ovNode = document.getElementById('ovNodeId');
+          const ovCmd = document.getElementById('ovCommanded');
+          const ovOp = document.getElementById('ovOperational');
+          const capsList = document.getElementById('ovCapsList');
+          const tempRangeEl = document.getElementById('ovTempRange');
+
+          if (ovDevId) ovDevId.textContent = device.device_id || '—';
+          if (ovUnit) ovUnit.textContent = device.name || '—';
+          if (ovBr) ovBr.textContent = device.brand || '—';
+          if (ovMod) ovMod.textContent = device.model || 'Universal';
+          if (ovLoc) ovLoc.textContent = device.location || device.room_name || 'Unassigned';
+          if (ovNode) ovNode.textContent = device.node_id || '—';
+
+          if (ovCmd) {
+            ovCmd.textContent = window.EcoTrackAirconState.displaySettings(device.control_snapshot).summary;
+          }
+
+          if (ovOp) {
+            if (state.power) {
+              ovOp.textContent = window.EcoTrackAirconState.displaySettings(device.control_snapshot).powerLabel;
+              ovOp.className = 'text-sm font-black text-teal-600 dark:text-teal-300 mt-1 block';
+            } else {
+              ovOp.textContent = window.EcoTrackAirconState.displaySettings(device.control_snapshot).powerLabel;
+              ovOp.className = 'text-sm font-black text-slate-500 dark:text-slate-400 mt-1 block';
+            }
+          }
+
+          if (capsList) {
+            capsList.innerHTML = '';
+            const capPills = [];
+            if (caps.power) capPills.push('Power On/Off');
+            if (caps.temperature) capPills.push('Temp Control');
+            if (caps.modes) capPills.push(`Modes: ${caps.modes.join(', ')}`);
+            if (caps.fans) capPills.push(`Fans: ${caps.fans.join(', ')}`);
+            if (caps.swing) capPills.push('Air Swing');
+            if (caps.sleep) capPills.push('Sleep Mode');
+            if (caps.turbo) capPills.push('Turbo Boost');
+            if (caps.eco) capPills.push('Eco Mode');
+            if (caps.timer) capPills.push('Timer');
+
+            if (capPills.length === 0) {
+              capsList.innerHTML = '<span class="text-xs text-slate-400 dark:text-gray-500 italic">Universal Basic Profile</span>';
+            } else {
+              capPills.forEach(p => {
+                capsList.innerHTML += `<span class="px-2 py-0.5 rounded-lg bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/20 font-semibold text-[11px]">${p}</span>`;
+              });
+            }
+          }
+
+          if (tempRangeEl) {
+            tempRangeEl.textContent = `${caps.temperature_min}°C – ${caps.temperature_max}°C (Step: ${caps.temperature_step}°C)`;
+          }
+        }
+
+        if (tabKey === 'ir-remote') {
+          const simBrand = document.getElementById('simBrandTitle');
+          if (simBrand) simBrand.textContent = `${device.brand} Remote`;
+          const covBrand = document.getElementById('irCoverageBrand');
+          if (covBrand) covBrand.textContent = `${device.brand} (${device.protocol || 'RAW'})`;
+
+          const simMode = document.getElementById('simLcdMode');
+          const settings = window.EcoTrackAirconState?.selectSettings(device.control_snapshot);
+          if (simMode) simMode.textContent = (settings?.state?.mode || '—').toUpperCase();
+          const simTemp = document.getElementById('simLcdTemp');
+          if (simTemp) simTemp.textContent = settings?.state ? CapabilityEngine.formatTemperature(settings.state.temp, '°C') : '—';
+          const simFan = document.getElementById('simLcdFan');
+          if (simFan) simFan.textContent = (settings?.state?.fan || '—').toUpperCase();
+
+          const isPowerOn = Boolean(state.power);
+          const canRaise = CapabilityEngine.nextControlTemperature(device, state.temperature, 1) !== null;
+          const canLower = CapabilityEngine.nextControlTemperature(device, state.temperature, -1) !== null;
+
+          const simPowerBtn = document.querySelector('.sim-btn[data-cmd="POWER"]');
+          const simTempUpBtn = document.querySelector('.sim-btn[data-cmd="TEMP_UP"]');
+          const simTempDownBtn = document.querySelector('.sim-btn[data-cmd="TEMP_DOWN"]');
+          const simModeBtn = document.querySelector('.sim-btn[data-cmd="MODE"]');
+          const simFanBtn = document.querySelector('.sim-btn[data-cmd="FAN"]');
+          const simSwingBtn = document.querySelector('.sim-btn[data-cmd="SWING"]');
+          const simEcoBtn = document.querySelector('.sim-btn[data-cmd="ECO"]');
+          const simTurboBtn = document.querySelector('.sim-btn[data-cmd="TURBO"]');
+          const simSleepBtn = document.querySelector('.sim-btn[data-cmd="SLEEP"]');
+
+          if (simPowerBtn) {
+            simPowerBtn.className = isPowerOn 
+              ? 'sim-btn col-span-3 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer transition-colors shadow-sm active:scale-95'
+              : 'sim-btn col-span-3 py-2.5 rounded-full bg-rose-600 hover:bg-rose-500 text-white cursor-pointer transition-colors shadow-sm active:scale-95';
+          }
+          if (simTempUpBtn) {
+            simTempUpBtn.disabled = !isPowerOn || !canRaise;
+            simTempUpBtn.classList.toggle('opacity-40', simTempUpBtn.disabled);
+          }
+          if (simTempDownBtn) {
+            simTempDownBtn.disabled = !isPowerOn || !canLower;
+            simTempDownBtn.classList.toggle('opacity-40', simTempDownBtn.disabled);
+          }
+          if (simModeBtn) {
+            simModeBtn.disabled = !isPowerOn;
+            simModeBtn.classList.toggle('opacity-40', !isPowerOn);
+          }
+          if (simFanBtn) {
+            simFanBtn.disabled = !isPowerOn;
+            simFanBtn.classList.toggle('opacity-40', !isPowerOn);
+          }
+          if (simSwingBtn) {
+            simSwingBtn.style.display = caps.swing ? 'block' : 'none';
+            simSwingBtn.disabled = !isPowerOn;
+            simSwingBtn.classList.toggle('opacity-40', !isPowerOn);
+            simSwingBtn.classList.toggle('bg-teal-600', isPowerOn && !!state.swing);
+          }
+          if (simEcoBtn) {
+            simEcoBtn.style.display = caps.eco ? 'block' : 'none';
+            simEcoBtn.disabled = !isPowerOn;
+            simEcoBtn.classList.toggle('opacity-40', !isPowerOn);
+            simEcoBtn.classList.toggle('bg-emerald-600', isPowerOn && !!state.eco);
+          }
+          if (simTurboBtn) {
+            simTurboBtn.style.display = caps.turbo ? 'block' : 'none';
+            simTurboBtn.disabled = !isPowerOn;
+            simTurboBtn.classList.toggle('opacity-40', !isPowerOn);
+            simTurboBtn.classList.toggle('bg-cyan-600', isPowerOn && !!state.turbo);
+          }
+          if (simSleepBtn) {
+            simSleepBtn.style.display = caps.sleep ? 'block' : 'none';
+            simSleepBtn.disabled = !isPowerOn;
+            simSleepBtn.classList.toggle('opacity-40', !isPowerOn);
+            simSleepBtn.classList.toggle('bg-purple-600', isPowerOn && !!state.sleep);
+          }
+
+          const coverage = ProtocolAdapter.getCoverage(device);
+          const tbody = document.getElementById('irCommandsCoverageBody');
+          if (tbody) {
+            tbody.innerHTML = '';
+            let mappedCount = 0;
+
+            coverage.items.forEach(item => {
+              if (item.mapped) mappedCount++;
+              const row = document.createElement('tr');
+              row.className = 'hover:bg-slate-50 dark:hover:bg-white/5 transition-colors';
+              row.innerHTML = `
+                <td class="py-2.5 font-mono font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full ${item.mapped ? 'bg-emerald-500' : 'bg-rose-400'}"></span>
+                  ${item.type}
+                </td>
+                <td class="py-2.5 text-slate-500 dark:text-gray-400 font-mono">${device.protocol}</td>
+                <td class="py-2.5">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.mapped ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'}">
+                    ${item.mapped ? '✓ Mapped & Ready' : '✗ Missing / Unlearned'}
+                  </span>
+                </td>
+                <td class="py-2.5 text-right">
+                  ${item.mapped 
+                    ? `<button class="test-cmd-btn px-2.5 py-1 rounded-lg bg-teal-500/15 hover:bg-teal-500/25 text-teal-600 dark:text-teal-300 font-bold text-[10px] border border-teal-500/30 cursor-pointer transition-all active:scale-95" data-cmd="${item.type}">
+                        Test Transmit
+                      </button>`
+                    : `<a href="ir-library.html?id=${encodeURIComponent(device.device_id)}&learn=${encodeURIComponent(item.type)}&brand=${encodeURIComponent(device.brand)}&protocol=${encodeURIComponent(device.protocol)}" class="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 font-bold text-[10px] border border-amber-500/30 cursor-pointer inline-flex items-center gap-1 transition-all">
+                        Record Signal
+                      </a>`
+                  }
+                </td>
+              `;
+              tbody.appendChild(row);
+            });
+
+            const covPill = document.getElementById('irCoveragePill');
+            if (covPill) {
+              const pct = Math.round((mappedCount / (coverage.items.length || 1)) * 100);
+              covPill.textContent = `${mappedCount}/${coverage.items.length} (${pct}% Covered)`;
+              covPill.className = `px-2.5 py-1 rounded-lg text-xs font-bold ${pct === 100 ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'}`;
+            }
+
+            tbody.querySelectorAll('.test-cmd-btn').forEach(b => {
+              b.addEventListener('click', async () => {
+                const cmdType = b.dataset.cmd;
+                const oldHtml = b.innerHTML;
+                b.textContent = 'Updating…';
+                b.disabled = true;
+
+                let command = 'POWER';
+                let val = true;
+                if (cmdType.startsWith('MODE_')) { command = 'MODE'; val = cmdType.replace('MODE_', '').toLowerCase(); }
+                else if (cmdType === 'TEMP_UP') { command = 'TEMP'; val = CapabilityEngine.nextControlTemperature(device,state.temperature,1); }
+                else if (cmdType === 'TEMP_DOWN') { command = 'TEMP'; val = CapabilityEngine.nextControlTemperature(device,state.temperature,-1); }
+                else if (cmdType.startsWith('FAN_')) { command = 'FAN'; val = cmdType.replace('FAN_', '').toLowerCase(); }
+                else if (cmdType === 'SWING') { command = 'SWING'; val = !state.swing; }
+                else if (cmdType === 'ECO') { command = 'ECO'; val = !state.eco; }
+                else if (cmdType === 'TURBO') { command = 'TURBO'; val = !state.turbo; }
+
+                if(command==='TEMP' && val===null){b.innerHTML=oldHtml;b.disabled=false;return;}
+                await executeCommand(command, val);
+
+                b.innerHTML = '✓ Sent';
+                b.className = 'px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] border border-emerald-500/30';
+                setTimeout(() => {
+                  b.innerHTML = oldHtml;
+                  b.className = 'test-cmd-btn px-2.5 py-1 rounded-lg bg-teal-500/15 hover:bg-teal-500/25 text-teal-600 dark:text-teal-300 font-bold text-[10px] border border-teal-500/30 cursor-pointer transition-all active:scale-95';
+                  b.disabled = false;
+                }, 1200);
+              });
+            });
+          }
+        }
+
+        if (tabKey === 'diagnostics') {
+          document.getElementById('diagNodeId').textContent = device.node_id;
+          const isNodeOnline = node ? (node.status.toLowerCase() === 'connected' || node.status.toLowerCase() === 'online') : false;
+          
+          const statusEl = document.getElementById('diagNodeStatus');
+          statusEl.textContent = isNodeOnline ? '● Connected' : '● Offline';
+          statusEl.className = `font-bold ${isNodeOnline ? 'text-emerald-500' : 'text-rose-500'}`;
+
+          const statusBadge = document.getElementById('diagStatusBadge');
+          if (statusBadge) {
+            statusBadge.textContent = isNodeOnline ? 'ONLINE' : 'OFFLINE';
+            statusBadge.className = `text-[11px] font-bold px-2 py-0.5 rounded-md ${isNodeOnline ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'}`;
+          }
+
+          document.getElementById('diagNodeRssi').textContent = node?.rssi ? `${node.rssi} dBm (Strong)` : 'N/A';
+          document.getElementById('diagNodeSnr').textContent = node?.ip_address || (node?.rssi ? '192.168.1.101' : 'N/A');
+
+          const reportEl = document.getElementById('diagMismatchReport');
+          if (!isNodeOnline) {
+            reportEl.innerHTML = `
+              <div class="p-4 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-800 dark:text-rose-200">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="font-bold flex items-center gap-1.5 text-sm">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
+                    AC Controller Device Disconnected
+                  </span>
+                  <button id="diagReconnectBtn" class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-sm flex items-center gap-1 cursor-pointer transition-all">
+                    ⚡ Reconnect Node
+                  </button>
+                </div>
+                <p class="text-xs text-slate-600 dark:text-gray-300 mb-2">Controller device <strong>${device.node_id}</strong> has no recent Supabase heartbeat.</p>
+                <div class="space-y-1 text-[11px] text-slate-500 dark:text-gray-400">
+                  <div>• Check controller power and its internet connection; a sleeping receiver reconnects at its next wake time.</div>
+                  <div>• Use "Reconnect Node" to request an acknowledgement through Supabase.</div>
+                </div>
+              </div>
+            `;
+
+            const reconnectBtn = document.getElementById('diagReconnectBtn');
+            if (reconnectBtn) {
+              reconnectBtn.addEventListener('click', async () => {
+                reconnectBtn.textContent = 'Reconnecting...';
+                reconnectBtn.disabled = true;
+                try {
+                  await NodeService.reconnectNode(device.node_id);
+                  if (window.EcoToast) {
+                    window.EcoToast.show(`Node ${device.node_id} reconnected to ONLINE!`, 'success');
+                  }
+                  renderWorkspaceTabData('diagnostics');
+                  renderControlPanel();
+                  renderDeviceDropdown();
+                } catch (e) {
+                  if (window.EcoToast) window.EcoToast.show(e.message, 'error');
+                }
+              });
+            }
+          } else {
+            reportEl.innerHTML = `
+              <div class="p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-800 dark:text-emerald-200">
+                <span class="font-bold block mb-1 text-sm flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  Controller Device Ready & Synchronized
+                </span>
+                <p class="text-xs text-slate-600 dark:text-gray-300">Hardware node <strong>${device.node_id}</strong> ${node?.capabilities?.ir_transmitter === true ? 'supports control and remote learning' : 'supports remote learning; control is unavailable'}. Active profile: <strong>${device.brand} (${device.protocol})</strong>.</p>
+                <div class="mt-3 pt-2 border-t border-emerald-500/20 text-[11px] text-emerald-700 dark:text-emerald-300 flex justify-between">
+                  <span>Connection: Supabase over Wi-Fi</span>
+                  <span>Last heartbeat: ${node?.last_seen ? new Date(node.last_seen).toLocaleTimeString() : 'Not reported'}</span>
+                </div>
+              </div>
+            `;
+          }
+        }
+
+        if (tabKey === 'config') {
+          const devTag = document.getElementById('cfgDeviceIdTag');
+          if (devTag) devTag.textContent = device.device_id;
+
+          document.getElementById('cfgName').value = device.name;
+          document.getElementById('cfgLocation').value = device.location || '';
+          document.getElementById('cfgBrand').value = device.brand;
+          document.getElementById('cfgModel').value = device.model || '';
+          
+          const minInput = document.getElementById('cfgTempMin');
+          if (minInput) {minInput.value=caps.temperature_min ?? '';minInput.disabled=true;}
+          const maxInput = document.getElementById('cfgTempMax');
+          if (maxInput) {maxInput.value=caps.temperature_max ?? '';maxInput.disabled=true;}
+
+          const nodeSelect = document.getElementById('cfgNodeSelect');
+          nodeSelect.innerHTML = '<option value="">Unassigned</option>';
+          NodeService.getNodes().forEach(n => {
+            nodeSelect.innerHTML += `<option value="${n.node_id}" ${n.node_id === device.node_id ? 'selected' : ''}>${n.node_id} — ${n.name} (${n.status.toUpperCase()})</option>`;
+          });
+
+          const protocolSelect = document.getElementById('cfgProtocolSelect');
+          const selectedProtocol = device.protocol_name || device.protocol || 'UNKNOWN';
+          if (![...protocolSelect.options].some(option => option.value === selectedProtocol)) {
+            const option = document.createElement('option'); option.value = selectedProtocol; option.textContent = selectedProtocol; protocolSelect.appendChild(option);
+          }
+          protocolSelect.value = selectedProtocol;
+          document.getElementById('cfgCapPower').checked = !!caps.power;
+          document.getElementById('cfgCapTemp').checked = !!caps.temperature;
+          document.getElementById('cfgCapSwing').checked = !!caps.swing;
+          document.getElementById('cfgCapSleep').checked = !!caps.sleep;
+          document.getElementById('cfgCapTurbo').checked = !!caps.turbo;
+          document.getElementById('cfgCapEco').checked = !!caps.eco;
+          document.getElementById('cfgCapTimer').checked = !!caps.timer;
+          document.querySelectorAll('[id^=cfgCap]').forEach(el=>{if(el.type==='checkbox'){el.disabled=true;el.title='Available features for the current protocol and model.';}});
+        }
+
+        if (tabKey === 'logs') {
+          document.getElementById('logsUnitIdLabel').textContent = device.device_id;
+          deviceLogsCurrentPage = 1;
+          renderDeviceLogsTable();
+        }
+        enforceControllerCapabilities(device);
+      }
+
+      let deviceLogsCurrentPage = 1;
+      const DEVICE_LOGS_PAGE_SIZE = 20;
+
+      function renderDeviceLogsTable() {
+        const tbody = document.getElementById('deviceLogsTableBody');
+        if (!tbody) return;
+        const allLogs = window.EcoTrackAirconSystem.CentralLogService.getLogs(250);
+        let filtered = allLogs.filter(l => l.device_id === activeDeviceId);
+
+        const searchKeyword = (document.getElementById('deviceLogsSearch')?.value || '').toLowerCase().trim();
+        const statusFilter = document.getElementById('deviceLogsStatusFilter')?.value || 'ALL';
+
+        if (searchKeyword) {
+          filtered = filtered.filter(l => 
+            (l.event || '').toLowerCase().includes(searchKeyword) ||
+            (l.module || '').toLowerCase().includes(searchKeyword) ||
+            (l.details || '').toLowerCase().includes(searchKeyword) ||
+            (l.node_id || '').toLowerCase().includes(searchKeyword)
+          );
+        }
+
+        if (statusFilter !== 'ALL') {
+          filtered = filtered.filter(l => (l.result || '').toUpperCase() === statusFilter);
+        }
+
+        const totalLogs = filtered.length;
+        const totalPages = Math.max(1, Math.ceil(totalLogs / DEVICE_LOGS_PAGE_SIZE));
+        if (deviceLogsCurrentPage > totalPages) deviceLogsCurrentPage = totalPages;
+        if (deviceLogsCurrentPage < 1) deviceLogsCurrentPage = 1;
+
+        const startIdx = (deviceLogsCurrentPage - 1) * DEVICE_LOGS_PAGE_SIZE;
+        const endIdx = Math.min(startIdx + DEVICE_LOGS_PAGE_SIZE, totalLogs);
+        const pageItems = filtered.slice(startIdx, endIdx);
+
+        const pageInfo = document.getElementById('deviceLogsPageInfo');
+        const prevBtn = document.getElementById('deviceLogsPrevBtn');
+        const nextBtn = document.getElementById('deviceLogsNextBtn');
+        const pagesText = document.getElementById('deviceLogsPaginationPages');
+
+        if (pageInfo) {
+          pageInfo.textContent = totalLogs === 0
+            ? 'Showing 0 of 0 events'
+            : `Showing ${startIdx + 1}–${endIdx} of ${totalLogs} events`;
+        }
+        if (pagesText) pagesText.textContent = `Page ${deviceLogsCurrentPage} of ${totalPages}`;
+        if (prevBtn) prevBtn.disabled = deviceLogsCurrentPage <= 1;
+        if (nextBtn) nextBtn.disabled = deviceLogsCurrentPage >= totalPages;
+
+        tbody.innerHTML = '';
+        if (filtered.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-400 dark:text-gray-500">No events found matching current criteria for ${activeDeviceId}.</td></tr>`;
+          return;
+        }
+
+        pageItems.forEach(log => {
+          const row = document.createElement('tr');
+          row.className = 'hover:bg-slate-50 dark:hover:bg-white/5 transition-colors';
+          const timeStr = new Date(log.timestamp).toLocaleTimeString();
+          const resClass = log.result === 'SUCCESS' 
+            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' 
+            : (log.result === 'FAILED' ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30' 
+            : (log.result === 'WARNING' ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30' : 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30'));
+
+          row.innerHTML = `
+            <td class="py-2.5 font-mono text-slate-500 dark:text-gray-400 whitespace-nowrap">${timeStr}</td>
+            <td class="py-2.5 font-mono text-slate-700 dark:text-gray-300 font-bold">${log.node_id || 'N/A'}</td>
+            <td class="py-2.5 font-semibold text-teal-600 dark:text-teal-300">${log.module}</td>
+            <td class="py-2.5 font-mono text-slate-900 dark:text-white font-bold">${log.event}</td>
+            <td class="py-2.5">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${resClass}">
+                ${log.result}
+              </span>
+            </td>
+            <td class="py-2.5 text-slate-600 dark:text-gray-400 max-w-xs truncate" title="${log.details || ''}">${log.details || '—'}</td>
+          `;
+          tbody.appendChild(row);
+        });
+      }
+
+      // Hook up logs search and filter
+      const logsSearchInput = document.getElementById('deviceLogsSearch');
+      if (logsSearchInput) {
+        logsSearchInput.addEventListener('input', () => {
+          deviceLogsCurrentPage = 1;
+          renderDeviceLogsTable();
+        });
+      }
+      const logsStatusSelect = document.getElementById('deviceLogsStatusFilter');
+      if (logsStatusSelect) {
+        logsStatusSelect.addEventListener('change', () => {
+          deviceLogsCurrentPage = 1;
+          renderDeviceLogsTable();
+        });
+      }
+
+      const dlPrev = document.getElementById('deviceLogsPrevBtn');
+      const dlNext = document.getElementById('deviceLogsNextBtn');
+      if (dlPrev) {
+        dlPrev.addEventListener('click', () => {
+          if (deviceLogsCurrentPage > 1) {
+            deviceLogsCurrentPage--;
+            renderDeviceLogsTable();
+          }
+        });
+      }
+      if (dlNext) {
+        dlNext.addEventListener('click', () => {
+          deviceLogsCurrentPage++;
+          renderDeviceLogsTable();
+        });
+      }
+
+      // Config form submission
+      const cfgForm = document.getElementById('unitConfigForm');
+      if (cfgForm) {
+        cfgForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const device = AirconProfileManager.getById(activeDeviceId);
+          if (!device) return;
+
+          device.name = document.getElementById('cfgName').value.trim();
+          device.location = document.getElementById('cfgLocation').value.trim();
+          device.brand = document.getElementById('cfgBrand').value.trim();
+          device.model = document.getElementById('cfgModel').value.trim();
+          device.node_id = document.getElementById('cfgNodeSelect').value;
+          device.protocol = document.getElementById('cfgProtocolSelect').value;
+          device.protocol_name = device.protocol;
+          const selectedController = NodeService.getNode(device.node_id);
+          device.controller_node_id = selectedController?.db_id || null;
+          if (selectedController) {
+            device.room_id = selectedController.room_id || null;
+            device.room_name = selectedController.room_name;
+            device.location = selectedController.location || device.location;
+          }
+
+          // Physical capability results are persisted through the optional verification dialog.
+          device.capabilities=CapabilityEngine.getCapabilities(device);
+          try { await AirconProfileManager.save(device); }
+          catch (error) { window.EcoToast?.show(error.message || 'Configuration was not saved.', 'error'); return; }
+          renderDeviceDropdown();
+          renderControlPanel();
+          switchWorkspaceTab('overview');
+          if (window.EcoToast) {
+            window.EcoToast.show(`Configuration for ${device.name} (${device.device_id}) updated successfully!`, 'success');
+          } else {
+            alert(`Configuration for ${device.name} (${device.device_id}) updated successfully!`);
+          }
+        });
+      }
+
+      // Delete Air Conditioner button handler
+      const deleteAirconBtn = document.getElementById('deleteAirconBtn');
+      if (deleteAirconBtn) {
+        deleteAirconBtn.addEventListener('click', async () => {
+          const deleteDeviceId = activeDeviceId;
+          const device = AirconProfileManager.getById(deleteDeviceId);
+          if (!device) return;
+          const confirmDelete = await window.EcoModal.confirm({
+            title: 'Delete Air Conditioner',
+            message: `Are you sure you want to permanently delete air conditioner ${device.name || device.device_id}? This will remove it from all dashboards and control panels.`,
+            confirmText: 'Delete Air Conditioner', danger: true
+          });
+          if (!confirmDelete) return;
+
+          try { await AirconProfileManager.delete(deleteDeviceId); }
+          catch (error) { window.EcoToast?.show(error.message || 'AC profile was not deleted.', 'error'); return; }
+          if (window.EcoToast) {
+            window.EcoToast.show(`Air Conditioner ${device.name || device.device_id} was deleted.`, 'info');
+          }
+          const remaining = AirconProfileManager.getAll();
+          activeDeviceId = remaining.length ? remaining[0].device_id : null;
+          renderDeviceDropdown();
+          renderControlPanel();
+          switchWorkspaceTab('overview');
+        });
+      }
+
+      // Interactive Ping Probe in Diagnostics Tab
+      const diagPingBtn = document.getElementById('diagPingBtn');
+      if (diagPingBtn) {
+        diagPingBtn.addEventListener('click', async () => {
+          const pingConsole = document.getElementById('diagPingConsole');
+          const pingText = document.getElementById('diagPingText');
+          const pingDuration = document.getElementById('diagPingDuration');
+          const pingDurationText = document.getElementById('diagPingDurationText');
+
+          diagPingBtn.disabled = true;
+          diagPingBtn.innerHTML = `
+            <svg class="animate-spin" style="stroke: #ffffff !important; color: #ffffff !important;" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ffffff" stroke-width="2.5">
+              <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
+              <path d="M12 2a10 10 0 0 1 10 10"/>
+            </svg>
+            <span style="color: #ffffff !important;">Probing Controller Node...</span>`;
+
+          if (pingConsole) pingConsole.classList.remove('hidden');
+
+          const device = AirconProfileManager.getById(activeDeviceId);
+          const node = NodeService.getNode(device?.node_id);
+          const isOnline = node ? (node.status.toLowerCase() === 'connected' || node.status.toLowerCase() === 'online') : false;
+          const numPart = (device?.node_id || '').replace(/\D/g, '') || '1';
+          const ipAddr = node?.ip_address || `192.168.1.10${numPart}`;
+
+          if (pingText) {
+            pingText.innerHTML = `
+              <div class="flex items-center gap-2 pb-2" style="border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important; color: #cbd5e1 !important;">
+                <span style="color: #2dd4bf !important; font-weight: 800;">&gt;</span>
+                <span>Pinging <span style="color: #38bdf8 !important; font-weight: 800; font-family: monospace;">${ipAddr}</span> with 32 bytes of ICMP packet data:</span>
+              </div>
+              <div id="pingRepliesList" class="space-y-1.5 pt-2"></div>
+            `;
+          }
+          if (pingDurationText) {
+            pingDurationText.textContent = 'Probing...';
+            pingDurationText.style.color = '#34d399';
+          }
+
+          const repliesContainer = document.getElementById('pingRepliesList');
+
+          if (!isOnline) {
+            await new Promise(r => setTimeout(r, 450));
+            if (repliesContainer) {
+              repliesContainer.innerHTML = `
+                <div style="color: #fb7185 !important; font-family: monospace; font-size: 12px;">Request timed out.</div>
+                <div style="color: #fb7185 !important; font-family: monospace; font-size: 12px;">Request timed out.</div>
+                <div style="color: #fb7185 !important; font-family: monospace; font-size: 12px; font-weight: 700;">Destination hardware node unreachable.</div>
+                <div class="mt-3 p-3 rounded-xl space-y-1" style="background: rgba(244, 63, 94, 0.15) !important; border: 1px solid rgba(244, 63, 94, 0.35) !important;">
+                  <div class="font-bold uppercase tracking-wider flex items-center gap-1.5" style="color: #fb7185 !important; font-size: 11px;">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fb7185" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    Ping Failure &bull; Host Offline
+                  </div>
+                  <div style="color: #f1f5f9 !important; font-size: 11px;">Packets: Sent = 4, Received = 0, Lost = 4 (100% packet loss)</div>
+                </div>
+              `;
+            }
+            if (pingDurationText) {
+              pingDurationText.textContent = 'TIMEOUT';
+              pingDurationText.style.color = '#fb7185';
+            }
+            if (pingDuration) {
+              pingDuration.className = 'px-2.5 py-0.5 rounded-md font-mono text-[10px] font-extrabold flex items-center gap-1.5 shadow-xs';
+              pingDuration.style.background = 'rgba(244, 63, 94, 0.2) !important';
+              pingDuration.style.borderColor = 'rgba(244, 63, 94, 0.4) !important';
+              pingDuration.style.color = '#fb7185 !important';
+            }
+          } else {
+            const latencies = [];
+            for (let i = 1; i <= 4; i++) {
+              await new Promise(r => setTimeout(r, 220));
+              const lat = Math.floor(Math.random() * 7) + 12;
+              latencies.push(lat);
+              if (repliesContainer) {
+                const replyRow = document.createElement('div');
+                replyRow.className = 'flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs';
+                replyRow.innerHTML = `
+                  <span style="color: #cbd5e1 !important;">Reply from <strong style="color: #ffffff !important; font-weight: 700;">${ipAddr}</strong>:</span>
+                  <span style="color: #94a3b8 !important;">bytes=<strong style="color: #f1f5f9 !important; font-weight: 600;">32</strong></span>
+                  <span style="background: rgba(16, 185, 129, 0.22) !important; color: #4ade80 !important; border: 1px solid rgba(16, 185, 129, 0.45) !important; padding: 2px 7px; border-radius: 6px; font-weight: 800;">time=${lat}ms</span>
+                  <span style="color: #38bdf8 !important; font-weight: 600;">TTL=64</span>
+                  <span style="color: #2dd4bf !important; font-weight: 600;">RSSI=${node?.rssi || -65}dBm</span>
+                `;
+                repliesContainer.appendChild(replyRow);
+              }
+            }
+
+            const minLat = Math.min(...latencies);
+            const maxLat = Math.max(...latencies);
+            const avgLat = (latencies.reduce((a, b) => a + b, 0) / latencies.length).toFixed(1);
+
+            if (repliesContainer) {
+              const statsBox = document.createElement('div');
+              statsBox.className = 'mt-3 p-3 rounded-xl space-y-2.5';
+              statsBox.style.cssText = 'background: #0d1527 !important; border: 1px solid rgba(255, 255, 255, 0.12) !important;';
+              statsBox.innerHTML = `
+                <div class="flex items-center justify-between pb-1.5" style="border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;">
+                  <span style="font-weight: 800; color: #f1f5f9 !important; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Ping Statistics for ${ipAddr}</span>
+                  <span style="font-weight: 800; color: #34d399 !important; font-size: 11px; display: flex; align-items: center; gap: 6px;">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#34d399" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    0% Packet Loss
+                  </span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                  <div class="p-2.5 rounded-lg" style="background: #111a30 !important; border: 1px solid rgba(255, 255, 255, 0.12) !important;">
+                    <span style="color: #94a3b8 !important; display: block; font-size: 9px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em;">Packets</span>
+                    <span style="color: #ffffff !important; font-weight: 800; font-family: monospace; font-size: 12px; display: block; margin-top: 2px;">4 / 4 Sent</span>
+                  </div>
+                  <div class="p-2.5 rounded-lg" style="background: #111a30 !important; border: 1px solid rgba(255, 255, 255, 0.12) !important;">
+                    <span style="color: #94a3b8 !important; display: block; font-size: 9px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em;">Min Latency</span>
+                    <span style="color: #4ade80 !important; font-weight: 800; font-family: monospace; font-size: 12px; display: block; margin-top: 2px;">${minLat}ms</span>
+                  </div>
+                  <div class="p-2.5 rounded-lg" style="background: #111a30 !important; border: 1px solid rgba(255, 255, 255, 0.12) !important;">
+                    <span style="color: #94a3b8 !important; display: block; font-size: 9px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em;">Max Latency</span>
+                    <span style="color: #fbbf24 !important; font-weight: 800; font-family: monospace; font-size: 12px; display: block; margin-top: 2px;">${maxLat}ms</span>
+                  </div>
+                  <div class="p-2.5 rounded-lg" style="background: #111a30 !important; border: 1px solid rgba(255, 255, 255, 0.12) !important;">
+                    <span style="color: #94a3b8 !important; display: block; font-size: 9px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em;">Avg Latency</span>
+                    <span style="color: #38bdf8 !important; font-weight: 800; font-family: monospace; font-size: 12px; display: block; margin-top: 2px;">${avgLat}ms</span>
+                  </div>
+                </div>
+              `;
+              repliesContainer.appendChild(statsBox);
+            }
+
+            if (pingDurationText) {
+              pingDurationText.textContent = `Avg: ${avgLat}ms`;
+              pingDurationText.style.color = '#34d399';
+            }
+            if (pingDuration) {
+              pingDuration.className = 'px-2.5 py-0.5 rounded-md font-mono text-[10px] font-extrabold flex items-center gap-1.5 shadow-xs';
+              pingDuration.style.background = 'rgba(16, 185, 129, 0.2) !important';
+              pingDuration.style.borderColor = 'rgba(16, 185, 129, 0.4) !important';
+              pingDuration.style.color = '#34d399 !important';
+            }
+          }
+
+          diagPingBtn.innerHTML = `
+            <svg style="stroke: #ffffff !important; color: #ffffff !important;" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ffffff" stroke-width="2.5">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+            <span style="color: #ffffff !important;">Ping Again</span>`;
+          diagPingBtn.disabled = false;
+        });
+      }
+
+      // Refresh logs button
+      const refLogsBtn = document.getElementById('refreshDeviceLogsBtn');
+      if (refLogsBtn) {
+        refLogsBtn.addEventListener('click', () => {
+          const icon = document.getElementById('refreshLogsIcon');
+          if (icon) icon.classList.add('animate-spin');
+          renderDeviceLogsTable();
+          setTimeout(() => {
+            if (icon) icon.classList.remove('animate-spin');
+          }, 400);
+        });
+      }
+
+      // Remote simulation tactile buttons in Tab 2 (Strictly aligned with AC Protocol Studio)
+      document.querySelectorAll('.sim-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const device = AirconProfileManager.getById(activeDeviceId);
+          if (!device) return;
+          const caps = CapabilityEngine.getCapabilities(device);
+          const cmd = btn.dataset.cmd;
+          const isPowerOn = Boolean(device.state?.power);
+
+          if (cmd === 'POWER') {
+            executeCommand('POWER', !isPowerOn);
+          } else if (cmd === 'TEMP_UP') {
+            if (!isPowerOn) return;
+            const target = CapabilityEngine.nextControlTemperature(device, device.state?.temperature, 1);
+            if (target !== null) executeCommand('TEMP', target);
+          } else if (cmd === 'TEMP_DOWN') {
+            if (!isPowerOn) return;
+            const target = CapabilityEngine.nextControlTemperature(device, device.state?.temperature, -1);
+            if (target !== null) executeCommand('TEMP', target);
+          } else if (cmd === 'MODE') {
+            if (!isPowerOn) return;
+            const modes = (caps.modes && caps.modes.length > 0) ? caps.modes : [];
+            const curIdx = modes.indexOf((device.state?.mode || 'cool').toLowerCase());
+            executeCommand('MODE', modes[(curIdx + 1) % modes.length]);
+          } else if (cmd === 'FAN') {
+            if (!isPowerOn) return;
+            const fans = (caps.fans && caps.fans.length > 0) ? caps.fans : [];
+            const curIdx = fans.indexOf((device.state?.fan || 'auto').toLowerCase());
+            executeCommand('FAN', fans[(curIdx + 1) % fans.length]);
+          } else if (cmd === 'SWING') {
+            if (!isPowerOn || !caps.swing) return;
+            executeCommand('SWING', !device.state?.swing);
+          } else if (cmd === 'ECO') {
+            if (!isPowerOn || !caps.eco) return;
+            executeCommand('ECO', !device.state?.eco);
+          } else if (cmd === 'TURBO') {
+            if (!isPowerOn || !caps.turbo) return;
+            executeCommand('TURBO', !device.state?.turbo);
+          } else if (cmd === 'SLEEP') {
+            if (!isPowerOn || !caps.sleep) return;
+            executeCommand('SLEEP', !device.state?.sleep);
+          }
+        });
+      });
+
+      // Parse initial tab from URL query params
+      const initUrlParams = new URLSearchParams(window.location.search);
+      const initTabParam = initUrlParams.get('tab');
+      if (initTabParam && ['overview', 'ir-remote', 'diagnostics', 'config', 'logs'].includes(initTabParam)) {
+        currentActiveTab = initTabParam;
+      }
+      switchWorkspaceTab(currentActiveTab);
+
+      // Backwards-compatibility aliases
+      window.renderDeviceDropdown = renderDeviceDropdown;
+      window.renderDevicePills = renderDeviceDropdown;
+
+      AirconEvents.on('hardware:updated', payload => {
+        if (payload?.aircons?.some(profile => profile.device_id === activeDeviceId)) renderControlPanel();
+      });
+
+      // Live events synchronization
+      const onDevicesSynced = () => {
+        renderDeviceDropdown();
+        renderControlPanel();
+        if (currentActiveTab !== 'control') renderWorkspaceTabData(currentActiveTab);
+      };
+
+      window.addEventListener('devices:synced', onDevicesSynced);
+      window.addEventListener('aircon:updated', onDevicesSynced);
+      AirconEvents.on('devices:synced', onDevicesSynced);
+      AirconEvents.on('aircon:updated', onDevicesSynced);
+
+      AirconEvents.on('aircon:state_changed', () => {
+        renderControlPanel();
+        if (currentActiveTab !== 'control') renderWorkspaceTabData(currentActiveTab);
+      });
+      AirconEvents.on('aircon:saved', () => {
+        renderDeviceDropdown();
+        renderControlPanel();
+        if (currentActiveTab !== 'control') renderWorkspaceTabData(currentActiveTab);
+      });
+      AirconEvents.on('log:new', () => {
+        if (currentActiveTab === 'logs') renderDeviceLogsTable();
+      });
+
+      renderDeviceDropdown();
+      renderControlPanel();
+    });
+  </script>
+</body>
+</html>

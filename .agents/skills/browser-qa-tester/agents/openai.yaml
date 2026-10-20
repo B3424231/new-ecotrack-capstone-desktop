@@ -1,0 +1,6 @@
+interface:
+  display_name: "Browser QA Tester"
+  short_description: "Test the running app in a real browser"
+  default_prompt: "Run browser-based functional and UI tests and record reproducible failures and evidence."
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,138 @@
+{
+  "model": "random_forest",
+  "algorithm": "RandomForestRegressor",
+  "reference_model": "Haier AS35XCAHRA / 1U35S2SM1FA-2",
+  "trained_utc": "2026-10-12T13:33:26.752411+00:00",
+  "python_version": "3.14.7",
+  "versions": {
+    "scikit-learn": "1.9.0",
+    "joblib": "1.5.3",
+    "numpy": "2.5.2",
+    "scipy": "1.18.1",
+    "pandas": "3.0.5"
+  },
+  "features": [
+    "setpoint_c",
+    "fan_command",
+    "operating_mode",
+    "eco",
+    "turbo",
+    "swing",
+    "quiet",
+    "horizontal_swing",
+    "display",
+    "indoor_c",
+    "outdoor_c",
+    "relative_humidity_percent"
+  ],
+  "control_features": [
+    "setpoint_c",
+    "fan_command",
+    "operating_mode",
+    "eco",
+    "turbo",
+    "swing",
+    "quiet",
+    "horizontal_swing",
+    "display"
+  ],
+  "output_unit": "kWh",
+  "horizon_hours": 1,
+  "training_data_type": "research_informed_estimates",
+  "evaluation_kind": "held_out_generated_formula_targets",
+  "physical_accuracy_validated": false,
+  "measured_validation_hours": 0,
+  "environment_source": "explicit_assumed_scenario",
+  "environment_scenarios": [
+    {
+      "scenario_id": "lab_hot",
+      "indoor_c": 30,
+      "outdoor_c": 35,
+      "relative_humidity_percent": 60
+    },
+    {
+      "scenario_id": "hot_room",
+      "indoor_c": 28,
+      "outdoor_c": 32,
+      "relative_humidity_percent": 60
+    },
+    {
+      "scenario_id": "mild_warm",
+      "indoor_c": 24,
+      "outdoor_c": 25,
+      "relative_humidity_percent": 50
+    },
+    {
+      "scenario_id": "lab_cold",
+      "indoor_c": 10,
+      "outdoor_c": 2,
+      "relative_humidity_percent": 50
+    },
+    {
+      "scenario_id": "cold_room",
+      "indoor_c": 18,
+      "outdoor_c": 7,
+      "relative_humidity_percent": 50
+    },
+    {
+      "scenario_id": "mild_cool",
+      "indoor_c": 22,
+      "outdoor_c": 15,
+      "relative_humidity_percent": 50
+    }
+  ],
+  "limitations": [
+    "Room/load evolution and compressor cycling are not simulated; one-hour labels are model estimates.",
+    "Eco energy/duration anchors derive from original shorter/longer experiments, not measured next-hour energy.",
+    "Eco Gear is distinct from Eco Sensor. ESPHome IR support and firmware equivalence remain unverified.",
+    "Motor rated output is not measured electrical input; efficiency and affinity-law application are assumptions.",
+    "Numerical Turbo, Quiet, Swing, Display, Dry and new-condition effects are not verified by measured energy comparisons.",
+    "Pairwise/compound function compatibility is a conservative modeling policy unless a rule is cited explicitly.",
+    "Filter is not verified as an independently toggled energy function; it remains not applicable, not OFF.",
+    "Other device features such as Self-Clean, UV/Health, Sleep and timers require separate operating models and are outside the panel subset."
+  ],
+  "selection_metric": "validation_mae",
+  "validation_candidates": [
+    {
+      "max_depth": 12,
+      "validation_mae_kwh": 0.0734459491699629
+    },
+    {
+      "max_depth": null,
+      "validation_mae_kwh": 0.07329790023306304
+    }
+  ],
+  "selected_max_depth": null,
+  "validation_mae_kwh": 0.07329790023306304,
+  "train_rows": 12320,
+  "validation_rows": 2464,
+  "test_rows": 3712,
+  "validation_setpoints_c": [
+    20,
+    26
+  ],
+  "test_setpoints_c": [
+    21,
+    24,
+    27
+  ],
+  "test_metrics": {
+    "mae": 0.08306965463642325,
+    "mse": 0.014022905444431678,
+    "rmse": 0.11841834927253325,
+    "r2": 0.9549886428034061,
+    "evs": 0.9556438017302797
+  },
+  "mean_baseline_test_mae_kwh": 0.4914667173437049,
+  "dataset_sha256": "ff6dd1a862058e02f84a75a59735ea27808bd3b3be280bc9fb35c19c2aaf8d54",
+  "artifacts": {
+    "model.joblib": "f1486ae6c31543a7150fffeefb0e1542725a4f6362105f885145ef5a2447382f",
+    "supported_inputs.json.gz": "ace53c0f19fc20a23e505224c5de8f4b825205f70e7c902ad26577f14693fe7b",
+    "assumptions.json": "0167e415092e984578ff11c5f98b043a7d56b2fa5e7985247968c686e8d68670"
+  },
+  "report_artifacts": {
+    "sources.json": "bbd251cf393ec74980893bc10a20a4db0b9316f16fdb70c68ccd77ecff5e138f",
+    "held_out_predictions.csv": "c88ff11fdd3221f84a740238959f30f316b930267ba912ac005ec44e8e2eafcc",
+    "prediction_probes.json": "9d63ddb0685e439e3117bd2a9e4715cef9272c10883fd3653c9048f39d2b7414"
+  }
+}

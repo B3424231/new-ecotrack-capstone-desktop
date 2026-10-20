@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="./js/app-mode.js?v=6"></script>
+  <title>Telemetry - EcoTrack</title>
+  <script src="./vendor/tailwindcss.js"></script><script>tailwind.config={darkMode:'class'};</script>
+  <link rel="stylesheet" href="./styles.css?v=62"><link rel="stylesheet" href="./css/sensor-workspace.css?v=9">
+  <script defer src="./vendor/chart.umd.js"></script>
+  <script defer src="./vendor/jspdf.umd.min.js"></script><script defer src="./vendor/jspdf.plugin.autotable.min.js"></script><script defer src="./vendor/exceljs.min.js"></script>
+  <script defer src="./js/sidebar.js"></script><script defer src="./js/sidebar-loader.js?v=25"></script>
+  <script defer src="./js/supabase.umd.js"></script><script defer src="./js/supabase-client.js"></script><script defer src="./js/shared.js"></script>
+  <script defer src="./js/skeletons.js?v=2"></script>
+  <script defer src="./js/sensor-workspace.js?v=20"></script>
+  <link rel="stylesheet" href="./css/location-cabinet.css?v=1">
+</head>
+<body class="app-shell" data-sensor-page="telemetry">
+  <div class="flex h-screen overflow-hidden">
+    <main class="sensor-main">
+      <header class="sensor-header"><div><div class="sensor-heading"><button type="button" class="sensor-button sensor-menu" id="sensorMenu" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false">Menu</button><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="2"/><path d="M6 12a6 6 0 0 1 12 0"/></svg><h1>Telemetry</h1><span class="sensor-badge">Sensor monitoring</span></div></div><div class="sensor-actions"><span class="sr-only" id="sensorConnection" role="status">Connecting to local readings…</span><button type="button" class="sensor-button" id="sensorRefresh" aria-label="Refresh sensor readings" title="Refresh sensor readings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6.1 7a7 7 0 0 1 11.5-2L20 8M4 16l2.4 3A7 7 0 0 0 18 17"/></svg></button></div></header>
+      <div class="sensor-content"><div class="sensor-content-inner"><div id="sensorError" class="sensor-error" role="alert" hidden></div><div id="sensorApp" aria-busy="true"><div class="sensor-empty"><strong>Loading local sensor records</strong><p>Reading recorded measurements.</p></div></div></div></div>
+    </main>
+  </div>
+  <button type="button" class="sensor-backdrop" id="sensorBackdrop" aria-label="Close navigation"></button><div id="sensorDialogs"></div>
+</body>
+</html>

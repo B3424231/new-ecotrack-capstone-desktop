@@ -1,0 +1,6 @@
+interface:
+  display_name: "Full Web App Lifecycle"
+  short_description: "Autonomous inspect-build-test-debug-rebuild workflow"
+  default_prompt: "Run the full web-app lifecycle from inspection through verified REPORT.md."
+policy:
+  allow_implicit_invocation: true

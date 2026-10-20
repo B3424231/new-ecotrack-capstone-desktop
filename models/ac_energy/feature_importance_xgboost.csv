@@ -1,0 +1,12 @@
+feature,importance
+categorical__ac_id_A200AC03,0.38121983
+categorical__ac_id_A200AC01,0.30032742
+categorical__ac_id_A200AC02,0.13388231
+numeric__month,0.103311576
+numeric__indoor_outdoor_temp_diff,0.026456565
+numeric__room_temp_c,0.02266776
+numeric__humidity,0.009086419
+numeric__is_weekend,0.0071562133
+numeric__day_of_week,0.0068080295
+numeric__outdoor_temp_c,0.005391738
+numeric__hour,0.0036921462

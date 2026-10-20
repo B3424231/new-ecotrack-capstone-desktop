@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="./js/app-mode.js?v=6"></script>
+  <title>Sensor Energy Forecast - EcoTrack</title>
+  <script src="./vendor/tailwindcss.js"></script><script>tailwind.config={darkMode:'class'};</script>
+  <link rel="stylesheet" href="./styles.css?v=62"><link rel="stylesheet" href="./css/sensor-workspace.css?v=9">
+  <script defer src="./vendor/chart.umd.js"></script>
+  <script defer src="./vendor/jspdf.umd.min.js"></script><script defer src="./vendor/jspdf.plugin.autotable.min.js"></script><script defer src="./vendor/exceljs.min.js"></script>
+  <script defer src="./js/sidebar.js"></script><script defer src="./js/sidebar-loader.js?v=25"></script>
+  <script defer src="./js/supabase.umd.js"></script><script defer src="./js/supabase-client.js"></script><script defer src="./js/shared.js"></script>
+  <script defer src="./js/skeletons.js?v=2"></script>
+  <script defer src="./js/future-cost.js?v=2"></script><script defer src="./js/sensor-reports.js?v=5"></script><script defer src="./js/sensor-workspace.js?v=20"></script>
+  <link rel="stylesheet" href="./css/future-cost.css?v=2">
+  <link rel="stylesheet" href="./css/sensor-forecast.css?v=9">
+  <link rel="stylesheet" href="./css/export-progress.css?v=1">
+</head>
+<body class="app-shell" data-sensor-page="logs">
+  <div class="flex h-screen overflow-hidden">
+    <main class="sensor-main">
+      <header class="sensor-header sensor-forecast-header">
+        <div class="sensor-forecast-header-top">
+          <div class="sensor-forecast-title">
+            <button type="button" class="sensor-button sensor-menu" id="sensorMenu" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+            <span class="sensor-forecast-dot" aria-hidden="true"></span>
+            <h1>Sensor Energy Forecast</h1><span class="sensor-badge">SENSOR</span>
+          </div>
+          <div class="sensor-forecast-periods" role="group" aria-label="Forecast period">
+            <button type="button" class="header-period-btn active" data-period="daily" aria-pressed="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>Daily</span></button>
+            <button type="button" class="header-period-btn" data-period="weekly" aria-pressed="false"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m22 12-4 0-3 9-6-18-3 9H2"/></svg><span>Weekly</span></button>
+            <button type="button" class="header-period-btn" data-period="monthly" aria-pressed="false"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>Monthly</span></button>
+          </div>
+          <div class="sensor-actions sensor-forecast-actions">
+            <button type="button" class="sensor-button primary sensor-top-consumers" id="openTopConsumersModalBtn" aria-haspopup="dialog" title="View sensor energy consumption by building, floor, room, sensor and aircon type"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M18 20V10M12 20V4M6 20v-6"/></svg><span>Top Consumers</span><span class="sensor-consumer-info">INFO</span></button>
+            <button type="button" class="sensor-button sensor-forecast-tariff" id="sensorTariff" title="Change electricity tariff"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/></svg><span>Tariff: <strong id="headerTariffDisplay">Not configured</strong></span></button>
+            <button type="button" class="sensor-button primary" id="headerExportPdfBtn" data-export="pdf" aria-describedby="sensorExportStatus"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 15A7 7 0 1 1 16 8h2a4.5 4.5 0 0 1 2 8M12 12v9m-4-4 4 4 4-4"/></svg><span>Export PDF</span></button>
+            <button type="button" class="sensor-button primary" id="headerExportExcelBtn" data-export="xlsx" aria-describedby="sensorExportStatus"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8ZM14 2v6h6M8 13h8M8 17h8"/></svg><span>Export Excel</span></button>
+            <button type="button" class="sensor-button sensor-forecast-refresh" id="sensorRefresh" aria-label="Refresh sensor readings" title="Refresh sensor readings"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6.1 7a7 7 0 0 1 11.5-2L20 8M4 16l2.4 3A7 7 0 0 0 18 17"/></svg></button>
+          </div>
+        </div>
+        <div class="sensor-forecast-filters" data-sidebar-divider="top">
+          <div class="sensor-forecast-field"><label for="sensorSelect"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 8v8M8 12h8M4 4h16v16H4z"/></svg>Filter Sensor:</label><select id="sensorSelect" class="header-filter-pill-select"><option value="">All Sensors</option></select></div>
+          <div class="sensor-forecast-field sensor-date-field"><label for="sensorDateSelect"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Date:</label><div class="sensor-date-controls"><select id="sensorDateSelect" class="header-filter-pill-select" aria-label="Observation period"></select><input id="sensorFrom" class="header-filter-pill-select" type="date" aria-label="Custom observation date" title="Custom observation date (UTC+08:00)"></div></div>
+          <div class="sensor-forecast-field sensor-time-field"><label for="sensorTimeStart"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Time:</label><div class="header-time-pill sensor-time-controls"><input id="sensorTimeStart" type="time" class="header-time-input" aria-label="Start time" title="Start time (UTC+08:00)"><span>to</span><input id="sensorTimeEnd" type="time" class="header-time-input" aria-label="End time" title="End time (UTC+08:00)"><button type="button" id="sensorClearTime" aria-label="Clear time filter" title="Clear time filter"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button></div></div>
+          <div class="sensor-forecast-meta"><span class="sr-only" id="sensorConnection" role="status">Connecting to local readings…</span></div>
+          <button type="button" class="sensor-button primary fc-launch-button" id="openFutureCostBtn" aria-haspopup="dialog">Future Cost</button>
+        </div>
+      </header>
+      <div class="sensor-content"><div class="sensor-content-inner"><div id="sensorError" class="sensor-error" role="alert" hidden></div><div id="sensorApp" aria-busy="true"><div class="sensor-empty"><strong>Loading local sensor records</strong><p>Reading recorded measurements.</p></div></div></div></div>
+    </main>
+  </div>
+  <button type="button" class="sensor-backdrop" id="sensorBackdrop" aria-label="Close navigation"></button><template id="sensorForecastTemplate"><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- KPI CARD 1: ENERGY CONSUMED -->
+          <div class="analytics-glass-card rounded-2xl p-5 flex flex-col justify-between min-h-[160px] relative overflow-hidden transition-all duration-200 hover:border-amber-500/40">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500 dark:text-gray-400 text-[11px] font-bold uppercase tracking-wider">
+                <span id="kpiEnergyLabel">ESTIMATED ENERGY</span>
+              </span>
+              <div class="w-8 h-8 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 flex items-center justify-center text-amber-500">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                </svg>
+              </div>
+            </div>
+            <div class="my-2">
+              <div class="flex items-baseline gap-1.5">
+                <span id="kpiEnergyVal" class="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight font-mono">--</span>
+                <span id="kpiEnergyUnit" class="text-sm font-bold text-slate-400 dark:text-gray-400">kWh</span>
+              </div>
+              <div class="flex items-center gap-1.5 mt-1 text-xs">
+                <span id="kpiEnergyTrend" class="font-extrabold text-emerald-600 dark:text-emerald-400">--</span>
+                <span id="kpiEnergyTrendLabel" class="text-slate-500 dark:text-gray-400">synchronizing telemetry...</span>
+              </div>
+            </div>
+            <div class="pt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[11px]">
+              <span class="text-slate-500 dark:text-gray-400">Average draw</span>
+              <span id="kpiAvgLoad" class="font-mono font-bold text-slate-700 dark:text-gray-300">-- kW</span>
+            </div>
+            <!-- Hidden backward-compatibility elements for ML energy model -->
+            <div class="hidden" id="kpiTargetBudget"></div>
+            <div class="hidden" id="kpiBudgetOver"></div>
+            <div class="hidden" id="energyConsumption">--</div>
+            <div class="hidden" id="aiSuggestion">Calculated draw</div>
+          </div>
+
+          <!-- KPI CARD 2: ESTIMATED COST -->
+          <div class="analytics-glass-card rounded-2xl p-5 flex flex-col justify-between min-h-[160px] relative overflow-hidden transition-all duration-200 hover:border-emerald-500/40">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500 dark:text-gray-400 text-[11px] font-bold uppercase tracking-wider">
+                <span id="kpiCostLabel">ESTIMATED COST</span>
+              </span>
+              <div class="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="6" width="20" height="12" rx="2" />
+                  <circle cx="12" cy="12" r="2.5" />
+                  <path d="M6 12h.01M18 12h.01" />
+                </svg>
+              </div>
+            </div>
+            <div class="my-2">
+              <div class="flex items-baseline">
+                <span id="kpiCostVal" class="text-3xl lg:text-4xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight font-mono">--</span>
+              </div>
+              <div class="flex items-center gap-1.5 mt-1 text-xs">
+                <span id="kpiCostTrend" class="font-extrabold text-emerald-600 dark:text-emerald-400">--</span>
+                <span id="kpiCostTrendLabel" class="text-slate-500 dark:text-gray-400">synchronizing telemetry...</span>
+              </div>
+            </div>
+            <div class="pt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[11px]">
+              <span class="text-slate-500 dark:text-gray-400">Electricity rate</span>
+              <span id="kpiCostRate" class="font-mono font-bold text-emerald-600 dark:text-emerald-400">Not configured</span>
+            </div>
+            <!-- Hidden backward-compatibility elements -->
+            <div class="hidden" id="estBillValue">--</div>
+            <div class="hidden" id="estBillPeriod">Daily</div>
+          </div>
+
+          <!-- KPI CARD 3: AIRCON RUNTIME -->
+          <div class="analytics-glass-card rounded-2xl p-5 flex flex-col justify-between min-h-[160px] relative overflow-hidden transition-all duration-200 hover:border-cyan-500/40">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500 dark:text-gray-400 text-[11px] font-bold uppercase tracking-wider"
+                title="Observed span from the first to last confirmed AC-on reading each day. Utilization sums bounded sessions per unit; long gaps are excluded from utilization.">
+                <span id="kpiRuntimeLabel">FACILITY OPERATIONAL SPAN</span>
+              </span>
+              <div class="w-8 h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 flex items-center justify-center text-cyan-500">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+              </div>
+            </div>
+            <div class="my-2">
+              <div class="flex items-baseline gap-1.5">
+                <span id="kpiRuntimeVal" class="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">--</span>
+                <span id="kpiRuntimeUnit" class="text-sm font-bold text-slate-400 dark:text-gray-400">hrs</span>
+              </div>
+              <div class="flex items-center gap-1.5 mt-1 text-xs">
+                <span id="kpiRuntimeTrend" class="font-extrabold text-cyan-600 dark:text-cyan-400">--</span>
+                <span id="kpiRuntimeTrendLabel" class="text-slate-500 dark:text-gray-400">synchronizing telemetry...</span>
+              </div>
+            </div>
+            <div class="pt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[11px]">
+              <span id="kpiUtilizationLabel" class="text-slate-500 dark:text-gray-400">Daily utilization factor</span>
+              <span id="kpiUtilization" class="font-mono font-bold text-cyan-600 dark:text-cyan-400">-- hrs / unit</span>
+            </div>
+            <!-- Hidden backward-compatibility elements -->
+            <div class="hidden" id="avgTemp">--</div>
+          </div>
+
+          <!-- KPI CARD 4: ACTIVE AIRCONS -->
+          <div class="analytics-glass-card rounded-2xl p-5 flex flex-col justify-between min-h-[160px] relative overflow-hidden transition-all duration-200 hover:border-emerald-500/40">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500 dark:text-gray-400 text-[11px] font-bold uppercase tracking-wider">
+                <span id="kpiActiveLabel">ACTIVE AIRCONS</span>
+              </span>
+              <div class="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 12c-2.8 0-5-2.2-5-5s2.2-5 5-5c1.4 0 2.6.6 3.5 1.5M12 12c0 2.8 2.2 5 5 5s5-2.2 5-5c0-1.4-.6-2.6-1.5-3.5M12 12c0-2.8-2.2-5-5-5S2 9.2 2 12c0 1.4.6 2.6 1.5 3.5M12 12c2.8 0 5 2.2 5 5s-2.2 5-5 5c-1.4 0-2.6-.6-3.5-1.5" />
+                </svg>
+              </div>
+            </div>
+            <div class="my-2">
+              <div class="flex items-baseline">
+                <span id="kpiActiveUnits" class="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">--</span>
+                <span id="kpiTotalUnits" class="text-xl font-bold text-slate-400 dark:text-gray-400"></span>
+              </div>
+              <div class="flex items-center gap-1.5 mt-1 text-xs">
+                <span id="kpiCapacityPct" class="font-extrabold text-emerald-600 dark:text-emerald-400">--</span>
+                <span id="kpiFleetStatusLabel" class="text-slate-500 dark:text-gray-400">Loading live fleet telemetry...</span>
+              </div>
+            </div>
+            <div class="pt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[11px]">
+              <span class="text-slate-500 dark:text-gray-400" id="kpiIdleLabel">Standby / Idle Units</span>
+              <span id="kpiIdleUnits" class="font-mono font-bold text-slate-700 dark:text-gray-300">--</span>
+            </div>
+            <!-- Hidden backward-compatibility elements -->
+            <div class="hidden" id="avgPressure">--</div>
+            <div class="hidden" id="totalRecords">0</div>
+            <div class="hidden" id="kpiCapacityBar"></div>
+          </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- ROW 2: MIDDLE 2-COLUMN CHARTS GRID                       -->
+        <!-- ======================================================== -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          <!-- LEFT CHART: ENERGY CONSUMPTION TREND -->
+          <div class="analytics-glass-card rounded-2xl p-5 sm:p-6 flex flex-col justify-between">
+            <div>
+              <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
+                <div>
+                  <h3 class="eco-primary-text text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                    Energy Consumption Trend
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]"></span>
+                  </h3>
+                  <p class="text-xs text-slate-500 dark:text-gray-400 mt-0.5" id="energyTrendSubtitle">Aircon electricity usage over time across all zones</p>
+                </div>
+              </div>
+
+              <!-- Custom Legend -->
+              <div class="sensor-chart-legend flex items-center gap-5 text-xs text-slate-500 dark:text-gray-400 my-3">
+                <span class="flex items-center gap-2">
+                  <span class="w-3.5 h-1 rounded-full bg-emerald-400"></span>
+                  <span class="font-medium text-slate-700 dark:text-gray-300">Estimated Energy (kWh)</span>
+                </span>
+                <span class="flex items-center gap-2">
+                  <span class="w-3.5 h-0.5 border-t border-dashed border-slate-400 dark:border-gray-500"></span>
+                  <span id="trendBaselineLegend">Prev. Period Baseline (-- kWh avg)</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Canvas -->
+            <div class="relative w-full h-64 sm:h-72 my-2">
+              <canvas id="energyTrendChart"></canvas>
+              <div id="energyTrendEmpty" role="status" class="absolute inset-0 items-center justify-center flex-col gap-1 pointer-events-none text-sm text-slate-500 dark:text-gray-400" style="display: none;"><strong>Unavailable</strong><span class="text-xs">Awaiting usable confirmed operating data</span></div>
+            </div>
+
+            <!-- Footer Stats -->
+            <div class="pt-4 border-t border-slate-100 dark:border-white/5 flex flex-wrap items-center justify-between text-xs text-slate-500 dark:text-gray-400 gap-2">
+              <div><span id="trendLowPrefix">Daily Low</span>: <strong id="trendLow" class="text-slate-800 dark:text-white font-mono font-bold">--</strong></div>
+              <div><span id="trendPeakPrefix">Daily Peak</span>: <strong id="trendPeak" class="text-amber-500 dark:text-amber-400 font-mono font-bold">--</strong></div>
+              <div><span id="trendTotalPrefix">Daily Total</span>: <strong id="trendTotal" class="text-emerald-600 dark:text-emerald-400 font-mono font-bold">--</strong></div>
+            </div>
+          </div>
+
+          <!-- RIGHT CHART: ESTIMATED ELECTRICITY COST -->
+          <div class="analytics-glass-card rounded-2xl p-5 sm:p-6 flex flex-col justify-between">
+            <div>
+              <div class="sensor-cost-heading flex items-start justify-between gap-3 mb-2">
+                <div>
+                  <h3 class="eco-primary-text text-base font-extrabold text-slate-900 dark:text-white">Estimated Electricity Cost</h3>
+                  <p class="text-xs text-slate-500 dark:text-gray-400" id="estimatedCostSubtitle">
+                    Electricity Rate: <span id="costCardRate" class="font-bold text-amber-600 dark:text-amber-400">Not configured</span>
+                  </p>
+                </div>
+                <!-- Highlight Stat -->
+                <div class="text-right">
+                  <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-gray-500 tracking-wider">Selected Period Cost</span>
+                  <div id="costTodayCost" class="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">--</div>
+                </div>
+              </div>
+
+              <!-- Cycle / Prev Period / Variance Stats -->
+              <div class="flex flex-wrap items-center gap-6 text-xs text-slate-500 dark:text-gray-400 my-3">
+                <div>Selected Period: <strong id="costCurrentCycle" class="font-mono text-slate-800 dark:text-white">--</strong></div>
+                <div>Prev. Period: <strong id="costPrevPeriod" class="font-mono text-slate-600 dark:text-gray-400">--</strong></div>
+                <div>Variance: <strong id="costVariance" class="font-mono text-slate-500 dark:text-gray-400 font-extrabold">--</strong></div>
+              </div>
+            </div>
+
+            <!-- Canvas -->
+            <div class="relative w-full h-64 sm:h-72 my-2">
+              <canvas id="estimatedCostChart"></canvas>
+              <div id="estimatedCostEmpty" role="status" class="absolute inset-0 items-center justify-center flex-col gap-1 pointer-events-none text-sm text-slate-500 dark:text-gray-400" style="display: none;"><strong>Unavailable</strong><span class="text-xs">Awaiting usable confirmed operating data</span></div>
+            </div>
+
+            <!-- Footer -->
+            <div class="pt-4 border-t border-slate-100 dark:border-white/5 text-center text-xs text-slate-400 dark:text-gray-500">
+              Cost = estimated energy × electricity rate.
+            </div>
+          </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- ROW 3: CONSUMPTION VS COST (DUAL-AXIS CORRELATION)       -->
+        <!-- ======================================================== -->
+        <div class="analytics-glass-card rounded-2xl p-5 sm:p-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="eco-primary-text text-base font-extrabold text-slate-900 dark:text-white">Consumption vs Cost</h3>
+
+              </div>
+              <p class="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+                Estimated energy and cost over the selected period.
+              </p>
+            </div>
+
+          </div>
+
+          <!-- Legend & Tag -->
+          <div class="flex flex-wrap items-center justify-between gap-4 text-xs text-slate-500 dark:text-gray-400 pt-1">
+            <div class="flex items-center gap-5">
+              <span class="flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-full bg-cyan-400"></span>
+                <span id="dualAxisEnergyLegend" class="text-slate-700 dark:text-gray-300 font-medium">Energy (Left Axis)</span>
+              </span>
+              <span class="flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-sm bg-emerald-500"></span>
+                <span id="dualAxisCostLegend" class="text-slate-700 dark:text-gray-300 font-medium">Cost (Right Axis)</span>
+              </span>
+            </div>
+            <span class="text-slate-400 dark:text-gray-500 text-[11px] font-medium" id="dualAxisPeriodBadge">
+              Synchronized 7-Day Observation Interval
+            </span>
+          </div>
+
+          <!-- Canvas -->
+          <div class="relative w-full h-64 sm:h-80">
+            <canvas id="dualAxisChart"></canvas>
+              <div id="dualAxisEmpty" role="status" class="absolute inset-0 items-center justify-center flex-col gap-1 pointer-events-none text-sm text-slate-500 dark:text-gray-400" style="display: none;"><strong>Unavailable</strong><span class="text-xs">Awaiting usable confirmed operating data</span></div>
+          </div>
+        </div>
+
+        </template><template id="sensorTariffTemplate"><div id="tariffSettingsModal" class="sensor-reference-modal">
+    <div class="modal-pop bg-white dark:bg-[#0c1328] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-amber-500/20 via-teal-500/10 to-transparent p-5 border-b border-slate-100 dark:border-white/10 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center font-bold">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+            </svg>
+          </div>
+          <div>
+            <h3 id="tariffModalTitle" class="eco-primary-text text-base font-extrabold text-slate-900 dark:text-white">
+              Electricity Tariff Configuration
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-gray-400">Customize the utility billing rate and utility provider details</p>
+          </div>
+        </div>
+        <button id="closeTariffModalBtn" data-close-reference aria-label="Close tariff settings" type="button" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-colors border-0 bg-transparent cursor-pointer font-bold text-lg">&times;</button>
+      </div>
+
+      <!-- Modal Body -->
+      <form id="tariffConfigForm" class="p-5 sm:p-6 space-y-4">
+        <!-- Tariff Rate -->
+        <div>
+          <label for="tariffRateInput" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1.5">
+            Electricity Tariff Rate (₱ / kWh)
+          </label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400 font-bold text-sm">₱</span>
+            <input type="number" id="tariffRateInput" step="0.01" min="0.10" max="100.00" value="" required
+              class="w-full pl-8 pr-16 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500">
+            <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-xs font-bold text-slate-400">/ kWh</span>
+          </div>
+          <p class="text-[11px] text-slate-400 dark:text-gray-500 mt-1">
+            Enter your utility rate to enable cost estimates.
+          </p>
+        </div>
+
+        <input type="hidden" id="targetBudgetInput" value="">
+
+        <!-- Utility Provider / Notes -->
+        <div>
+          <label for="utilityProviderInput" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1.5">
+            Utility Provider & Region
+          </label>
+          <input type="text" id="utilityProviderInput" value=""
+            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500">
+        </div>
+
+        <!-- Dynamic Live Calculation Preview -->
+        <div class="p-3 rounded-xl bg-slate-100 dark:bg-black/30 border border-slate-200/60 dark:border-white/5 space-y-1.5">
+          <div class="text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Live Impact Preview</div>
+          <div class="text-xs text-slate-700 dark:text-gray-300 flex justify-between">
+            <span>Estimated Fleet Bill Impact:</span>
+            <strong id="tariffPreviewBill" class="font-mono text-emerald-600 dark:text-emerald-400 font-bold">--</strong>
+          </div>
+          <div class="text-[11px] text-slate-400 dark:text-gray-500">
+            The rate applies immediately to estimates and reports.
+          </div>
+        </div>
+
+        <!-- Modal Actions -->
+        <div class="pt-3 border-t border-slate-100 dark:border-white/10 flex items-center justify-between gap-3">
+          <button type="button" id="resetTariffDefaultBtn"
+            class="text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white underline bg-transparent border-0 cursor-pointer">
+            Clear tariff settings
+          </button>
+          <div class="flex items-center gap-2">
+            <button type="button" id="cancelTariffModalBtn" data-close-reference aria-label="Close tariff settings"
+              class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 rounded-xl text-xs font-bold transition-colors border-0 cursor-pointer">
+              Cancel
+            </button>
+            <button type="submit" id="saveTariffBtn"
+              class="px-5 py-2 bg-[#10b981] hover:bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-500/20 transition-all border-0 cursor-pointer flex items-center gap-1.5">
+              <span>Save & Apply Tariff</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div></template><template id="sensorConsumersTemplate"><div id="topConsumersModal" class="sensor-reference-modal">
+    <div class="modal-pop bg-white dark:bg-[#0c1328] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden">
+      
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-emerald-500/20 via-teal-500/15 to-transparent p-4 sm:p-5 border-b border-slate-100 dark:border-white/10 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-500 flex items-center justify-center font-bold shrink-0">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M18 20V10" />
+              <path d="M12 20V4" />
+              <path d="M6 20v-6" />
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 id="topConsumersModalTitle" class="eco-primary-text text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                Highest Estimated Energy Breakdown
+              </h3>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                Peak Insights
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+              Experimental estimates across Buildings, Floors, Rooms, AC Sensors, and Aircon Equipment
+            </p>
+          </div>
+        </div>
+        <button id="closeTopConsumersModalBtn" data-close-reference aria-label="Close consumption breakdown" type="button" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-colors border-0 bg-transparent cursor-pointer font-bold text-xl leading-none">&times;</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-4 sm:p-6 space-y-6 overflow-y-auto flex-1">
+
+        <!-- Scope & Tariff Evaluation Banner -->
+        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="text-slate-600 dark:text-gray-300">
+              Active Scope: <strong id="modalScopePeriod" class="text-slate-900 dark:text-white uppercase font-black">Daily</strong> • Tariff Multiplier: <strong id="modalScopeTariff" class="text-amber-600 dark:text-amber-400 font-mono font-bold">Not configured</strong>
+            </span>
+          </div>
+          <div class="text-slate-500 dark:text-gray-400 text-xs">
+            Evaluated Fleet Total: <strong id="modalScopeTotalKwh" class="text-emerald-600 dark:text-emerald-400 font-mono font-black">--</strong> (<strong id="modalScopeTotalCost" class="text-emerald-600 dark:text-emerald-400 font-mono font-black">--</strong>)
+          </div>
+        </div>
+
+        <!-- 5 Top Category Highlights Cards -->
+        <div>
+          <div class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400 mb-2.5 flex items-center gap-1.5">
+            <span>🏆 Primary Energy Consumers (#1 In Each Category)</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            
+            <!-- 1. Top Building -->
+            <div class="p-3.5 rounded-xl bg-gradient-to-b from-blue-500/10 to-transparent border border-blue-500/30 flex flex-col justify-between space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400 tracking-wider">Top Building</span>
+                <span class="w-6 h-6 rounded-lg bg-blue-500/20 text-blue-500 flex items-center justify-center text-xs">🏢</span>
+              </div>
+              <div>
+                <div id="topBuildingName" class="text-xs font-black text-slate-900 dark:text-white truncate" title="Top Building">--</div>
+                <div class="flex items-baseline gap-1 mt-1">
+                  <span id="topBuildingKwh" class="text-xl font-black text-blue-600 dark:text-blue-400 font-mono">--</span>
+                  <span class="text-[10px] text-slate-400 font-bold">kWh</span>
+                </div>
+              </div>
+              <div class="pt-2 border-t border-slate-200/50 dark:border-white/5 flex items-center justify-between text-[11px]">
+                <span id="topBuildingCost" class="font-mono font-bold text-slate-700 dark:text-gray-300">--</span>
+                <span id="topBuildingShare" class="font-black text-blue-600 dark:text-blue-400">--%</span>
+              </div>
+            </div>
+
+            <!-- 2. Top Floor -->
+            <div class="p-3.5 rounded-xl bg-gradient-to-b from-purple-500/10 to-transparent border border-purple-500/30 flex flex-col justify-between space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-black uppercase text-purple-600 dark:text-purple-400 tracking-wider">Top Floor</span>
+                <span class="w-6 h-6 rounded-lg bg-purple-500/20 text-purple-500 flex items-center justify-center text-xs">📑</span>
+              </div>
+              <div>
+                <div id="topFloorName" class="text-xs font-black text-slate-900 dark:text-white truncate" title="Top Floor">--</div>
+                <div class="flex items-baseline gap-1 mt-1">
+                  <span id="topFloorKwh" class="text-xl font-black text-purple-600 dark:text-purple-400 font-mono">--</span>
+                  <span class="text-[10px] text-slate-400 font-bold">kWh</span>
+                </div>
+              </div>
+              <div class="pt-2 border-t border-slate-200/50 dark:border-white/5 flex items-center justify-between text-[11px]">
+                <span id="topFloorCost" class="font-mono font-bold text-slate-700 dark:text-gray-300">--</span>
+                <span id="topFloorShare" class="font-black text-purple-600 dark:text-purple-400">--%</span>
+              </div>
+            </div>
+
+            <!-- 3. Top Room -->
+            <div class="p-3.5 rounded-xl bg-gradient-to-b from-amber-500/10 to-transparent border border-amber-500/30 flex flex-col justify-between space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider">Top Room</span>
+                <span class="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-500 flex items-center justify-center text-xs">🚪</span>
+              </div>
+              <div>
+                <div id="topRoomName" class="text-xs font-black text-slate-900 dark:text-white truncate" title="Top Room">--</div>
+                <div class="flex items-baseline gap-1 mt-1">
+                  <span id="topRoomKwh" class="text-xl font-black text-amber-600 dark:text-amber-400 font-mono">--</span>
+                  <span class="text-[10px] text-slate-400 font-bold">kWh</span>
+                </div>
+              </div>
+              <div class="pt-2 border-t border-slate-200/50 dark:border-white/5 flex items-center justify-between text-[11px]">
+                <span id="topRoomCost" class="font-mono font-bold text-slate-700 dark:text-gray-300">--</span>
+                <span id="topRoomShare" class="font-black text-amber-600 dark:text-amber-400">--%</span>
+              </div>
+            </div>
+
+            <!-- 4. Top AC Sensor -->
+            <div class="p-3.5 rounded-xl bg-gradient-to-b from-emerald-500/10 to-transparent border border-emerald-500/30 flex flex-col justify-between space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">Top AC Sensor</span>
+                <span class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-500 flex items-center justify-center text-xs">🎛</span>
+              </div>
+              <div>
+                <div id="topControlName" class="text-xs font-black text-slate-900 dark:text-white truncate" title="Top AC Sensor">--</div>
+                <div class="flex items-baseline gap-1 mt-1">
+                  <span id="topControlKwh" class="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono">--</span>
+                  <span class="text-[10px] text-slate-400 font-bold">kWh</span>
+                </div>
+              </div>
+              <div class="pt-2 border-t border-slate-200/50 dark:border-white/5 flex items-center justify-between text-[11px]">
+                <span id="topControlCost" class="font-mono font-bold text-slate-700 dark:text-gray-300">--</span>
+                <span id="topControlShare" class="font-black text-emerald-600 dark:text-emerald-400">--%</span>
+              </div>
+            </div>
+
+            <!-- 5. Top Aircon Type -->
+            <div class="p-3.5 rounded-xl bg-gradient-to-b from-cyan-500/10 to-transparent border border-cyan-500/30 flex flex-col justify-between space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-black uppercase text-cyan-600 dark:text-cyan-400 tracking-wider">Top Aircon Type</span>
+                <span class="w-6 h-6 rounded-lg bg-cyan-500/20 text-cyan-500 flex items-center justify-center text-xs">❄</span>
+              </div>
+              <div>
+                <div id="topAirconTypeName" class="text-xs font-black text-slate-900 dark:text-white truncate" title="Top Aircon Type">--</div>
+                <div class="flex items-baseline gap-1 mt-1">
+                  <span id="topAirconTypeKwh" class="text-xl font-black text-cyan-600 dark:text-cyan-400 font-mono">--</span>
+                  <span class="text-[10px] text-slate-400 font-bold">kWh</span>
+                </div>
+              </div>
+              <div class="pt-2 border-t border-slate-200/50 dark:border-white/5 flex items-center justify-between text-[11px]">
+                <span id="topAirconTypeCost" class="font-mono font-bold text-slate-700 dark:text-gray-300">--</span>
+                <span id="topAirconTypeShare" class="font-black text-cyan-600 dark:text-cyan-400">--%</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Interactive Category Switcher & Leaderboard Table -->
+        <div class="space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-white/10">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-gray-300">
+              📊 Category Consumption Leaderboard
+            </span>
+
+            <!-- Category Switcher Tabs -->
+            <div class="inline-flex p-1 bg-slate-100 dark:bg-slate-900/90 rounded-xl border border-slate-200 dark:border-white/10 gap-1 text-xs font-bold" id="consumersTabContainer">
+              <button type="button" class="consumer-tab-btn active px-3 py-1.5 rounded-lg transition-all cursor-pointer bg-[#10b981] text-white shadow-xs" data-category="buildings">
+                🏢 Buildings
+              </button>
+              <button type="button" class="consumer-tab-btn px-3 py-1.5 rounded-lg transition-all cursor-pointer text-slate-600 dark:text-gray-300 hover:text-[#10b981]" data-category="floors">
+                📑 Floors
+              </button>
+              <button type="button" class="consumer-tab-btn px-3 py-1.5 rounded-lg transition-all cursor-pointer text-slate-600 dark:text-gray-300 hover:text-[#10b981]" data-category="rooms">
+                🚪 Rooms
+              </button>
+              <button type="button" class="consumer-tab-btn px-3 py-1.5 rounded-lg transition-all cursor-pointer text-slate-600 dark:text-gray-300 hover:text-[#10b981]" data-category="sensors">
+                🎛 AC Sensors
+              </button>
+              <button type="button" class="consumer-tab-btn px-3 py-1.5 rounded-lg transition-all cursor-pointer text-slate-600 dark:text-gray-300 hover:text-[#10b981]" data-category="airconTypes">
+                ❄ Aircon Types
+              </button>
+            </div>
+          </div>
+
+          <!-- Leaderboard Table Card -->
+          <div class="eco-table-frame border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden shadow-xs">
+            <table class="eco-data-table w-full text-left border-collapse">
+              <thead class="bg-slate-50 dark:bg-[#070d1e] text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider border-b border-slate-200 dark:border-white/10">
+                <tr>
+                  <th scope="col" class="px-4 py-3">Rank</th>
+                  <th scope="col" class="px-4 py-3" id="leaderboardNameHeader">Entity Name</th>
+                  <th scope="col" class="px-4 py-3">Consumption Share</th>
+                  <th scope="col" class="px-4 py-3">Energy (kWh)</th>
+                  <th scope="col" class="px-4 py-3">Estimated Cost (₱)</th>
+                  <th scope="col" class="px-4 py-3 text-right">Estimate Basis</th>
+                </tr>
+              </thead>
+              <tbody id="topConsumersTableBody" class="divide-y divide-slate-100 dark:divide-white/5 text-xs text-slate-800 dark:text-gray-200">
+                <!-- Rows injected dynamically by logs.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-4 bg-slate-50 dark:bg-[#070d1e] border-t border-slate-100 dark:border-white/10 flex items-center justify-between gap-3 shrink-0">
+        <div class="text-[11px] text-slate-500 dark:text-gray-400">
+          Ranks use experimental covered energy only. A configured tariff is required for cost.
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" id="closeTopConsumersBtn" data-close-reference aria-label="Close consumption breakdown" class="px-5 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white rounded-xl text-xs font-bold transition-all border-0 cursor-pointer">
+            Close
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div></template><div id="sensorDialogs"></div>
+</body>
+</html>

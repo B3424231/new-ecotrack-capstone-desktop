@@ -1,0 +1,18 @@
+{
+  "input_scope": "controls_only",
+  "features": [
+    "setpoint_c",
+    "fan_command",
+    "operating_mode",
+    "eco",
+    "turbo",
+    "swing",
+    "quiet",
+    "horizontal_swing",
+    "display"
+  ],
+  "sensor_inputs": [],
+  "target_basis": "Original generated one-hour labels; environmental variation remains unobserved in these control-only regressors.",
+  "unknown_control_policy": "Only genuinely missing function flags may be averaged across supported control variants; no environmental scenarios or sensor defaults are supplied.",
+  "physical_accuracy_validated": false
+}

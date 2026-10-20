@@ -1,0 +1,6 @@
+interface:
+  display_name: "Final Report Generator"
+  short_description: "Generate an evidence-based REPORT.md"
+  default_prompt: "Generate REPORT.md using only verified evidence from the completed work."
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,23 @@
+[
+  {
+    "name": "test_atomic_rule_workflows.js",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 2.4
+  },
+  {
+    "name": "test_workflow_followup.js",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 0.1
+  },
+  {
+    "name": "test_followup_monitoring.py",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 5.8
+  }
+]

@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+  <script src="./js/app-mode.js?v=6"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control Dashboard - EcoTrack Aircon IoT</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              500: '#10b981',
+              600: '#059669',
+              900: '#064e3b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="./styles.css?v=62">
+  <script src="./js/supabase.umd.js"></script>
+  <script src="./js/supabase-client.js"></script>
+  <script src="./js/hardware-cloud.js?v=11"></script>
+  <script src="./js/sidebar.js"></script>
+  <script src="./js/sidebar-loader.js?v=25"></script>
+  <script src="./js/icons.js"></script>
+  <script src="./js/eco-network.js"></script>
+  <script src="./js/eco-data-bus.js"></script>
+  <script src="./js/skeletons.js"></script>
+  <script src="./js/aircon-system.js?v=23"></script>
+  <script src="./js/aircon-state.js?v=5"></script>
+  <link rel="stylesheet" href="./css/ac-power-history.css?v=1">
+  <script defer src="./js/ac-power-history.js?v=3"></script>
+</head>
+
+<body class="app-shell bg-gray-50 dark:bg-[#0a0f1d] text-slate-800 dark:text-slate-100 transition-colors duration-200">
+  <div class="flex h-screen">
+    <!-- Sidebar dynamically injected by sidebar-loader.js -->
+
+    <!-- MAIN DASHBOARD CONTENT -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+      <!-- HEADER BAR -->
+      <header class="bg-white dark:bg-[#0c1328] border-b border-gray-200 dark:border-white/5 px-6 py-3.5 flex flex-wrap gap-3 justify-between items-center z-10 shadow-sm flex-shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
+              <rect x="3" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="14" width="7" height="7" rx="1.5" />
+              <rect x="3" y="14" width="7" height="7" rx="1.5" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="eco-primary-text text-xl font-extrabold text-[#18392B] dark:text-white tracking-tight">Control Dashboard</h1>
+            <p class="text-[11px] font-medium text-gray-500 dark:text-gray-400">Multi-unit real-time monitoring and dynamic command overview</p>
+          </div>
+        </div>
+
+        <button id="openAcPowerHistoryBtn" type="button" class="aph-launch" aria-haspopup="dialog" aria-controls="acPowerHistoryDialog"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>ON/OFF History</span></button>
+      </header>
+
+      <!-- SCROLLABLE DASHBOARD BODY -->
+      <div class="flex-1 overflow-y-auto p-5 space-y-5">
+        
+        <!-- CONTROL KPI SUMMARY ROW -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+          <div class="glass-surface-soft p-3.5 rounded-xl border border-white/5 flex flex-col">
+            <span class="eco-secondary-text text-[10px] font-bold uppercase tracking-wider text-gray-400">Total Units</span>
+            <span id="kpiTotalUnits" class="text-2xl font-black text-cyan-400 mt-1">4</span>
+            <span class="text-[10px] text-gray-400 mt-0.5">Air Conditioners</span>
+          </div>
+
+          <div class="glass-surface-soft p-3.5 rounded-xl border border-white/5 flex flex-col">
+            <span class="eco-secondary-text text-[10px] font-bold uppercase tracking-wider text-emerald-400">Online</span>
+            <span id="kpiOnlineUnits" class="text-2xl font-black text-emerald-400 mt-1">4</span>
+            <span class="text-[10px] text-emerald-400/80 mt-0.5">Ready for Control</span>
+          </div>
+
+          <div class="glass-surface-soft p-3.5 rounded-xl border border-white/5 flex flex-col">
+            <span class="eco-secondary-text text-[10px] font-bold uppercase tracking-wider text-teal-300">Confirmed ON</span>
+            <span id="kpiActivePower" class="text-2xl font-black text-teal-300 mt-1">3</span>
+            <span class="text-[10px] text-teal-400/80 mt-0.5" id="kpiActivePowerCaption">Units with power ON</span>
+          </div>
+
+          <div class="glass-surface-soft p-3.5 rounded-xl border border-white/5 flex flex-col">
+            <span class="eco-secondary-text text-[10px] font-bold uppercase tracking-wider text-slate-400">Standby / Off</span>
+            <span id="kpiStandby" class="text-2xl font-black text-slate-300 mt-1">1</span>
+            <span class="text-[10px] text-slate-400 mt-0.5" id="kpiStandbyCaption">Units with power OFF</span>
+          </div>
+
+          <div class="glass-surface-soft p-3.5 rounded-xl border border-white/5 flex flex-col">
+            <span class="eco-secondary-text text-[10px] font-bold uppercase tracking-wider text-purple-400">AC Controllers</span>
+            <span id="kpiNodesOnline" class="text-2xl font-black text-purple-400 mt-1">3 / 4</span>
+            <span class="text-[10px] text-purple-300 mt-0.5">Hardware Connected</span>
+          </div>
+
+          <div class="glass-surface-soft p-3.5 rounded-xl border border-white/5 flex flex-col">
+            <span class="eco-secondary-text text-[10px] font-bold uppercase tracking-wider text-cyan-300">Commands Sent</span>
+            <span id="kpiCommandsSent" class="text-2xl font-black text-cyan-300 mt-1">0</span>
+            <span class="text-[10px] text-cyan-400/80 mt-0.5">Recorded actions</span>
+          </div>
+
+          <div class="glass-surface-soft p-3.5 rounded-xl border border-white/5 flex flex-col">
+            <span class="eco-secondary-text text-[10px] font-bold uppercase tracking-wider text-emerald-400">Successful</span>
+            <span id="kpiCommandsSuccess" class="text-2xl font-black text-emerald-400 mt-1">0</span>
+            <span class="text-[10px] text-emerald-400/80 mt-0.5">Completed commands</span>
+          </div>
+
+          <div class="glass-surface-soft p-3.5 rounded-xl border border-white/5 flex flex-col">
+            <span class="eco-secondary-text text-[10px] font-bold uppercase tracking-wider text-rose-400">Failed / Offline</span>
+            <span id="kpiCommandsFailed" class="text-2xl font-black text-rose-400 mt-1">0</span>
+            <span class="text-[10px] text-rose-400/80 mt-0.5">Command Errors</span>
+          </div>
+        </div>
+
+        <!-- MULTI-AIRCON SIMULTANEOUS DESKTOP OVERVIEW -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <h2 class="eco-primary-text text-base font-bold text-white flex items-center gap-2">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" class="text-cyan-400">
+                  <rect x="2" y="5" width="20" height="9" rx="2" />
+                  <line x1="6" y1="10.5" x2="18" y2="10.5" />
+                  <path d="M7 18c2.5-1.5 4.5-1.5 7 0" />
+                  <path d="M9 20.5c1.5-.9 2.5-.9 4 0" />
+                </svg>
+                Air Conditioners Overview
+              </h2>
+              <span class="text-xs text-gray-400 font-medium">(Simultaneous real-time status across all units)</span>
+            </div>
+
+            <!-- FILTERS -->
+            <div class="flex items-center gap-2">
+              <button class="filter-pill active px-3 py-1 rounded-full text-xs font-semibold bg-teal-500/20 text-teal-300 border border-teal-500/40" data-filter="all">All Units</button>
+              <button class="filter-pill px-3 py-1 rounded-full text-xs font-semibold bg-white/5 text-gray-400 hover:text-white border border-transparent hover:border-white/10" data-filter="active">Powered ON</button>
+              <button class="filter-pill px-3 py-1 rounded-full text-xs font-semibold bg-white/5 text-gray-400 hover:text-white border border-transparent hover:border-white/10" data-filter="standby">Standby</button>
+            </div>
+          </div>
+
+          <!-- DYNAMIC AIRCON GRID -->
+          <div id="airconCardsGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <!-- Rendered dynamically by JavaScript -->
+          </div>
+        </div>
+
+        <!-- BOTTOM SPLIT PANELS: LIVE COMMANDS AUDIT + AC CONTROLLER DEVICES HEARTBEAT -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 pt-2">
+          
+          <!-- LEFT: RECENT SYSTEM COMMANDS AUDIT TRAIL (7 cols) -->
+          <div class="lg:col-span-7 glass-panel p-4 rounded-2xl flex flex-col">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="eco-primary-text text-sm font-bold text-cyan-400 flex items-center gap-2">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+                <span>Command & IR Audit Trail</span>
+              </h3>
+              <button id="openAuditModalBtn" type="button" class="text-xs font-bold text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 hover:underline flex items-center gap-1 cursor-pointer bg-transparent border-0 transition-colors">
+                <span>View All Logs</span>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </button>
+            </div>
+
+            <div class="eco-table-frame overflow-y-auto overflow-x-hidden flex-1 max-h-64 pr-1">
+              <table class="eco-data-table w-full text-left text-xs border-collapse">
+                <thead class="sticky top-0 bg-white/95 dark:bg-[#0c1328]/95 backdrop-blur-sm z-10">
+                  <tr class="text-slate-400 dark:text-gray-400 border-b border-slate-200/40 dark:border-white/10 pb-2">
+                    <th scope="col" class="py-2 px-2 font-semibold">Time</th>
+                    <th scope="col" class="py-2 px-2 font-semibold">Target Unit</th>
+                    <th scope="col" class="py-2 px-2 font-semibold">Controller</th>
+                    <th scope="col" class="py-2 px-2 font-semibold">Command & IR Dispatch</th>
+                    <th scope="col" class="py-2 px-2 font-semibold text-right">Result</th>
+                  </tr>
+                </thead>
+                <tbody id="commandAuditTableBody" class="divide-y divide-slate-100 dark:divide-white/5 text-slate-700 dark:text-gray-300">
+                  <!-- Injected dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- RIGHT: AC CONTROLLER DEVICES LIVE HEALTH (5 cols) -->
+          <div class="lg:col-span-5 glass-panel p-4 rounded-2xl flex flex-col">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="eco-primary-text text-sm font-bold text-teal-400 flex items-center gap-2">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="4" y="4" width="16" height="16" rx="2" />
+                  <rect x="9" y="9" width="6" height="6" />
+                </svg>
+                AC Controller Devices Health
+              </h3>
+              <a href="nodes.html" class="text-xs font-medium text-teal-400 hover:underline">Manage AC Controller Devices &rarr;</a>
+            </div>
+
+            <div id="nodesListContainer" class="space-y-2.5 overflow-y-auto max-h-64 pr-1">
+              <!-- Injected dynamically -->
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- CLIENT CONTROLLER SCRIPT -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const { AirconProfileManager, CapabilityEngine, CommandManager, NodeService, CentralLogService, AirconEvents } = window.EcoTrackAirconSystem;
+
+      let currentFilter = 'all';
+      let modalAuditCurrentPage = 1;
+      const MODAL_AUDIT_PAGE_SIZE = 20;
+
+      // Helper for in-place DOM update on a single card (zero-flicker)
+      function updateSingleCardDom(card, ac, node) {
+        if (!card) return;
+        const isPowerOn = ac.state && ac.state.power;
+        const isNodeOnline = node ? (node.status.toLowerCase() === 'connected' || node.status.toLowerCase() === 'online') : false;
+
+        // Container border and glow
+        card.className = `glass-card p-4 rounded-2xl border transition-all duration-300 flex flex-col justify-between overflow-hidden min-w-0 ${
+          isPowerOn ? 'border-teal-500/35 shadow-lg shadow-teal-950/20' : 'border-white/5 opacity-85'
+        }`;
+
+        // Display the admin's controller name separately from the AC manufacturer.
+        const savedName = typeof node?.name === 'string' ? node.name.trim() : '';
+        const controllerName = savedName && !/^(?:EcoTrack[-_])?esp32s3[-_:][0-9a-f]{12}$/i.test(savedName)
+          ? savedName : 'AC Controller';
+        const titleEl = card.querySelector('h3');
+        if (titleEl) {
+          titleEl.textContent = controllerName;
+          titleEl.title = controllerName;
+        }
+        const subEl = card.querySelector('h3 + p');
+        if (subEl) {
+          subEl.textContent = ac.model || ac.aircon_type || '';
+          subEl.title = subEl.textContent;
+        }
+
+        // Power toggle button
+        const pBtn = card.querySelector('.power-toggle-btn');
+        if (pBtn) {
+          pBtn.setAttribute('data-current-power', isPowerOn ? '1' : '0');
+          pBtn.className = `power-toggle-btn shrink-0 p-2 rounded-xl transition-all border ${
+            isPowerOn 
+              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30' 
+              : 'bg-white/5 text-gray-400 border-white/10 hover:text-white'
+          }`;
+          pBtn.disabled = false;
+        }
+
+        // Temperature readout
+        const tempVal = card.querySelector('.target-temp-val');
+        if (tempVal) {
+          tempVal.textContent = CapabilityEngine.formatTemperature(ac.state?.temperature);
+          tempVal.className = `target-temp-val text-3xl font-black font-mono tracking-tight tabular-nums ${isPowerOn ? 'text-cyan-600 dark:text-cyan-400' : 'text-gray-400 dark:text-gray-500'}`;
+        }
+
+        // Quick temp +/- buttons
+        card.querySelectorAll('.temp-step-btn').forEach(btn => {
+          const direction = btn.dataset.action === 'up' ? 1 : -1;
+          btn.disabled = !isPowerOn || CapabilityEngine.nextControlTemperature(ac, ac.state?.temperature, direction) === null;
+        });
+
+        // Mode, fan, swing
+        const modeVal = card.querySelector('.ac-mode-val');
+        if (modeVal) modeVal.textContent = (ac.state?.mode || '—').toUpperCase();
+        const fanVal = card.querySelector('.ac-fan-val');
+        if (fanVal) {
+          fanVal.textContent = (ac.state?.fan || '—').toUpperCase() + (ac.state?.turbo === true ? ' · TURBO' : '');
+          fanVal.title = fanVal.textContent;
+        }
+        const swingVal = card.querySelector('.ac-swing-val');
+        if (swingVal) swingVal.textContent = ac.state?.swing === true ? 'ON' : ac.state?.swing === false ? 'OFF' : '—';
+
+        // Protocol
+        const protoVal = card.querySelector('.ac-proto-val');
+        if (protoVal) protoVal.textContent = ac.protocol_name || ac.protocol || 'Unspecified';
+
+        // Active / Standby badge
+        const statusBadge = card.querySelector('.ac-status-badge');
+        if (statusBadge) {
+          statusBadge.className = `ac-status-badge shrink-0 inline-flex items-center gap-1 font-semibold ${isPowerOn ? 'text-emerald-400' : 'text-slate-400'}`;
+          statusBadge.innerHTML = `
+            <span class="w-1.5 h-1.5 rounded-full ${isPowerOn ? 'bg-emerald-400' : 'bg-slate-500'}"></span>
+            ${getDashboardPowerState(ac).label}
+          `;
+        }
+
+        // Node connection indicator
+        const nodeDot = card.querySelector('.ac-node-status-dot');
+        if (nodeDot) {
+          nodeDot.className = `ac-node-status-dot w-2 h-2 rounded-full shrink-0 ${isNodeOnline ? 'bg-emerald-400' : 'bg-rose-500'}`;
+        }
+        const nodeNameEl = card.querySelector('.ac-node-name');
+        if (nodeNameEl) {
+          nodeNameEl.textContent = controllerName;
+          nodeNameEl.title = controllerName;
+          if (nodeNameEl.parentElement) nodeNameEl.parentElement.title = controllerName;
+        }
+      }
+
+      function wireCardListeners(container) {
+        // Wire Power Toggle Buttons with Optimistic Feedback
+        container.querySelectorAll('.power-toggle-btn').forEach(btn => {
+          btn.onclick = async (e) => {
+            e.stopPropagation();
+            const devId = btn.getAttribute('data-device-id');
+            const curPower = btn.getAttribute('data-current-power') === '1';
+            const nextPower = !curPower;
+            const ac = AirconProfileManager.getById(devId);
+            const node = ac ? NodeService.getNode(ac.node_id) : null;
+            const card = document.getElementById(`ac-card-${devId}`);
+
+            btn.disabled = true;
+
+            // 1. Instant optimistic update (0ms, zero flicker)
+            if (card && ac) {
+              const optimisticAc = { ...ac, state: { ...ac.state, power: nextPower } };
+              updateSingleCardDom(card, optimisticAc, node);
+            }
+
+            try {
+              // 2. Dispatch command via system bus
+              const res = await CommandManager.dispatch({
+                device_id: devId,
+                command: 'POWER',
+                value: nextPower
+              });
+
+              btn.disabled = false;
+
+              if (!res.success) {
+                // Revert on error
+                if (card && ac) {
+                  updateSingleCardDom(card, ac, node);
+                }
+                alert(res.message);
+              }
+            } catch (err) {
+              btn.disabled = false;
+              if (card && ac) {
+                updateSingleCardDom(card, ac, node);
+              }
+              alert(err.message || 'Failed to toggle power');
+            }
+          };
+        });
+
+        // Wire Temperature Quick Adjustment with Optimistic Feedback (zero flicker & no glitch)
+        container.querySelectorAll('.temp-step-btn').forEach(btn => {
+          btn.onclick = async (e) => {
+            e.stopPropagation();
+            const devId = btn.getAttribute('data-device-id');
+            const action = btn.getAttribute('data-action');
+            const ac = AirconProfileManager.getById(devId);
+            if (!ac || !ac.state?.power) return;
+
+            const prevTemp = Number(ac.state.temperature);
+            const newTemp = CapabilityEngine.nextControlTemperature(ac, ac.state.temperature, action === 'up' ? 1 : -1);
+            if (!CapabilityEngine.validateControlTemperature(ac, newTemp)) return;
+
+            const card = document.getElementById(`ac-card-${devId}`);
+
+            // 1. Instantly update in-memory state so any sync/render sees the new temperature immediately
+            ac.state.temperature = newTemp;
+            try {
+              const aircons = AirconProfileManager.getAll();
+              const target = aircons.find(a => a.device_id === devId);
+              if (target && target.state) target.state.temperature = newTemp;
+            } catch (_) {}
+
+            // 2. Instant zero-flicker DOM update
+            if (card) {
+              const tempVal = card.querySelector('.target-temp-val');
+              if (tempVal) {
+                tempVal.textContent = CapabilityEngine.formatTemperature(newTemp);
+              }
+            }
+
+            try {
+              const res = await CommandManager.dispatch({
+                device_id: devId,
+                command: 'TEMP',
+                value: newTemp
+              });
+
+              if (!res.success) {
+                // Revert on error
+                ac.state.temperature = prevTemp;
+                try {
+                  const aircons = AirconProfileManager.getAll();
+                  const target = aircons.find(a => a.device_id === devId);
+                  if (target && target.state) target.state.temperature = prevTemp;
+                } catch (_) {}
+                if (card) {
+                  const tempVal = card.querySelector('.target-temp-val');
+                  if (tempVal) tempVal.textContent = prevTemp;
+                }
+                alert(res.message);
+              }
+            } catch (err) {
+              ac.state.temperature = prevTemp;
+              try {
+                const aircons = AirconProfileManager.getAll();
+                const target = aircons.find(a => a.device_id === devId);
+                if (target && target.state) target.state.temperature = prevTemp;
+              } catch (_) {}
+              if (card) {
+                const tempVal = card.querySelector('.target-temp-val');
+                if (tempVal) tempVal.textContent = prevTemp;
+              }
+              alert(err.message || 'Failed to adjust temperature');
+            }
+          };
+        });
+      }
+
+      function getDashboardPowerState(ac) {
+        const observation = window.EcoTrackAirconState.describeAirconState(ac.control_snapshot);
+        const online = String(ac.status).toLowerCase() === 'online' &&
+          !!ac.node_id && NodeService.isNodeOnline(ac.node_id);
+        const power = online && observation.confirmed ? observation.power : null;
+        return {power,label:power === true ? 'Active' : power === false ? 'Standby' : 'Power unconfirmed'};
+      }
+
+      function renderDashboard() {
+        let aircons = AirconProfileManager.getAll();
+        if (typeof AirconProfileManager.deduplicateAircons === 'function') {
+          aircons = AirconProfileManager.deduplicateAircons(aircons);
+        }
+        const nodes = NodeService.getNodes();
+        const logs = CentralLogService.getLogs(8);
+
+        // Update Control KPIs
+        const total = aircons.length;
+        const onlineCount = aircons.filter(a => a.status === 'online' && a.node_id && NodeService.isNodeOnline(a.node_id)).length;
+        const powerStates = aircons.map(getDashboardPowerState);
+        const activePowerCount = powerStates.filter(state => state.power === true).length;
+        const standbyCount = powerStates.filter(state => state.power === false).length;
+        const unknownPowerCount = total - activePowerCount - standbyCount;
+        const onlineNodesCount = nodes.filter(n => n.status.toLowerCase() === 'connected' || n.status.toLowerCase() === 'online').length;
+        const commandsSent = logs.length;
+        const commandsSuccess = logs.filter(l => l.result === 'SUCCESS').length;
+        const commandsFailed = logs.filter(l => l.result === 'FAILED' || l.result === 'OFFLINE').length;
+
+        document.getElementById('kpiTotalUnits').textContent = total;
+        document.getElementById('kpiOnlineUnits').textContent = onlineCount;
+        document.getElementById('kpiActivePower').textContent = total && unknownPowerCount === total ? '—' : activePowerCount;
+        document.getElementById('kpiStandby').textContent = total && unknownPowerCount === total ? '—' : standbyCount;
+        document.getElementById('kpiActivePowerCaption').textContent = unknownPowerCount ? `${unknownPowerCount} awaiting feedback` : 'Units with confirmed power ON';
+        document.getElementById('kpiStandbyCaption').textContent = unknownPowerCount ? `${unknownPowerCount} awaiting feedback` : 'Units with confirmed power OFF';
+        document.getElementById('kpiNodesOnline').textContent = `${onlineNodesCount} / ${nodes.length}`;
+        document.getElementById('kpiCommandsSent').textContent = commandsSent;
+        document.getElementById('kpiCommandsSuccess').textContent = commandsSuccess;
+        document.getElementById('kpiCommandsFailed').textContent = commandsFailed;
+
+        // Render Aircon Cards (In-Place DOM Diffing to eliminate flicker)
+        const grid = document.getElementById('airconCardsGrid');
+        if (!grid) return;
+
+        const filtered = aircons.filter(a => {
+          if (currentFilter === 'active') return getDashboardPowerState(a).power === true;
+          if (currentFilter === 'standby') return getDashboardPowerState(a).power === false;
+          return true;
+        });
+
+        const existingCards = Array.from(grid.children).filter(c => c.hasAttribute('data-device-id'));
+        const existingIds = existingCards.map(c => c.getAttribute('data-device-id'));
+        const filteredIds = filtered.map(a => a.device_id);
+        const canUpdateInPlace = existingIds.length > 0 && 
+                                 existingIds.length === filteredIds.length && 
+                                 existingIds.every((id, idx) => id === filteredIds[idx]);
+
+        if (canUpdateInPlace) {
+          filtered.forEach(ac => {
+            const card = document.getElementById(`ac-card-${ac.device_id}`);
+            const node = NodeService.getNode(ac.node_id);
+            updateSingleCardDom(card, ac, node);
+          });
+        } else {
+          grid.innerHTML = '';
+
+          if (filtered.length === 0) {
+            const isZeroTotal = aircons.length === 0;
+            const emptyCard = document.createElement('div');
+            emptyCard.className = 'col-span-full py-12 px-6 rounded-2xl border-2 border-dashed border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/[0.02] backdrop-blur-sm flex flex-col items-center justify-center text-center my-4';
+            emptyCard.innerHTML = isZeroTotal ? `
+              <div class="w-16 h-16 rounded-2xl bg-teal-500/10 dark:bg-teal-500/15 text-teal-600 dark:text-teal-400 border border-teal-500/30 flex items-center justify-center mb-4 shadow-sm">
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6z"/>
+                  <path d="M4 10h16"/>
+                  <path d="M7 16v2a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-2"/>
+                  <line x1="9" y1="16" x2="9" y2="18"/>
+                  <line x1="15" y1="16" x2="15" y2="18"/>
+                </svg>
+              </div>
+              <h3 class="eco-primary-text text-base font-bold text-slate-800 dark:text-white mb-1.5">No Air Conditioning Units Registered</h3>
+              <p class="text-xs text-slate-500 dark:text-gray-400 max-w-md mb-5 leading-relaxed">
+                Connect and register your campus air conditioners to monitor real-time telemetry, manage thermostat setpoints, and view energy analytics.
+              </p>
+              <a href="nodes.html" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/20 inline-flex items-center gap-2 transition-all">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Register AC Controller Device &rarr;
+              </a>
+            ` : `
+              <div class="w-16 h-16 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center mb-4 shadow-sm">
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  <line x1="8" y1="11" x2="14" y2="11"/>
+                </svg>
+              </div>
+              <h3 class="eco-primary-text text-base font-bold text-slate-800 dark:text-white mb-1.5">No Matching Air Conditioning Units</h3>
+              <p class="text-xs text-slate-500 dark:text-gray-400 max-w-md mb-5 leading-relaxed">
+                No units match the selected status filter (${(currentFilter || 'all').toUpperCase()}). Switch back to view all units or check other filters.
+              </p>
+              <button type="button" onclick="document.querySelector('.filter-pill[data-filter=\\'all\\']')?.click()" class="px-5 py-2.5 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 text-teal-600 dark:text-teal-400 border border-teal-500/30 font-bold text-xs transition-all cursor-pointer">
+                Reset Status Filter
+              </button>
+            `;
+            grid.appendChild(emptyCard);
+          } else {
+            filtered.forEach(ac => {
+            const isPowerOn = ac.state && ac.state.power;
+            const node = NodeService.getNode(ac.node_id);
+            const isNodeOnline = node ? (node.status.toLowerCase() === 'connected' || node.status.toLowerCase() === 'online') : false;
+
+            const card = document.createElement('div');
+            card.id = `ac-card-${ac.device_id}`;
+            card.setAttribute('data-device-id', ac.device_id);
+            card.className = `glass-card p-4 rounded-2xl border transition-all duration-300 flex flex-col justify-between overflow-hidden min-w-0 ${
+              isPowerOn ? 'border-teal-500/35 shadow-lg shadow-teal-950/20' : 'border-white/5 opacity-85'
+            }`;
+
+            card.innerHTML = `
+              <div class="min-w-0">
+                <!-- TOP ROW: LOCATION + POWER TOGGLE -->
+                <div class="flex items-start justify-between gap-3 mb-2.5">
+                  <div class="min-w-0 flex-1">
+                    <h3 class="eco-primary-text font-bold text-sm md:text-base text-slate-800 dark:text-white truncate"></h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5"></p>
+                  </div>
+                  <button class="power-toggle-btn shrink-0 p-2 rounded-xl transition-all border ${
+                    isPowerOn 
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30' 
+                      : 'bg-white/5 text-gray-400 border-white/10 hover:text-white'
+                  }" data-device-id="${ac.device_id}" data-current-power="${isPowerOn ? '1' : '0'}" title="Toggle Power">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2">
+                      <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                      <line x1="12" y1="2" x2="12" y2="12"></line>
+                    </svg>
+                  </button>
+                </div>
+
+                <!-- MIDDLE: TEMPERATURE READOUT & CONTROLS -->
+                <div class="bg-slate-50 dark:bg-black/20 rounded-xl p-3 my-2.5 border border-slate-200/80 dark:border-white/5 flex items-center justify-between">
+                  <div>
+                    <span class="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400 tracking-wider">Target Setpoint</span>
+                    <div class="flex items-baseline gap-1 mt-0.5">
+                      <span class="target-temp-val text-3xl font-black font-mono tracking-tight tabular-nums ${isPowerOn ? 'text-cyan-600 dark:text-cyan-400' : 'text-gray-400 dark:text-gray-500'}">${CapabilityEngine.formatTemperature(ac.state?.temperature)}</span>
+                      <span class="text-sm font-bold text-gray-400">°C</span>
+                    </div>
+                  </div>
+
+                  <!-- QUICK TEMP STEP ADJUSTMENT -->
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    <button class="temp-step-btn w-8 h-8 rounded-lg bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-800 dark:text-gray-200 disabled:opacity-30 disabled:cursor-not-allowed text-sm font-bold shadow-xs active:scale-95 transition-all cursor-pointer" 
+                      data-device-id="${ac.device_id}" data-action="down" ${!isPowerOn || CapabilityEngine.nextControlTemperature(ac, ac.state?.temperature, -1) === null ? 'disabled' : ''}>-</button>
+                    <button class="temp-step-btn w-8 h-8 rounded-lg bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-800 dark:text-gray-200 disabled:opacity-30 disabled:cursor-not-allowed text-sm font-bold shadow-xs active:scale-95 transition-all cursor-pointer" 
+                      data-device-id="${ac.device_id}" data-action="up" ${!isPowerOn || CapabilityEngine.nextControlTemperature(ac, ac.state?.temperature, 1) === null ? 'disabled' : ''}>+</button>
+                  </div>
+                </div>
+
+                <!-- CONTROL STATUS & CONFIGURATION -->
+                <div class="grid grid-cols-3 gap-1.5 text-center text-xs mb-3">
+                  <div class="p-2 rounded-lg bg-white/5 border border-white/5 min-w-0">
+                    <span class="text-[9px] text-gray-400 uppercase tracking-wider block truncate">Mode</span>
+                    <span class="ac-mode-val font-bold text-cyan-300 text-[11px] truncate block">${(ac.state?.mode || '—').toUpperCase()}</span>
+                  </div>
+                  <div class="p-2 rounded-lg bg-white/5 border border-white/5 min-w-0">
+                    <span class="text-[9px] text-gray-400 uppercase tracking-wider block truncate">Fan Speed</span>
+                    <span class="ac-fan-val font-bold text-teal-300 text-[11px] truncate block">${(ac.state?.fan || '—').toUpperCase()}${ac.state?.turbo === true ? ' · TURBO' : ''}</span>
+                  </div>
+                  <div class="p-2 rounded-lg bg-white/5 border border-white/5 min-w-0">
+                    <span class="text-[9px] text-gray-400 uppercase tracking-wider block truncate">Swing</span>
+                    <span class="ac-swing-val font-bold text-emerald-300 text-[11px] truncate block">${ac.state?.swing === true ? 'ON' : ac.state?.swing === false ? 'OFF' : '—'}</span>
+                  </div>
+                </div>
+
+                <!-- PROTOCOL & STATUS BAR -->
+                <div class="flex items-center justify-between text-[11px] text-gray-400 mb-3 px-1">
+                  <span class="truncate min-w-0 mr-2">Protocol: <strong class="ac-proto-val text-gray-200">${ac.protocol_name || ac.protocol || 'Unspecified'}</strong></span>
+                  <span class="ac-status-badge shrink-0 inline-flex items-center gap-1 font-semibold ${isPowerOn ? 'text-emerald-400' : 'text-slate-400'}">
+                    <span class="w-1.5 h-1.5 rounded-full ${isPowerOn ? 'bg-emerald-400' : 'bg-slate-500'}"></span>
+                    ${getDashboardPowerState(ac).label}
+                  </span>
+                </div>
+              </div>
+
+              <!-- FOOTER: CONTROLLER DEVICE STATUS & CONTROL LINK -->
+              <div class="pt-2.5 border-t border-white/5 flex items-center justify-between text-xs">
+                <div class="flex items-center gap-1.5 text-gray-400 min-w-0 flex-1 mr-2">
+                  <span class="ac-node-status-dot w-2 h-2 rounded-full shrink-0 ${isNodeOnline ? 'bg-emerald-400' : 'bg-rose-500'}"></span>
+                  <span class="ac-node-name text-[11px] font-medium truncate"></span>
+                </div>
+
+                <a href="control.html?id=${encodeURIComponent(ac.device_id)}" class="shrink-0 text-teal-400 hover:text-cyan-300 font-semibold text-xs flex items-center gap-1">
+                  Control &rarr;
+                </a>
+              </div>
+            `;
+
+            updateSingleCardDom(card, ac, node);
+            grid.appendChild(card);
+          });
+
+          wireCardListeners(grid);
+          }
+        }
+
+        // Render Command Audit Table
+        renderAuditTable();
+
+        // Render AC Controller Devices List
+        const nodesContainer = document.getElementById('nodesListContainer');
+        if (nodesContainer) {
+          nodesContainer.innerHTML = '';
+          if (nodes.length === 0) {
+            const emptyNodeItem = document.createElement('div');
+            emptyNodeItem.className = 'p-5 rounded-2xl bg-white/50 dark:bg-white/[0.02] border-2 border-dashed border-slate-200 dark:border-white/10 flex flex-col items-center text-center justify-center';
+            emptyNodeItem.innerHTML = `
+              <div class="w-12 h-12 rounded-xl bg-teal-500/10 dark:bg-teal-500/15 text-teal-600 dark:text-teal-400 border border-teal-500/30 flex items-center justify-center mb-3 shadow-xs">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="4" y="4" width="16" height="16" rx="2"/>
+                  <rect x="9" y="9" width="6" height="6"/>
+                  <line x1="9" y1="1" x2="9" y2="4"/>
+                  <line x1="15" y1="1" x2="15" y2="4"/>
+                  <line x1="9" y1="20" x2="9" y2="23"/>
+                  <line x1="15" y1="20" x2="15" y2="23"/>
+                  <line x1="20" y1="9" x2="23" y2="9"/>
+                  <line x1="20" y1="14" x2="23" y2="14"/>
+                  <line x1="1" y1="9" x2="4" y2="9"/>
+                  <line x1="1" y1="14" x2="4" y2="14"/>
+                </svg>
+              </div>
+              <h4 class="eco-primary-text font-bold text-xs text-slate-800 dark:text-white mb-1">No Controller Devices</h4>
+              <p class="text-[11px] text-slate-500 dark:text-gray-400 mb-3 leading-relaxed">
+                ESP32 IoT hardware controllers will appear here once connected via WiFi.
+              </p>
+              <a href="nodes.html" class="px-3.5 py-1.5 rounded-lg bg-teal-500/15 hover:bg-teal-500/25 text-teal-600 dark:text-teal-400 border border-teal-500/30 text-[11px] font-bold inline-flex items-center gap-1.5 transition-all">
+                Setup Nodes &rarr;
+              </a>
+            `;
+            nodesContainer.appendChild(emptyNodeItem);
+          } else {
+            nodes.forEach(n => {
+              const isOnline = n.status && (n.status.toLowerCase() === 'connected' || n.status.toLowerCase() === 'online');
+              const attachedACs = aircons.filter(a => a.node_id === n.node_id).length;
+              const ip = n.ip_address || '192.168.1.101';
+
+              const item = document.createElement('div');
+              item.className = 'p-3 rounded-2xl bg-white/80 dark:bg-white/5 border border-slate-200/80 dark:border-white/5 flex items-center justify-between gap-3 overflow-hidden min-w-0 transition-all hover:border-teal-500/30 shadow-xs';
+              item.innerHTML = `
+                <div class="flex items-center gap-3 min-w-0 flex-1 mr-1">
+                  <div class="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center transition-all ${
+                    isOnline 
+                      ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/80 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30 shadow-xs' 
+                      : 'bg-rose-50 text-rose-600 border border-rose-200/80 dark:bg-rose-500/15 dark:text-rose-400 dark:border-rose-500/30 shadow-xs'
+                  }">
+                    ${isOnline ? `
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12.55a11 11 0 0 1 14.08 0" stroke-linecap="round"/>
+                        <path d="M1.42 9a16 16 0 0 1 21.16 0" stroke-linecap="round"/>
+                        <path d="M8.53 16.11a6 6 0 0 1 6.95 0" stroke-linecap="round"/>
+                        <line x1="12" y1="20" x2="12.01" y2="20" stroke-linecap="round" stroke-width="2.5"/>
+                      </svg>
+                    ` : `
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="1" y1="1" x2="23" y2="23" stroke-linecap="round"/>
+                        <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" stroke-linecap="round"/>
+                        <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39" stroke-linecap="round"/>
+                        <path d="M10.71 5.05A16 16 0 0 1 22.56 9.28" stroke-linecap="round"/>
+                        <path d="M1.42 9A15.91 15.91 0 0 1 4.7 5.75" stroke-linecap="round"/>
+                        <path d="M8.53 16.11a6 6 0 0 1 6.95 0" stroke-linecap="round"/>
+                        <line x1="12" y1="20" x2="12.01" y2="20" stroke-linecap="round" stroke-width="2.5"/>
+                      </svg>
+                    `}
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <h4 class="eco-primary-text font-bold text-xs text-slate-800 dark:text-white truncate" title="${n.name}">${n.name}</h4>
+                    <p class="text-[10px] text-slate-500 dark:text-gray-400 truncate mt-0.5" title="${n.node_id} • ${n.hardware || 'AC Controller Device'} • ${ip}">${n.node_id} &bull; ${n.hardware || 'AC Controller Device (WiFi + IR)'} &bull; ${ip}</p>
+                  </div>
+                </div>
+                <div class="text-right shrink-0">
+                  <span class="inline-flex items-center gap-1.5 text-xs font-bold ${isOnline ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">
+                    <span class="w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}"></span>
+                    ${isOnline ? 'Connected' : 'Offline'}
+                  </span>
+                  <p class="text-[10px] text-slate-400 dark:text-gray-400 mt-0.5">${attachedACs} aircon${attachedACs !== 1 ? 's' : ''} linked</p>
+                </div>
+              `;
+              nodesContainer.appendChild(item);
+            });
+          }
+        }
+      }
+
+      // Filter pills listener
+      document.querySelectorAll('.filter-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          document.querySelectorAll('.filter-pill').forEach(p => {
+            p.classList.remove('active', 'bg-teal-500/20', 'text-teal-300', 'border-teal-500/40');
+            p.classList.add('bg-white/5', 'text-gray-400', 'border-transparent');
+          });
+          pill.classList.add('active', 'bg-teal-500/20', 'text-teal-300', 'border-teal-500/40');
+          pill.classList.remove('bg-white/5', 'text-gray-400', 'border-transparent');
+          currentFilter = pill.getAttribute('data-filter');
+          renderDashboard();
+        });
+      });
+
+      // Data fetching via EcoDataBus with Stale-While-Revalidate caching
+      async function loadDashboardWithSWR(forceRefresh = false) {
+        if (window.EcoDataBus) {
+          // If no cached data and grid is currently empty, render skeletons once
+          const grid = document.getElementById('airconCardsGrid');
+          const hasRealCards = grid && grid.children.length > 0 && !grid.querySelector('.eco-skeleton');
+          if (!hasRealCards && !window.EcoDataBus.getCached('dashboard:data') && window.EcoTrackSkeletons) {
+            window.EcoTrackSkeletons.renderAirconGridSkeleton('airconCardsGrid', { count: 4 });
+            window.EcoTrackSkeletons.renderTableSkeleton('commandAuditTableBody', { rows: 4, cols: 5, colWidths: ['w-20', 'w-24', 'w-24', 'w-40', 'w-20'] });
+            window.EcoTrackSkeletons.renderRoomListSkeleton('nodesListContainer', { count: 3 });
+          }
+
+          await window.EcoDataBus.query('dashboard:data', async () => {
+            return {
+              aircons: AirconProfileManager.getAll(),
+              nodes: NodeService.getNodes(),
+              logs: CentralLogService.getLogs(8)
+            };
+          }, { forceRefresh });
+        } else {
+          renderDashboard();
+        }
+      }
+
+      // EcoDataBus event subscriber
+      if (window.EcoDataBus) {
+        window.EcoDataBus.onQuery('dashboard:data', {
+          onStart: ({ isBackground }) => {
+            const grid = document.getElementById('airconCardsGrid');
+            const hasRealCards = grid && grid.children.length > 0 && !grid.querySelector('.eco-skeleton');
+            // NEVER wipe cards with skeletons if real cards are already rendered!
+            if (!hasRealCards && !isBackground && window.EcoTrackSkeletons) {
+              window.EcoTrackSkeletons.renderAirconGridSkeleton('airconCardsGrid', { count: 4 });
+              window.EcoTrackSkeletons.renderTableSkeleton('commandAuditTableBody', { rows: 4, cols: 5, colWidths: ['w-20', 'w-24', 'w-24', 'w-40', 'w-20'] });
+              window.EcoTrackSkeletons.renderRoomListSkeleton('nodesListContainer', { count: 3 });
+            }
+          },
+          onSuccess: () => {
+            const grid = document.getElementById('airconCardsGrid');
+            const hadSkeletons = grid && grid.querySelector('.eco-skeleton');
+            renderDashboard();
+            // ONLY apply fade-in transition when replacing initial loading skeletons
+            if (hadSkeletons && grid) {
+              grid.classList.remove('eco-content-fade-in');
+              void grid.offsetWidth;
+              grid.classList.add('eco-content-fade-in');
+            }
+          }
+        });
+      }
+
+      // --- AUDIT MODAL CONTROLLER & CARD TABLE REFINEMENT ---
+      let isAuditModalOpen = false;
+      const getAuditModal = () => document.getElementById('commandAuditModal');
+      const openAuditModalBtn = document.getElementById('openAuditModalBtn');
+      const closeAuditModalXBtn = document.getElementById('closeAuditModalXBtn');
+      const closeAuditModalBottomBtn = document.getElementById('closeAuditModalBottomBtn');
+      const modalSearchInput = document.getElementById('modalAuditSearchInput');
+      const modalStatusFilter = document.getElementById('modalAuditStatusFilter');
+      const modalRefreshBtn = document.getElementById('modalAuditRefreshBtn');
+      const modalClearBtn = document.getElementById('modalAuditClearBtn');
+
+      function formatStatusBadge(result) {
+        const res = (result || '').toUpperCase();
+        if (res === 'SUCCESS') {
+          return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">SUCCESS</span>`;
+        } else if (res === 'PENDING' || res === 'TRANSMITTING') {
+          return `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>PENDING</span>`;
+        } else if (res === 'FAILED' || res === 'OFFLINE') {
+          return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">${res}</span>`;
+        } else if (res === 'WARNING') {
+          return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">WARNING</span>`;
+        }
+        return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-gray-400 border border-slate-200 dark:border-white/10">${res || 'INFO'}</span>`;
+      }
+
+      function renderAuditTable() {
+        const logs = CentralLogService.getLogs(6);
+        const allLogs = CentralLogService.getLogs(500);
+        const commandsSent = allLogs.length;
+        const commandsSuccess = allLogs.filter(l => l.result === 'SUCCESS').length;
+        const commandsFailed = allLogs.filter(l => l.result === 'FAILED' || l.result === 'OFFLINE').length;
+
+        const sentEl = document.getElementById('kpiCommandsSent');
+        if (sentEl) sentEl.textContent = commandsSent;
+        const succEl = document.getElementById('kpiCommandsSuccess');
+        if (succEl) succEl.textContent = commandsSuccess;
+        const failEl = document.getElementById('kpiCommandsFailed');
+        if (failEl) failEl.textContent = commandsFailed;
+
+        const auditBody = document.getElementById('commandAuditTableBody');
+        if (!auditBody) return;
+        auditBody.innerHTML = '';
+        if (logs.length === 0) {
+          auditBody.innerHTML = `
+            <tr>
+              <td colspan="5" class="py-10 px-4 text-center">
+                <div class="flex flex-col items-center justify-center">
+                  <div class="w-12 h-12 rounded-xl bg-teal-500/10 dark:bg-teal-500/15 text-teal-600 dark:text-teal-400 border border-teal-500/30 flex items-center justify-center mb-2.5 shadow-xs">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="4 17 10 11 4 5"/>
+                      <line x1="12" y1="19" x2="20" y2="19"/>
+                    </svg>
+                  </div>
+                  <p class="font-bold text-xs text-slate-800 dark:text-gray-200 mb-1">No Hardware Command Dispatches</p>
+                  <p class="text-[11px] text-slate-500 dark:text-gray-400 max-w-sm">IR control signals, setpoints, and power operations will be logged here in real-time as they are transmitted.</p>
+                </div>
+              </td>
+            </tr>
+          `;
+        } else {
+          logs.forEach(l => {
+            const timeStr = new Date(l.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const badgeHtml = formatStatusBadge(l.result);
+
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors';
+            row.innerHTML = `
+              <td class="py-2.5 px-2 text-slate-400 dark:text-gray-400 font-mono text-[11px] whitespace-nowrap">${timeStr}</td>
+              <td class="py-2.5 px-2 text-slate-800 dark:text-cyan-300 font-bold font-mono">${l.device_id}</td>
+              <td class="py-2.5 px-2 text-slate-500 dark:text-gray-400 font-mono text-[11px]">${l.node_id}</td>
+              <td class="py-2.5 px-2 text-slate-700 dark:text-gray-200">
+                <span class="font-bold text-slate-800 dark:text-white block">${l.event}</span>
+                <span class="text-[10px] text-slate-500 dark:text-gray-400 line-clamp-1">${l.details || ''}</span>
+              </td>
+              <td class="py-2.5 px-2 text-right whitespace-nowrap">${badgeHtml}</td>
+            `;
+            auditBody.appendChild(row);
+          });
+        }
+      }
+
+      function renderModalAuditTable() {
+        const modalBody = document.getElementById('modalAuditTableBody');
+        if (!modalBody) return;
+        modalBody.innerHTML = '';
+
+        const allLogs = CentralLogService.getLogs(500);
+        const total = allLogs.length;
+        const success = allLogs.filter(l => l.result === 'SUCCESS').length;
+        const pending = allLogs.filter(l => l.result === 'PENDING' || l.result === 'TRANSMITTING').length;
+        const failed = allLogs.filter(l => l.result === 'FAILED' || l.result === 'OFFLINE').length;
+
+        const totalEl = document.getElementById('modalAuditTotal');
+        if (totalEl) totalEl.textContent = total;
+        const succEl = document.getElementById('modalAuditSuccess');
+        if (succEl) succEl.textContent = success;
+        const pendEl = document.getElementById('modalAuditPending');
+        if (pendEl) pendEl.textContent = pending;
+        const failEl = document.getElementById('modalAuditFailed');
+        if (failEl) failEl.textContent = failed;
+
+        const query = (modalSearchInput?.value || '').toLowerCase().trim();
+        const statusFilter = modalStatusFilter?.value || 'ALL';
+
+        const filtered = allLogs.filter(l => {
+          if (statusFilter !== 'ALL') {
+            const res = (l.result || '').toUpperCase();
+            if (statusFilter === 'SUCCESS' && res !== 'SUCCESS') return false;
+            if (statusFilter === 'PENDING' && (res !== 'PENDING' && res !== 'TRANSMITTING')) return false;
+            if (statusFilter === 'FAILED' && (res !== 'FAILED' && res !== 'OFFLINE')) return false;
+            if (statusFilter === 'WARNING' && res !== 'WARNING') return false;
+          }
+
+          if (query) {
+            const target = `${l.device_id || ''} ${l.node_id || ''} ${l.event || ''} ${l.details || ''} ${l.result || ''}`.toLowerCase();
+            if (!target.includes(query)) return false;
+          }
+          return true;
+        });
+
+        const totalFiltered = filtered.length;
+        const totalPages = Math.max(1, Math.ceil(totalFiltered / MODAL_AUDIT_PAGE_SIZE));
+        if (modalAuditCurrentPage > totalPages) modalAuditCurrentPage = totalPages;
+        if (modalAuditCurrentPage < 1) modalAuditCurrentPage = 1;
+
+        const startIdx = (modalAuditCurrentPage - 1) * MODAL_AUDIT_PAGE_SIZE;
+        const endIdx = Math.min(startIdx + MODAL_AUDIT_PAGE_SIZE, totalFiltered);
+        const pageItems = filtered.slice(startIdx, endIdx);
+
+        const pageInfo = document.getElementById('modalAuditPageInfo');
+        const prevBtn = document.getElementById('modalAuditPrevBtn');
+        const nextBtn = document.getElementById('modalAuditNextBtn');
+        const pagesText = document.getElementById('modalAuditPagesText');
+
+        if (pageInfo) {
+          pageInfo.textContent = totalFiltered === 0
+            ? 'Showing 0 to 0 of 0 audit records'
+            : `Showing ${startIdx + 1} to ${endIdx} of ${totalFiltered} audit records`;
+        }
+        if (pagesText) pagesText.textContent = `Page ${modalAuditCurrentPage} of ${totalPages}`;
+        if (prevBtn) prevBtn.disabled = modalAuditCurrentPage <= 1;
+        if (nextBtn) nextBtn.disabled = modalAuditCurrentPage >= totalPages;
+
+        if (filtered.length === 0) {
+          modalBody.innerHTML = `
+            <tr>
+              <td colspan="5" class="py-12 text-center text-slate-400 dark:text-gray-500">
+                <div class="flex flex-col items-center justify-center gap-2">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" class="opacity-40"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <p class="font-semibold text-xs">No matching Command & IR audit records found</p>
+                  <p class="text-[11px] text-slate-400">Try adjusting your search query or status filter</p>
+                </div>
+              </td>
+            </tr>`;
+          return;
+        }
+
+        pageItems.forEach(l => {
+          const d = new Date(l.timestamp);
+          const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          const dateStr = d.toLocaleDateString();
+          const badgeHtml = formatStatusBadge(l.result);
+
+          const row = document.createElement('tr');
+          row.className = 'hover:bg-slate-100/60 dark:hover:bg-white/[0.03] transition-colors';
+          row.innerHTML = `
+            <td class="py-2.5 px-3 whitespace-nowrap">
+              <span class="font-mono text-xs font-bold text-slate-700 dark:text-gray-200 block">${timeStr}</span>
+              <span class="text-[10px] text-slate-400 dark:text-gray-500">${dateStr}</span>
+            </td>
+            <td class="py-2.5 px-3 whitespace-nowrap">
+              <span class="inline-block px-2 py-0.5 rounded-md font-mono text-xs font-bold text-cyan-700 dark:text-cyan-300 bg-cyan-500/10 border border-cyan-500/20">${l.device_id}</span>
+            </td>
+            <td class="py-2.5 px-3 whitespace-nowrap">
+              <span class="font-mono text-xs font-semibold text-slate-600 dark:text-gray-300">${l.node_id}</span>
+            </td>
+            <td class="py-2.5 px-3">
+              <span class="font-bold text-slate-900 dark:text-white text-xs">${l.event}</span>
+              <span class="text-[11px] text-slate-500 dark:text-gray-400 block mt-0.5 font-mono">${l.details || ''}</span>
+            </td>
+            <td class="py-2.5 px-3 text-right whitespace-nowrap">${badgeHtml}</td>
+          `;
+          modalBody.appendChild(row);
+        });
+      }
+
+      function openAuditModal() {
+        const modal = getAuditModal();
+        if (!modal) return;
+        isAuditModalOpen = true;
+        modalAuditCurrentPage = 1;
+        renderModalAuditTable();
+        modal.classList.remove('opacity-0', 'pointer-events-none');
+        modal.classList.add('opacity-100', 'pointer-events-auto');
+        const card = modal.querySelector('.relative.w-full');
+        if (card) {
+          card.classList.remove('scale-95');
+          card.classList.add('scale-100');
+        }
+      }
+
+      function closeAuditModal() {
+        const modal = getAuditModal();
+        if (!modal) return;
+        isAuditModalOpen = false;
+        modal.classList.remove('opacity-100', 'pointer-events-auto');
+        modal.classList.add('opacity-0', 'pointer-events-none');
+        const card = modal.querySelector('.relative.w-full');
+        if (card) {
+          card.classList.remove('scale-100');
+          card.classList.add('scale-95');
+        }
+      }
+
+            let isClearConfirmOpen = false;
+      const getClearConfirmModal = () => document.getElementById('clearAuditConfirmModal');
+
+      function openClearConfirmModal() {
+        const modal = getClearConfirmModal();
+        if (!modal) return;
+        const allLogs = CentralLogService.getLogs(500);
+        const count = allLogs ? allLogs.length : 0;
+        const countEl = document.getElementById('clearModalRecordCount');
+        const confirmBtn = document.getElementById('confirmClearExecuteBtn');
+        const subMsg = document.getElementById('clearModalSubMsg');
+
+        if (countEl) countEl.textContent = `${count} record${count === 1 ? '' : 's'}`;
+        if (count === 0) {
+          if (confirmBtn) confirmBtn.disabled = true;
+          if (subMsg) subMsg.textContent = 'Audit trail buffer is currently empty. There are no records to clear.';
+        } else {
+          if (confirmBtn) confirmBtn.disabled = false;
+          if (subMsg) subMsg.textContent = 'Are you sure you want to clear all command and IR audit trail records from the buffer?';
+        }
+
+        isClearConfirmOpen = true;
+        modal.classList.remove('opacity-0', 'pointer-events-none');
+        const card = modal.querySelector('.relative.w-full');
+        if (card) {
+          card.classList.remove('scale-95');
+          card.classList.add('scale-100');
+        }
+      }
+
+      function closeClearConfirmModal() {
+        const modal = getClearConfirmModal();
+        if (!modal) return;
+        isClearConfirmOpen = false;
+        modal.classList.add('opacity-0', 'pointer-events-none');
+        const card = modal.querySelector('.relative.w-full');
+        if (card) {
+          card.classList.remove('scale-100');
+          card.classList.add('scale-95');
+        }
+      }
+
+      function triggerAuditRefresh() {
+        const btn = document.getElementById('modalAuditRefreshBtn');
+        const icon = btn ? btn.querySelector('svg') : null;
+        if (icon) icon.classList.add('animate-spin');
+        if (btn) btn.disabled = true;
+
+        modalAuditCurrentPage = 1;
+        renderModalAuditTable();
+        if (typeof renderAuditTable === 'function') {
+          renderAuditTable();
+        }
+        if (typeof syncWithDatabase === 'function') {
+          syncWithDatabase().catch(() => {});
+        }
+        if (typeof loadDashboardWithSWR === 'function') {
+          loadDashboardWithSWR(true).catch(() => {});
+        }
+
+        setTimeout(() => {
+          if (icon) icon.classList.remove('animate-spin');
+          if (btn) btn.disabled = false;
+        }, 400);
+      }
+
+      function executeClearAuditLogs() {
+        if (typeof CentralLogService.clearLogs === 'function') {
+          CentralLogService.clearLogs();
+        } else {
+          try {
+            localStorage.setItem('ecoTrack_system_logs', JSON.stringify([]));
+          } catch (_) {}
+        }
+        modalAuditCurrentPage = 1;
+        renderModalAuditTable();
+        if (typeof renderAuditTable === 'function') {
+          renderAuditTable();
+        }
+        closeClearConfirmModal();
+      }
+
+      if (openAuditModalBtn) openAuditModalBtn.addEventListener('click', (e) => { e.preventDefault(); openAuditModal(); });
+      if (closeAuditModalXBtn) closeAuditModalXBtn.addEventListener('click', (e) => { e.preventDefault(); closeAuditModal(); });
+      if (closeAuditModalBottomBtn) closeAuditModalBottomBtn.addEventListener('click', (e) => { e.preventDefault(); closeAuditModal(); });
+      if (modalClearBtn) modalClearBtn.addEventListener('click', (e) => { e.preventDefault(); openClearConfirmModal(); });
+
+      // Delegated document click handler ensures child elements (<svg>, <span>) never miss clicks
+      document.addEventListener('click', (e) => {
+        const openBtn = e.target.closest('#openAuditModalBtn');
+        if (openBtn) {
+          e.preventDefault();
+          openAuditModal();
+          return;
+        }
+        const closeBtn = e.target.closest('#closeAuditModalXBtn, #closeAuditModalBottomBtn');
+        if (closeBtn) {
+          e.preventDefault();
+          closeAuditModal();
+          return;
+        }
+        const refreshBtn = e.target.closest('#modalAuditRefreshBtn');
+        if (refreshBtn) {
+          e.preventDefault();
+          triggerAuditRefresh();
+          return;
+        }
+        const clrBtn = e.target.closest('#modalAuditClearBtn');
+        if (clrBtn) {
+          e.preventDefault();
+          openClearConfirmModal();
+          return;
+        }
+        const closeConfirmBtn = e.target.closest('#closeClearConfirmXBtn, #cancelClearConfirmBtn');
+        if (closeConfirmBtn) {
+          e.preventDefault();
+          closeClearConfirmModal();
+          return;
+        }
+        const executeClearBtn = e.target.closest('#confirmClearExecuteBtn');
+        if (executeClearBtn) {
+          e.preventDefault();
+          executeClearAuditLogs();
+          return;
+        }
+
+        const confirmModal = getClearConfirmModal();
+        if (confirmModal && isClearConfirmOpen && e.target === confirmModal) {
+          closeClearConfirmModal();
+          return;
+        }
+
+        const modal = getAuditModal();
+        if (modal && isAuditModalOpen && e.target === modal && !isClearConfirmOpen) {
+          closeAuditModal();
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (isClearConfirmOpen) {
+            closeClearConfirmModal();
+          } else if (isAuditModalOpen) {
+            closeAuditModal();
+          }
+        }
+      });
+
+      if (modalSearchInput) modalSearchInput.addEventListener('input', () => { modalAuditCurrentPage = 1; renderModalAuditTable(); });
+      if (modalStatusFilter) modalStatusFilter.addEventListener('change', () => { modalAuditCurrentPage = 1; renderModalAuditTable(); });
+      if (modalRefreshBtn) modalRefreshBtn.addEventListener('click', (e) => { e.preventDefault(); triggerAuditRefresh(); });
+
+      const modalAuditPrevBtn = document.getElementById('modalAuditPrevBtn');
+      const modalAuditNextBtn = document.getElementById('modalAuditNextBtn');
+      if (modalAuditPrevBtn) {
+        modalAuditPrevBtn.addEventListener('click', () => {
+          if (modalAuditCurrentPage > 1) {
+            modalAuditCurrentPage--;
+            renderModalAuditTable();
+          }
+        });
+      }
+      if (modalAuditNextBtn) {
+        modalAuditNextBtn.addEventListener('click', () => {
+          modalAuditCurrentPage++;
+          renderModalAuditTable();
+        });
+      }
+
+      // Listen for system events to refresh dashboard smoothly in real time without flicker
+      let refreshDebounceTimer = null;
+      const refreshDashboard = (silent = true) => {
+        if (silent) {
+          if (refreshDebounceTimer) clearTimeout(refreshDebounceTimer);
+          refreshDebounceTimer = setTimeout(() => {
+            renderDashboard();
+          }, 35);
+          return;
+        }
+        window.EcoDataBus?.invalidate('dashboard:data');
+        loadDashboardWithSWR(true);
+      };
+
+      AirconEvents.on('hardware:updated', () => renderDashboard());
+      AirconEvents.on('aircon:state_changed', () => refreshDashboard(true));
+      AirconEvents.on('aircon:saved', () => refreshDashboard(true));
+      AirconEvents.on('aircon:deleted', () => refreshDashboard(true));
+      AirconEvents.on('aircon:updated', () => refreshDashboard(true));
+      AirconEvents.on('devices:synced', () => refreshDashboard(true));
+      AirconEvents.on('log:new', () => {
+        renderAuditTable();
+        if (isAuditModalOpen) renderModalAuditTable();
+      });
+      AirconEvents.on('node:updated', () => refreshDashboard(true));
+
+      loadDashboardWithSWR();
+    });
+  </script>
+
+  <!-- DEDICATED COMMAND & IR AUDIT TRAIL MODAL (ISOLATED FROM ACTIVITY LOGS) -->
+  <div id="commandAuditModal" class="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 bg-slate-950/75 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-300">
+    <div class="relative w-full max-w-5xl bg-white dark:bg-[#0c1328] rounded-2xl border border-slate-200/80 dark:border-teal-500/20 shadow-2xl p-5 sm:p-7 transform scale-95 transition-all duration-300 max-h-[90vh] flex flex-col overflow-hidden text-slate-800 dark:text-slate-100">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-white/10 shrink-0 relative z-10">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-teal-500/10 dark:bg-teal-500/20 border border-teal-500/30 flex items-center justify-center text-teal-600 dark:text-teal-400 shadow-sm shrink-0">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="eco-primary-text text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                Command & IR Audit Trail
+              </h3>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/20 uppercase tracking-wider">
+                Hardware Live Log
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-gray-400">
+              Direct record of IR blaster transmissions, state setpoints, and controller node acknowledgments
+            </p>
+          </div>
+        </div>
+
+        <!-- Close X Button -->
+        <button id="closeAuditModalXBtn" type="button" aria-label="Close dialog" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-400 hover:text-slate-700 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer border-0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Quick Metrics Ribbon -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-4 shrink-0">
+        <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200/60 dark:border-white/5">
+          <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-gray-400 block tracking-wider">Total Commands</span>
+          <span id="modalAuditTotal" class="text-base font-extrabold text-slate-900 dark:text-white mt-0.5">0</span>
+        </div>
+        <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200/60 dark:border-white/5">
+          <span class="text-[10px] uppercase font-bold text-emerald-500 dark:text-emerald-400 block tracking-wider">Success Dispatches</span>
+          <span id="modalAuditSuccess" class="text-base font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">0</span>
+        </div>
+        <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200/60 dark:border-white/5">
+          <span class="text-[10px] uppercase font-bold text-amber-500 dark:text-amber-400 block tracking-wider">Pending / Transmitting</span>
+          <span id="modalAuditPending" class="text-base font-extrabold text-amber-600 dark:text-amber-400 mt-0.5">0</span>
+        </div>
+        <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200/60 dark:border-white/5">
+          <span class="text-[10px] uppercase font-bold text-rose-500 dark:text-rose-400 block tracking-wider">Failed / Offline</span>
+          <span id="modalAuditFailed" class="text-base font-extrabold text-rose-600 dark:text-rose-400 mt-0.5">0</span>
+        </div>
+      </div>
+
+      <!-- Filter / Search Controls Toolbar -->
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-3 shrink-0">
+        <div class="flex flex-1 items-center gap-2 min-w-[240px] max-w-md">
+          <div class="relative w-full">
+            <input type="text" id="modalAuditSearchInput" placeholder="Search device ID, node, request ID, event..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/10 rounded-xl text-xs text-slate-800 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-teal-500">
+            <svg class="absolute left-2.5 top-2.5 text-gray-400" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <select id="modalAuditStatusFilter" class="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white text-xs font-semibold focus:ring-1 focus:ring-teal-500 outline-none cursor-pointer">
+            <option value="ALL">All Statuses</option>
+            <option value="SUCCESS">Success Only</option>
+            <option value="PENDING">Pending / Transmitting</option>
+            <option value="FAILED">Failed / Offline</option>
+            <option value="WARNING">Warning</option>
+          </select>
+          <button id="modalAuditRefreshBtn" aria-label="Refresh audit logs" type="button" class="group px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 active:scale-95 text-xs font-bold text-slate-700 dark:text-gray-300 border border-slate-200 dark:border-white/10 cursor-pointer flex items-center gap-1.5 transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none transition-transform"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+
+          </button>
+          <button id="modalAuditClearBtn" type="button" class="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold border border-rose-500/30 cursor-pointer flex items-center gap-1.5 transition-all">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            <span>Clear</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Table Body (Scrollable) -->
+      <div class="eco-table-frame overflow-y-auto flex-1 border border-slate-200/80 dark:border-white/10 rounded-xl bg-slate-50/50 dark:bg-black/20">
+        <table class="eco-data-table w-full text-left text-xs border-collapse">
+          <thead class="sticky top-0 bg-slate-100 dark:bg-[#0e1730] text-slate-600 dark:text-gray-300 border-b border-slate-200 dark:border-white/10 z-10">
+            <tr>
+              <th scope="col" class="py-2.5 px-3 font-bold">Timestamp</th>
+              <th scope="col" class="py-2.5 px-3 font-bold">Target Device</th>
+              <th scope="col" class="py-2.5 px-3 font-bold">Controller Node</th>
+              <th scope="col" class="py-2.5 px-3 font-bold">Event & Dispatch Payload</th>
+              <th scope="col" class="py-2.5 px-3 font-bold text-right">Result</th>
+            </tr>
+          </thead>
+          <tbody id="modalAuditTableBody" class="divide-y divide-slate-200/70 dark:divide-white/5 text-slate-700 dark:text-gray-300">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Modal Pagination Controls (20 items per page) -->
+      <div class="mt-3 pt-2.5 border-t border-slate-200/80 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs">
+        <div class="flex items-center gap-2">
+          <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+          <span id="modalAuditPageInfo" class="font-medium text-slate-600 dark:text-gray-300">
+            Showing 0 to 0 of 0 audit records
+          </span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" id="modalAuditPrevBtn" disabled class="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-gray-200 border border-slate-200/80 dark:border-white/10 text-xs font-semibold shadow-sm hover:shadow active:scale-95 transition-all cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed disabled:pointer-events-none disabled:shadow-none">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="transition-transform group-hover:-translate-x-0.5"><polyline points="15 18 9 12 15 6"/></svg>
+            <span>Previous</span>
+          </button>
+          <div class="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-slate-100/90 dark:bg-black/30 border border-slate-200/80 dark:border-white/10 text-xs shadow-inner">
+            <span id="modalAuditPagesText" class="font-bold text-slate-800 dark:text-gray-200 tracking-wide font-mono">Page 1 of 1</span>
+          </div>
+          <button type="button" id="modalAuditNextBtn" disabled class="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-gray-200 border border-slate-200/80 dark:border-white/10 text-xs font-semibold shadow-sm hover:shadow active:scale-95 transition-all cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed disabled:pointer-events-none disabled:shadow-none">
+            <span>Next</span>
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="transition-transform group-hover:translate-x-0.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="mt-4 pt-3 border-t border-slate-100 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-500 dark:text-gray-400 shrink-0">
+        <span class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>Live audit buffer stored locally (up to 500 entries) &bull; Isolated from Activity Logs</span>
+        </span>
+        <div class="flex items-center gap-2">
+          <a href="logs.html" class="px-3.5 py-2 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 text-teal-700 dark:text-teal-300 font-bold border border-teal-500/30 flex items-center gap-1.5 transition-all text-xs no-underline">
+            <span>Aircon Energy Analytics</span>
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </a>
+          <button id="closeAuditModalBottomBtn" type="button" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15 text-xs font-bold text-slate-800 dark:text-white cursor-pointer transition-colors border-0">
+            Close Window
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CUSTOM CLEAR AUDIT TRAIL CONFIRMATION MODAL -->
+  <div id="clearAuditConfirmModal" class="fixed inset-0 z-[10001] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-200">
+    <div class="relative w-full max-w-md bg-white dark:bg-[#0c1328] border-2 border-rose-500/30 dark:border-rose-500/40 rounded-2xl shadow-2xl overflow-hidden p-6 flex flex-col items-center text-center transform scale-95 transition-all duration-200">
+      
+      <!-- Ambient Glow Decorator -->
+      <div class="absolute -top-10 left-1/2 -translate-x-1/2 w-48 h-48 bg-rose-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- Close 'X' Button -->
+      <button type="button" id="closeClearConfirmXBtn" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white text-xl bg-transparent border-0 cursor-pointer p-1 transition-colors leading-none" aria-label="Close dialog">&times;</button>
+
+      <!-- Danger Icon with glowing ring -->
+      <div class="w-14 h-14 rounded-2xl bg-rose-500/10 dark:bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-600 dark:text-rose-400 mb-3.5 shadow-lg shadow-rose-500/15 relative z-10">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </svg>
+      </div>
+
+      <!-- Title & Subtitle -->
+      <h3 class="eco-primary-text text-lg font-extrabold text-slate-900 dark:text-white tracking-tight mb-1 relative z-10">
+        Clear Audit Trail Buffer?
+      </h3>
+      <p id="clearModalSubMsg" class="text-xs text-slate-500 dark:text-gray-400 mb-4 max-w-xs relative z-10 leading-relaxed">
+        Are you sure you want to clear all command and IR audit trail records from the buffer?
+      </p>
+
+      <!-- Details Summary Card -->
+      <div class="w-full mb-5 p-3.5 rounded-xl bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/10 text-left space-y-2 relative z-10">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-500 dark:text-gray-400 font-medium">Records in Buffer:</span>
+          <span id="clearModalRecordCount" class="font-mono font-bold text-rose-600 dark:text-rose-400">0</span>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-500 dark:text-gray-400 font-medium">Storage Target:</span>
+          <span class="font-semibold text-slate-700 dark:text-gray-300">Local live buffer (up to 500 entries)</span>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-500 dark:text-gray-400 font-medium">Operation:</span>
+          <span class="font-semibold text-amber-600 dark:text-amber-400">Resets buffer counters &amp; tables</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center justify-end gap-2.5 w-full relative z-10">
+        <button type="button" id="cancelClearConfirmBtn" class="flex-1 px-4 py-2 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-xs font-bold text-slate-700 dark:text-gray-300 border border-slate-200 dark:border-white/10 cursor-pointer transition-all">
+          Cancel
+        </button>
+        <button type="button" id="confirmClearExecuteBtn" class="flex-1 px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white text-xs font-bold shadow-lg shadow-rose-500/25 cursor-pointer flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          <span>Clear All</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

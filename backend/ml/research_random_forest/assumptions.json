@@ -1,0 +1,98 @@
+{
+  "version": "research_estimator_1.0",
+  "reference_model": "Haier AS35XCAHRA / 1U35S2SM1FA-2",
+  "source_derived": {
+    "fan_motor_rated_output_w": 30,
+    "fan_rpm": {
+      "low": 800,
+      "medium": 925,
+      "high": 1050
+    },
+    "catalog_max_cool_input_kw": 1.4,
+    "catalog_max_heat_input_kw": 1.6,
+    "controller_setpoint_min_c": 16,
+    "controller_setpoint_max_c": 30
+  },
+  "assumed": {
+    "fan_motor_efficiency": 0.6666666666666666,
+    "quiet_fan_rpm": 650,
+    "controls_power_kw": 0.002,
+    "display_power_kw": 0.0008,
+    "swing_motor_power_kw_per_axis": 0.001,
+    "load_indoor_weight": 0.7,
+    "load_outdoor_weight": 0.3,
+    "turbo_compressor_factor": 1.2,
+    "quiet_compressor_factor": 0.85,
+    "dry_compressor_fraction": 0.55,
+    "dry_humidity_slope_per_percent": 0.006,
+    "auto_deadband_c": 1.0
+  },
+  "eco_toggle_mapping": "L1",
+  "assumptions_are_measured": false,
+  "scenarios": [
+    {
+      "scenario_id": "lab_hot",
+      "indoor_c": 30,
+      "outdoor_c": 35,
+      "relative_humidity_percent": 60
+    },
+    {
+      "scenario_id": "hot_room",
+      "indoor_c": 28,
+      "outdoor_c": 32,
+      "relative_humidity_percent": 60
+    },
+    {
+      "scenario_id": "mild_warm",
+      "indoor_c": 24,
+      "outdoor_c": 25,
+      "relative_humidity_percent": 50
+    },
+    {
+      "scenario_id": "lab_cold",
+      "indoor_c": 10,
+      "outdoor_c": 2,
+      "relative_humidity_percent": 50
+    },
+    {
+      "scenario_id": "cold_room",
+      "indoor_c": 18,
+      "outdoor_c": 7,
+      "relative_humidity_percent": 50
+    },
+    {
+      "scenario_id": "mild_cool",
+      "indoor_c": 22,
+      "outdoor_c": 15,
+      "relative_humidity_percent": 50
+    }
+  ],
+  "policy": {
+    "quiet_and_turbo_together": false,
+    "eco_with_turbo_or_quiet": false,
+    "eco_modes": [
+      "cool",
+      "heat"
+    ],
+    "turbo_modes": [
+      "cool",
+      "heat"
+    ],
+    "quiet_modes": [
+      "cool",
+      "heat"
+    ],
+    "fan_auto_in_fan_mode": false,
+    "filter_toggle_supported": false
+  },
+  "limitations": [
+    "Room/load evolution and compressor cycling are not simulated; one-hour labels are model estimates.",
+    "Eco energy/duration anchors derive from original shorter/longer experiments, not measured next-hour energy.",
+    "Eco Gear is distinct from Eco Sensor. ESPHome IR support and firmware equivalence remain unverified.",
+    "Motor rated output is not measured electrical input; efficiency and affinity-law application are assumptions.",
+    "Numerical Turbo, Quiet, Swing, Display, Dry and new-condition effects are not verified by measured energy comparisons.",
+    "Pairwise/compound function compatibility is a conservative modeling policy unless a rule is cited explicitly.",
+    "Filter is not verified as an independently toggled energy function; it remains not applicable, not OFF.",
+    "Other device features such as Self-Clean, UV/Health, Sleep and timers require separate operating models and are outside the panel subset."
+  ]
+}

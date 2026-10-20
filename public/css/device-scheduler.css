@@ -1,0 +1,38 @@
+html:not([data-eco-mode="controller"]) [data-controller-schedule-field] { display:none!important; }
+body[data-device-scheduler]>div { overflow:hidden; }
+body[data-device-scheduler] { overflow:hidden; }
+body[data-device-scheduler] main>header { flex-wrap:wrap; gap:12px; flex-shrink:0; }
+body[data-device-scheduler] main>header h2 { font-size:21px; }
+.device-scheduler-layout { min-height:0; min-width:0; }
+.device-scheduler-layout>div { min-width:0; }
+body[data-device-scheduler] .sched-interval-box input[type="number"] { width:84px!important; min-width:84px; min-height:32px; background:transparent!important; color:var(--eco-text)!important; font-size:16px; }
+body[data-device-scheduler] .sched-interval-box input::placeholder { color:var(--eco-muted); font-size:12px; }
+body[data-device-scheduler] .sched-interval-box { min-width:230px; position:relative; }
+body[data-device-scheduler] .sched-interval-box .eco-native-select { left:0!important; top:0!important; }
+.device-scheduler-note { font-size:11px; color:var(--eco-muted); margin-top:8px; max-width:230px; white-space:normal; }
+.device-scheduler-status { font-size:11px; color:var(--eco-secondary); white-space:normal; min-width:150px; }
+.scheduler-device-state { display:inline-flex; align-items:center; gap:8px; padding:6px 11px; border-radius:20px; background:var(--eco-raised); color:var(--eco-muted); font-size:12px; font-weight:700; white-space:nowrap; }
+.scheduler-device-state-dot { width:8px; height:8px; border-radius:50%; background:currentColor; flex-shrink:0; }
+.scheduler-device-state[data-device-state="online"] { --scheduler-state:var(--eco-success); --scheduler-state-bg:var(--eco-success-bg); }
+.scheduler-device-state[data-device-state="offline"] { --scheduler-state:var(--eco-danger); --scheduler-state-bg:var(--eco-danger-bg); }
+.scheduler-device-state[data-device-state="sleeping"] { --scheduler-state:var(--eco-warning); --scheduler-state-bg:var(--eco-warning-bg); }
+html body.app-shell[data-device-scheduler] .eco-scheduler-table .scheduler-device-state { color:var(--scheduler-state,var(--eco-muted))!important; background:var(--scheduler-state-bg,var(--eco-raised))!important; }
+html body.app-shell[data-device-scheduler] .eco-scheduler-table .scheduler-device-state > span { color:inherit!important; }
+.device-scheduler-location { display:block; width:100%; margin:6px 0; padding:10px; background:var(--eco-raised); color:var(--eco-text); border:1px solid var(--eco-border); border-radius:8px; text-align:left; font-size:12px; cursor:pointer; }
+.device-scheduler-location[aria-selected="true"] { border-color:var(--eco-accent); color:var(--eco-accent); }
+body[data-device-scheduler] .sensor-button[aria-busy="true"] svg { animation:device-refresh-spin 1s linear infinite; }
+@keyframes device-refresh-spin { to { transform:rotate(360deg); } }
+@media(max-width:760px) {
+ .device-scheduler-layout { flex-direction:column; overflow:auto; }
+ .device-scheduler-layout>div:first-child { width:100%; min-height:130px; max-height:220px; flex-shrink:0; padding:16px; }
+ .device-scheduler-layout>div:last-child { flex:none; min-height:400px; }
+ body[data-device-scheduler] main>header { padding:14px 16px; }
+ body[data-device-scheduler] main>header h2 { font-size:18px; }
+ body[data-device-scheduler] #sensorConnection { max-width:180px; }
+}
+
+body[data-device-scheduler] .sched-device-name { min-width:170px; max-width:250px; overflow-wrap:anywhere; }
+html body[data-device-scheduler] .sched-interval-box button.eco-select-trigger { min-width:110px; padding:9px 12px!important; min-height:40px; border-radius:10px; }
+body[data-device-scheduler] .eco-select-menu-compact { padding:5px; border-radius:12px; }
+body[data-device-scheduler] .eco-select-menu-compact .eco-select-option { display:flex; align-items:center; justify-content:space-between; min-height:40px; padding:9px 12px; border-radius:8px; }
+body[data-device-scheduler] .eco-select-menu-compact .eco-select-option[aria-selected="true"]::after { content:'✓'; font-weight:700; margin-left:12px; }

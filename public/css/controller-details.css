@@ -1,0 +1,10 @@
+#viewNodeModal > .glass-card {max-width:720px;width:100%;}
+#viewNodeModal .controller-details-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+#viewNodeModal .controller-details-card {min-width:0;}
+#viewNodeModal .controller-details-row {display:grid;grid-template-columns:minmax(88px,.85fr) minmax(0,1.4fr);gap:8px;align-items:start;line-height:1.5;}
+#viewNodeModal .controller-details-row > :last-child {min-width:0;text-align:right;overflow-wrap:anywhere;white-space:normal;}
+#viewNodeModal .controller-deployment-dates {margin-top:12px;padding-top:10px;border-top:1px solid #cbd5e1;}
+.dark #viewNodeModal .controller-deployment-dates {border-color:#ffffff1a;}
+#viewNodeModal .controller-date-note {font-size:10px;line-height:1.5;color:#64748b;overflow-wrap:anywhere;}
+.dark #viewNodeModal .controller-date-note {color:#94a3b8;}
+@media(max-width:600px){#viewNodeModal .controller-details-grid{grid-template-columns:1fr;}#viewNodeModal .controller-details-row{grid-template-columns:110px minmax(0,1fr);}}

@@ -1,0 +1,367 @@
+<!-- SIDEBAR TEMPLATE -->
+<!-- Copy and paste this code into any page that needs the sidebar -->
+
+<!-- Floating Expand Button (appears when collapsed) -->
+<aside id="sidebar" class="w-64 glass-sidebar flex flex-col">
+  <style>
+    /* Scrollbar Elimination */
+    #sidebar {
+      scrollbar-width: none !important;
+      -ms-overflow-style: none !important;
+      overflow-y: hidden !important;
+      overflow-x: hidden !important;
+    }
+
+    #sidebarNav {
+      scrollbar-width: none !important;
+      -ms-overflow-style: none !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+    }
+
+    #sidebar::-webkit-scrollbar,
+    #sidebarNav::-webkit-scrollbar,
+    aside::-webkit-scrollbar {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+    }
+
+    /* Refined legible typography, icons and compact padding (zero-scrollbar fit) */
+    #sidebar .nav-link {
+      padding: 0.35rem 0.6rem !important;
+      margin: 0.06rem 0 !important;
+      gap: 0.6rem !important;
+      font-size: 0.865rem !important;
+      border-radius: 0.375rem !important;
+      min-height: unset !important;
+      line-height: 1.25 !important;
+      color: var(--eco-secondary) !important;
+      border: 1px solid transparent !important;
+      transition: all 0.2s ease !important;
+    }
+
+    #sidebar .nav-link span:not(.notif-badge) {
+      font-size: 0.865rem !important;
+      font-weight: 500 !important;
+      line-height: 1.25 !important;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: inherit !important;
+    }
+
+    #sidebar .nav-link:hover:not(.active):not(#logoutButton) {
+      background: var(--eco-raised) !important;
+      border-color: var(--eco-border) !important;
+      color: var(--eco-text) !important;
+    }
+
+    #sidebar .nav-link:hover:not(.active):not(#logoutButton) span {
+      color: var(--eco-text) !important;
+    }
+
+    #sidebar .nav-link.active:not(#logoutButton) {
+      background: var(--eco-selected) !important;
+      border: 1px solid var(--eco-accent) !important;
+      border-left: 3.5px solid var(--eco-accent) !important;
+      color: var(--eco-text) !important;
+      box-shadow: none !important;
+    }
+
+    #sidebar .nav-link.active:not(#logoutButton) span {
+      color: var(--eco-text) !important;
+      font-weight: 600 !important;
+      text-shadow: none !important;
+    }
+
+    #sidebar .nav-link:not(#logoutButton) svg {
+      width: 17px !important;
+      height: 17px !important;
+      min-width: 17px !important;
+      min-height: 17px !important;
+      color: var(--eco-accent) !important;
+      stroke: var(--eco-accent) !important;
+      transition: filter 0.2s ease, transform 0.2s ease !important;
+    }
+
+    #sidebar .nav-link.active:not(#logoutButton) svg {
+      color: var(--eco-accent) !important;
+      stroke: var(--eco-accent) !important;
+      filter: none !important;
+    }
+
+    #sidebar #logoutButton,
+    .glass-sidebar #logoutButton,
+    html:not(.dark) #sidebar #logoutButton,
+    html:not(.dark) .glass-sidebar #logoutButton {
+      color: var(--eco-danger) !important;
+    }
+
+    #sidebar #logoutButton span,
+    .glass-sidebar #logoutButton span,
+    html:not(.dark) #sidebar #logoutButton span,
+    html:not(.dark) .glass-sidebar #logoutButton span {
+      color: var(--eco-danger) !important;
+    }
+
+    #sidebar #logoutButton svg,
+    .glass-sidebar #logoutButton svg,
+    html:not(.dark) #sidebar #logoutButton svg,
+    html:not(.dark) .glass-sidebar #logoutButton svg {
+      width: 17px !important;
+      height: 17px !important;
+      min-width: 17px !important;
+      min-height: 17px !important;
+      color: var(--eco-danger) !important;
+      stroke: var(--eco-danger) !important;
+    }
+
+    #sidebar #logoutButton:hover,
+    .glass-sidebar #logoutButton:hover {
+      background-color: var(--eco-danger-bg) !important;
+      border-color: var(--eco-danger) !important;
+      color: var(--eco-danger) !important;
+    }
+
+    #sidebar #logoutButton:hover span,
+    #sidebar #logoutButton:hover svg {
+      color: var(--eco-danger) !important;
+      stroke: var(--eco-danger) !important;
+    }
+
+    #sidebar .sidebar-section-header {
+      font-size: 0.68rem !important;
+      font-weight: 750 !important;
+      letter-spacing: 0.08em !important;
+      padding: 0.38rem 0.6rem 0.12rem 0.6rem !important;
+      margin-top: 0.18rem !important;
+      color: var(--eco-secondary) !important;
+      text-transform: uppercase !important;
+      opacity: 0.9 !important;
+    }
+
+    #sidebar .sidebar-header {
+      padding: 0.65rem 0.85rem !important;
+    }
+
+    #sidebar .brand-logo {
+      width: 22px !important;
+      height: 22px !important;
+      border-radius: 6px !important;
+      object-fit: contain;
+    }
+
+    #sidebar .sidebar-title {
+      font-size: 1.05rem !important;
+      color: var(--eco-accent) !important;
+    }
+
+    #sidebar .sidebar-title span {
+      color: var(--eco-accent) !important;
+    }
+
+    #sidebar .sidebar-subtitle {
+      font-size: 0.65rem !important;
+      margin-top: 0.05rem !important;
+      color: var(--eco-muted) !important;
+    }
+
+    #sidebar .user-container {
+      padding: 0.35rem 0.6rem !important;
+    }
+
+    #sidebar .user-container .nav-link {
+      margin-bottom: 0.06rem !important;
+    }
+
+    #sidebar .user-container .nav-link svg {
+      width: 17px !important;
+      height: 17px !important;
+    }
+  </style>
+  <div class="px-3.5 py-2.5 border-b border-white/5 flex items-center justify-between flex-shrink-0 sidebar-header">
+    <div class="flex-1 sidebar-content">
+      <h1 class="eco-primary-text text-lg font-bold text-cyan-400 flex items-center gap-2 sidebar-title"><img
+          src="../assets/ecoTrack.png" alt="EcoTrack Logo" class="brand-logo rounded-md"> <span>EcoTrack</span></h1>
+      <p class="text-[10px] mt-0.5 sidebar-subtitle" style="color: var(--eco-muted) !important;">v1.0 Dashboard</p>
+      <a href="profile.html#device-mode" class="workspace-sidebar-mode" data-workspace-label>Both modes</a>
+    </div>
+    <button id="sidebarToggle" class="p-1.5 rounded-lg btn-glass text-cyan-200 flex-shrink-0 sidebar-toggle"
+      aria-label="Toggle Sidebar">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <line x1="3" y1="12" x2="21" y2="12" />
+        <line x1="3" y1="18" x2="21" y2="18" />
+      </svg>
+    </button>
+  </div>
+
+  <nav id="sidebarNav" class="flex-1 overflow-y-auto py-1.5 space-y-0.5 px-2 transition-all duration-300">
+    <!-- SECTION 1: CONTROL CENTER -->
+    <div id="sensorMonitoringSection" class="sidebar-section-header" data-eco-mode="monitoring">Sensor Monitoring</div>
+    <a href="analytics.html" class="nav-link" data-tooltip="Analytics">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 3v18h18M7 20v-8m5 8V8m5 12v-6"/></svg>
+      <span>Analytics</span>
+    </a>
+    <a href="telemetry.html" class="nav-link" data-tooltip="Telemetry">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="2"/><path d="M6 12a6 6 0 0 1 12 0"/></svg>
+      <span>Telemetry</span>
+    </a>
+
+    <a href="sensor-logs.html" class="nav-link" data-tooltip="Sensor Energy Forecast">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M11 4H4v18h16V11M14 3h7v5M10 16l3-1 8-9-3-3-8 10z"/></svg>
+      <span>Sensor Energy Forecast</span>
+    </a>
+
+
+    <div class="sidebar-section-header" data-eco-mode="controller">Control Center</div>
+
+    <a href="dashboard.html" class="nav-link" data-tooltip="Control Dashboard">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"
+        class="text-cyan-400 shrink-0">
+        <rect x="3" y="3" width="7" height="7" rx="1.5" />
+        <rect x="14" y="3" width="7" height="7" rx="1.5" />
+        <rect x="14" y="14" width="7" height="7" rx="1.5" />
+        <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      </svg>
+      <span>Control Dashboard</span>
+    </a>
+
+    <a href="control.html" class="nav-link" data-tooltip="Aircon Control">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"
+        class="text-cyan-400 shrink-0">
+        <line x1="4" y1="21" x2="4" y2="14" />
+        <line x1="4" y1="10" x2="4" y2="3" />
+        <line x1="12" y1="21" x2="12" y2="12" />
+        <line x1="12" y1="8" x2="12" y2="3" />
+        <line x1="20" y1="21" x2="20" y2="16" />
+        <line x1="20" y1="12" x2="20" y2="3" />
+        <line x1="1" y1="14" x2="7" y2="14" />
+        <line x1="9" y1="8" x2="15" y2="8" />
+        <line x1="17" y1="16" x2="23" y2="16" />
+      </svg>
+      <span>Aircon Control</span>
+    </a>
+
+
+
+
+
+    <a href="logs.html" class="nav-link" data-tooltip="Control Energy Forecast">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>
+      <span>Control Energy Forecast</span>
+    </a>
+
+    <!-- SECTION 2: DEVICES & IR -->
+    <div id="deviceRegistrationSection" class="sidebar-section-header" data-eco-mode="controller">Devices & IR</div>
+
+
+    <a href="nodes.html" class="nav-link" data-tooltip="Register AC Devices">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"
+        class="text-cyan-400 shrink-0">
+        <rect x="4" y="4" width="16" height="16" rx="2" />
+        <rect x="9" y="9" width="6" height="6" />
+        <line x1="9" y1="1" x2="9" y2="4" />
+        <line x1="15" y1="1" x2="15" y2="4" />
+        <line x1="9" y1="20" x2="9" y2="23" />
+        <line x1="15" y1="20" x2="15" y2="23" />
+        <line x1="20" y1="9" x2="23" y2="9" />
+        <line x1="20" y1="15" x2="23" y2="15" />
+        <line x1="1" y1="9" x2="4" y2="9" />
+        <line x1="1" y1="15" x2="4" y2="15" />
+      </svg>
+      <span>Register AC Devices</span>
+    </a>
+
+    <a href="ir-library.html" class="nav-link" data-tooltip="IR Command Library">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"
+        class="text-cyan-400 shrink-0">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+        <line x1="8" y1="6" x2="16" y2="6" />
+        <line x1="8" y1="10" x2="14" y2="10" />
+      </svg>
+      <span>AC Protocol Studio</span>
+    </a>
+
+    <!-- SECTION 3: SYSTEM & LOGS -->
+    <div id="systemLogsSection" class="sidebar-section-header">System & Logs</div>
+
+    <a href="scheduler.html" class="nav-link" data-tooltip="AC Device Scheduler">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"
+        class="text-cyan-400 shrink-0">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+        <circle cx="12" cy="15" r="2" />
+      </svg>
+      <span>AC Device Scheduler</span>
+    </a>
+
+    <a href="rules.html" class="nav-link" data-tooltip="Rules Management">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"
+        class="text-cyan-400 shrink-0">
+        <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" />
+        <path d="M12 12l-8-4.3 8-4.3 8 4.3" />
+      </svg>
+      <span>Rules Management</span>
+    </a>
+
+    <a href="Notification.html?v=4" class="nav-link relative" data-tooltip="Notifications">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"
+        class="text-cyan-400 shrink-0">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+      </svg>
+      <span>Notifications</span>
+      <span id="notificationBadge"
+        class="notif-badge hidden bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">0</span>
+    </a>
+
+    <a href="staff.html" class="nav-link" data-tooltip="Maintenance">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"
+        class="text-cyan-400 shrink-0">
+        <path
+          d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+      </svg>
+      <span>Maintenance</span>
+    </a>
+  </nav>
+
+  <div class="user-container flex flex-col items-center justify-center p-2 border-t border-white/5 mt-auto">
+    <a href="profile.html" class="nav-link w-full justify-start mb-0.5" data-tooltip="Admin Profile">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"
+        class="text-cyan-400 shrink-0">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
+      <span>Admin Profile</span>
+    </a>
+    <button id="logoutButton" class="nav-link w-full justify-start text-rose-400 hover:text-rose-300"
+      data-tooltip="Logout" style="color: var(--eco-danger) !important;">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--eco-danger)" stroke-width="1.5"
+        class="text-rose-400 shrink-0" style="color: var(--eco-danger) !important; stroke: var(--eco-danger) !important;">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+        <polyline points="16 17 21 12 16 7" />
+        <line x1="21" y1="12" x2="9" y2="12" />
+      </svg>
+      <span style="color: var(--eco-danger) !important;">Logout</span>
+    </button>
+  </div>
+</aside>
+
+<!-- Logout Confirmation Modal -->
+<div id="logoutModal" class="hidden fixed inset-0 bg-slate-950/70 flex items-center justify-center z-[9999]"
+  style="display: none;">
+  <div class="glass-elevated glass-card p-6 max-w-sm w-[90%]">
+    <h3 class="eco-primary-text text-xl font-bold text-cyan-400 mb-4">Confirm Logout</h3>
+    <p class="text-gray-300 mb-6">Are you sure you want to logout? You will be redirected to the login page.</p>
+    <div class="flex gap-3 justify-end">
+      <button id="logoutCancel" class="px-4 py-2 btn-glass rounded-lg transition-colors">Cancel</button>
+      <button id="logoutConfirm"
+        class="px-4 py-2 bg-rose-500/20 border border-rose-400/40 text-rose-100 rounded-lg transition-colors font-semibold">Logout</button>
+    </div>
+  </div>
+</div>

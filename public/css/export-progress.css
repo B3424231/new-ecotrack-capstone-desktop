@@ -1,0 +1,34 @@
+/* Explicit fill also fixes the controller modal when utility gradients are overridden. */
+#downloadModal #downloadProgressBar {
+  display:block; height:100%; min-height:10px;
+  background:linear-gradient(90deg,#10b981,#22d3ee)!important;
+  transition:width .18s ease;
+}
+.sensor-download-dialog {
+  width:min(340px,calc(100vw - 32px)); max-height:calc(100dvh - 32px);
+  margin:auto; padding:24px; overflow:auto; box-sizing:border-box;
+  border:2px solid var(--eco-accent); border-radius:16px;
+  background:var(--eco-surface); color:var(--eco-text);
+  box-shadow:0 20px 60px #0004; text-align:center;
+}
+.sensor-download-dialog::backdrop { background:rgba(7,13,26,.8); }
+.sensor-download-icon {
+  width:80px; height:80px; margin:8px auto 22px; display:grid; place-items:center;
+  border:3px solid var(--eco-accent); border-radius:50%;
+  background:var(--eco-selected); color:var(--eco-accent);
+}
+.sensor-download-dialog h3 { margin:0 0 6px; font-size:19px; font-weight:800; }
+.sensor-download-dialog p { margin:0; color:var(--eco-secondary); font-size:12px; line-height:1.5; }
+.sensor-download-divider { height:2px; background:var(--eco-raised); margin:20px 0 22px; }
+.sensor-download-label { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.sensor-download-label span { font-size:10px; font-weight:700; color:var(--eco-secondary); text-transform:uppercase; }
+.sensor-download-label strong { color:var(--eco-accent); font-size:14px; }
+.sensor-download-track { height:10px; border-radius:20px; overflow:hidden; background:var(--eco-raised); margin-bottom:24px; }
+.sensor-download-dialog #cancelDownloadBtn {
+  display:block; width:100%; min-height:44px; padding:12px 20px; border:1px solid var(--eco-border);
+  border-radius:12px; background:var(--eco-raised); color:var(--eco-secondary);
+  font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; cursor:pointer;
+}
+.sensor-download-dialog #cancelDownloadBtn:hover { border-color:var(--eco-accent); color:var(--eco-text); }
+.sensor-download-dialog #cancelDownloadBtn:focus-visible { outline:2px solid var(--eco-accent); outline-offset:3px; }
+@media(prefers-reduced-motion:reduce) { #downloadModal #downloadProgressBar { transition:none; } }

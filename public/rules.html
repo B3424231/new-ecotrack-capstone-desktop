@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <script src="./js/app-mode.js?v=6"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rules Management - EcoTrack</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js?v=3"></script>
+  <link rel="stylesheet" href="./styles.css?v=62">
+  <script src="./js/supabase.umd.js"></script>
+  <script src="./js/supabase-client.js"></script>
+  <script src="./js/sidebar.js"></script>
+  <script src="./js/sidebar-loader.js?v=25"></script>
+  <script src="./js/icons.js"></script>
+  <script src="./js/eco-network.js"></script>
+  <script src="./js/eco-data-bus.js"></script>
+  <script src="./js/skeletons.js"></script>
+  <script src="./js/maintenance-modal.js?v=72"></script>
+</head>
+
+<body class="app-shell bg-gray-50 dark:bg-[#0a0f1d] transition-colors duration-200">
+  <div class="flex h-screen">
+    <!-- Sidebar will be injected here by sidebar-loader.js -->
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+      <header
+        class="bg-white dark:bg-[#0c1328] border-b border-gray-200 dark:border-white/5 px-6 py-4 flex justify-between items-center z-10 shadow-sm relative">
+        <h2 class="eco-primary-text text-2xl font-bold text-[#18392B] dark:text-cyan-400 flex items-center gap-2">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"
+            class="text-[#10b981]">
+            <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" />
+            <path d="M12 12l-8-4.3 8-4.3 8 4.3" />
+          </svg>Rules Management
+        </h2>
+        <div class="flex items-center gap-3">
+          <button id="viewActiveRulesBtn"
+            class="px-4 py-2 bg-[#18392B] dark:bg-[#10b981] hover:bg-[#0b291d] dark:hover:bg-emerald-600 text-white rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 shadow-sm cursor-pointer border-0"
+            style="color: #ffffff !important;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ffffff" stroke-width="2" style="stroke: #ffffff !important;">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+            <span style="color: #ffffff !important;">View Active Rules</span>
+          </button>
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-bold text-gray-500 dark:text-gray-400">Total Rules:</span>
+            <span id="totalRulesCount"
+              class="text-sm font-black text-[#18392B] dark:text-[#64f0b6] bg-emerald-50 dark:bg-emerald-950/20 border-[2px] border-[#10b981] dark:border-[#10b981]/40 px-3 py-1 rounded-full shadow-sm">0</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="flex-1 overflow-auto p-6 eco-slim-scrollbar">
+        <div class="space-y-6 max-w-[1600px] mx-auto w-full">
+          <!-- Shared placeholders keep the real rule controls and chart intact. -->
+          <section id="rulesLoadingState" class="hidden space-y-6" role="status" aria-label="Loading Rules Management" aria-busy="true">
+            <span class="sr-only">Loading Rules Management…</span>
+            <div id="rulesLoadingStats" class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4" aria-hidden="true"></div>
+            <div id="rulesLoadingChart" aria-hidden="true"></div>
+            <div class="glass-elevated glass-card p-5 md:p-6 rounded-3xl shadow-xl">
+              <h4 class="eco-primary-text text-base font-bold mb-4">Violation Rankings</h4>
+              <div class="eco-table-frame overflow-x-auto eco-slim-scrollbar" aria-hidden="true">
+                <table class="eco-data-table w-full"><tbody id="rulesLoadingRankings"></tbody></table>
+              </div>
+            </div>
+            <div class="glass-elevated glass-card p-5 md:p-6 rounded-3xl shadow-xl">
+              <h4 class="eco-primary-text text-base font-bold mb-4">Violation History Board</h4>
+              <div class="eco-table-frame overflow-x-auto eco-slim-scrollbar" aria-hidden="true">
+                <table class="eco-data-table w-full"><tbody id="rulesLoadingHistory"></tbody></table>
+              </div>
+            </div>
+          </section>
+          <!-- Rule Violation Benchmarking Section -->
+          <section class="space-y-6" id="ruleBenchmarkingSection">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500/20 via-orange-500/10 to-transparent dark:from-rose-500/20 dark:to-cyan-500/10 border border-rose-500/30 flex items-center justify-center text-rose-500 shadow-sm shrink-0">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h3 class="eco-primary-text text-lg font-bold text-[#18392B] dark:text-cyan-400 tracking-tight">Rule Violation
+                      Benchmarking</h3>
+                    <div class="info-tooltip relative group inline-flex items-center">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                        class="text-gray-400 hover:text-[#10b981] dark:hover:text-cyan-400 cursor-help transition-colors">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 16v-4M12 8h.01" />
+                      </svg>
+                      <div
+                        class="tooltip-content absolute top-full left-0 mt-2.5 bg-white dark:bg-[#0c1328] border-2 border-emerald-500/50 dark:border-emerald-500/40 shadow-2xl rounded-2xl p-4 w-72 text-left z-50">
+                        <h4
+                          class="eco-primary-text font-bold text-[#18392B] dark:text-cyan-400 text-sm mb-1.5 flex items-center gap-1.5">
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 16v-4M12 8h.01" />
+                          </svg>
+                          Rule Violation Benchmarking
+                        </h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-xs leading-relaxed mb-2">
+                          Active rule violations by room.
+                        </p>
+                        <p class="text-gray-500 dark:text-gray-400 text-[11px] leading-relaxed mb-2">
+                          More violations mean readings exceed configured temperature, battery or pressure limits.
+                        </p>
+                        <div
+                          class="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 border-t border-gray-100 dark:border-white/5 pt-2 flex items-center gap-1">
+                          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                          Evaluated against active rule triggers
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">Continuous telemetry compliance tracking across
+                    campus facility rooms</p>
+                </div>
+              </div>
+
+              <!-- Live Status Pill & Legend -->
+              <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+                <div
+                  class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>Active Monitoring</span>
+                </div>
+                <div
+                  class="hidden sm:flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100/80 dark:bg-white/5 px-3 py-1 rounded-full border border-gray-200/50 dark:border-white/5">
+                  <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span> &gt;2
+                    High</span>
+                  <span class="text-gray-300 dark:text-gray-600">•</span>
+                  <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span> 1-2
+                    Mod</span>
+                  <span class="text-gray-300 dark:text-gray-600">•</span>
+                  <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> 0
+                    Normal</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- TOP SUMMARY METRICS CARDS (Placed at top of Rule Violation benchmark) -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+              <!-- Card 1: Total Violations -->
+              <div
+                class="bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200/60 dark:border-rose-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-rose-400/50 transition-all duration-200 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-[11px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-300">Total
+                    Violations</span>
+                  <div
+                    class="w-7 h-7 rounded-lg bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                      <path
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                </div>
+                <p class="text-2xl sm:text-3xl font-extrabold text-rose-600 dark:text-rose-400 font-mono tracking-tight my-0.5"
+                  id="totalViolations">0</p>
+                <p class="text-[11px] font-medium text-rose-600/80 dark:text-rose-400/80 mt-1 flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Active breaches
+                </p>
+              </div>
+
+              <!-- Card 2: Non-Compliant Rooms -->
+              <div
+                class="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-amber-400/50 transition-all duration-200 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                  <span
+                    class="text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">Non-Compliant</span>
+                  <div
+                    class="w-7 h-7 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <line x1="9" y1="9" x2="15" y2="15" />
+                      <line x1="15" y1="9" x2="9" y2="15" />
+                    </svg>
+                  </div>
+                </div>
+                <p class="text-2xl sm:text-3xl font-extrabold text-amber-600 dark:text-amber-400 font-mono tracking-tight my-0.5"
+                  id="nonCompliantRooms">0</p>
+                <p
+                  class="text-[11px] font-medium text-amber-600/80 dark:text-amber-400/80 mt-1 flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Rooms affected
+                </p>
+              </div>
+
+              <!-- Card 3: Violating AC Nodes -->
+              <div
+                class="bg-cyan-50/50 dark:bg-cyan-950/20 border border-cyan-200/60 dark:border-cyan-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-cyan-400/50 transition-all duration-200 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                  <span
+                    class="text-[11px] font-bold uppercase tracking-wider text-cyan-700 dark:text-cyan-300">Violating
+                    Nodes</span>
+                  <div
+                    class="w-7 h-7 rounded-lg bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="4" y="4" width="16" height="16" rx="2" />
+                      <rect x="9" y="9" width="6" height="6" />
+                      <line x1="9" y1="1" x2="9" y2="4" />
+                      <line x1="15" y1="1" x2="15" y2="4" />
+                      <line x1="9" y1="20" x2="9" y2="23" />
+                      <line x1="15" y1="20" x2="15" y2="23" />
+                      <line x1="20" y1="9" x2="23" y2="9" />
+                      <line x1="20" y1="14" x2="23" y2="14" />
+                      <line x1="1" y1="9" x2="4" y2="9" />
+                      <line x1="1" y1="14" x2="4" y2="14" />
+                    </svg>
+                  </div>
+                </div>
+                <p class="text-2xl sm:text-3xl font-extrabold text-cyan-600 dark:text-cyan-400 font-mono tracking-tight my-0.5"
+                  id="violatingNodes">0</p>
+                <p class="text-[11px] font-medium text-cyan-600/80 dark:text-cyan-400/80 mt-1 flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-cyan-500"></span> Control units drifting
+                </p>
+              </div>
+
+              <!-- Card 4: Rooms Without Rules -->
+              <div
+                class="bg-slate-50/70 dark:bg-slate-900/40 border border-slate-200/70 dark:border-white/10 rounded-2xl p-4 flex flex-col justify-between hover:border-slate-400/50 transition-all duration-200 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                  <span
+                    class="text-[11px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">Unconfigured</span>
+                  <div
+                    class="w-7 h-7 rounded-lg bg-gray-500/15 text-gray-600 dark:text-gray-300 flex items-center justify-center">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="3" />
+                      <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0-.33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                  </div>
+                </div>
+                <p class="text-2xl sm:text-3xl font-extrabold text-gray-700 dark:text-gray-200 font-mono tracking-tight my-0.5"
+                  id="roomsNoRules">0</p>
+                <p class="text-[11px] font-medium text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span> Rooms without rules
+                </p>
+              </div>
+            </div>
+
+            <!-- Campus Violation Distribution Card -->
+            <div
+              class="glass-elevated glass-card dark:bg-[#0c1328]/80 dark:border-[#10b981]/25 p-5 md:p-6 rounded-3xl shadow-xl transition-all duration-300">
+              <div
+                class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-4 border-b border-gray-100 dark:border-white/5 gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Campus
+                    Violation Distribution</span>
+                  <span id="monitoredRoomsCountBadge"
+                    class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border border-cyan-500/20">0
+                    Monitored Rooms</span>
+                </div>
+                <div class="flex sm:hidden items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
+                  <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                    High</span>
+                  <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                    Mod</span>
+                  <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    Normal</span>
+                </div>
+              </div>
+
+              <!-- Dynamic Chart Container -->
+              <div id="ruleComplianceChartWrapper" class="relative w-full transition-all duration-300 min-h-[140px]">
+                <canvas id="ruleComplianceChart"></canvas>
+              </div>
+
+              <!-- Fallback Empty State -->
+              <div id="ruleComplianceEmptyState" class="hidden flex flex-col items-center justify-center py-10 text-center">
+                <div
+                  class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 mb-3 mx-auto shadow-sm">
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                  </svg>
+                </div>
+                <h4 id="ruleComplianceEmptyTitle" class="eco-primary-text font-bold text-gray-800 dark:text-gray-200 text-sm">No Active Violations</h4>
+                <p id="ruleComplianceEmptyDesc" class="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-sm mx-auto">No active rule violations detected.</p>
+              </div>
+            </div>
+
+            <!-- VIOLATION RANKINGS SECTION (Buildings, Floors, Rooms) -->
+            <div class="glass-elevated glass-card dark:bg-[#0c1328]/80 dark:border-[#10b981]/25 p-5 md:p-6 rounded-3xl shadow-xl transition-all duration-300">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-4 border-b border-gray-100 dark:border-white/5 gap-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/20 to-rose-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold text-base shadow-sm">
+                    🏆
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <h4 class="eco-primary-text text-base font-bold text-[#18392B] dark:text-cyan-400 tracking-tight">Violation Rankings</h4>
+                      <span id="rankingsSubtitleBadge" class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">Ranked by Breaches</span>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Identify highest breach density across campus facilities</p>
+                  </div>
+                </div>
+
+                <!-- Tab Segmented Controls: Rooms | Floors | Buildings -->
+                <div class="inline-flex p-1 bg-gray-100/90 dark:bg-slate-900/80 rounded-2xl border border-gray-200/70 dark:border-white/10 self-start sm:self-auto shadow-inner" role="tablist">
+                  <button type="button" id="tabRankingRooms" class="ranking-tab-btn active px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 bg-white dark:bg-[#10b981] text-[#18392B] dark:text-white shadow-sm" data-tab="rooms">
+                    <span>🚪</span>
+                    <span>Rooms</span>
+                  </button>
+                  <button type="button" id="tabRankingFloors" class="ranking-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white" data-tab="floors">
+                    <span>🏬</span>
+                    <span>Floors</span>
+                  </button>
+                  <button type="button" id="tabRankingBuildings" class="ranking-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white" data-tab="buildings">
+                    <span>🏢</span>
+                    <span>Buildings</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Rankings Dynamic Container -->
+              <div id="violationRankingsContainer" class="eco-table-frame overflow-x-auto eco-slim-scrollbar">
+                <!-- Injected via JavaScript -->
+              </div>
+            </div>
+
+            <!-- VIOLATION HISTORY BOARD SECTION (with 20-per-page Pagination) -->
+            <div class="glass-elevated glass-card dark:bg-[#0c1328]/80 dark:border-[#10b981]/25 p-5 md:p-6 rounded-3xl shadow-xl transition-all duration-300">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-4 border-b border-gray-100 dark:border-white/5 gap-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500/20 to-orange-500/20 text-rose-500 dark:text-rose-400 border border-rose-500/30 flex items-center justify-center font-bold text-base shadow-sm">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <h4 class="eco-primary-text text-base font-bold text-[#18392B] dark:text-cyan-400 tracking-tight">Violation History Board</h4>
+                      <span id="violationHistoryTotalBadge" class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20">0 Events</span>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Auditable chronological log of environmental threshold breaches</p>
+                  </div>
+                </div>
+
+                <!-- Search & Filters -->
+                <div class="flex flex-wrap items-center gap-2">
+                  <div class="relative">
+                    <input type="text" id="violationHistorySearch" placeholder="Search room, building, control..." class="px-3 py-1.5 pl-8 text-xs bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 rounded-xl text-gray-800 dark:text-gray-200 outline-none focus:border-[#10b981] w-48 sm:w-60 transition-all">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" class="absolute left-2.5 top-2.5 text-gray-400">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                  </div>
+                  <select id="violationHistorySeverityFilter" class="px-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 rounded-xl text-gray-800 dark:text-gray-200 outline-none focus:border-[#10b981] cursor-pointer">
+                    <option value="all">All Severities</option>
+                    <option value="critical">Critical (>2)</option>
+                    <option value="moderate">Moderate (1-2)</option>
+                  </select>
+                  <button type="button" id="clearViolationHistoryBtn" class="px-3 py-1.5 text-xs bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 hover:border-rose-500/50 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs" title="Erase Violation History">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    <span>Erase History</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- History Table -->
+              <div class="eco-table-frame overflow-x-auto rounded-2xl border border-[#10b981]/30 dark:border-[#10b981]/20 eco-slim-scrollbar min-h-[220px]">
+                <table class="eco-data-table w-full text-left border-collapse">
+                  <thead class="bg-[#0b291d] dark:bg-[#081a14] text-white dark:text-[#a7f3d0] sticky top-0 z-10 text-[11px] font-bold uppercase tracking-wider">
+                    <tr>
+                      <th scope="col" class="px-4 py-3.5 text-center w-12">#</th>
+                      <th scope="col" class="px-4 py-3.5">DATE & TIME</th>
+                      <th scope="col" class="px-4 py-3.5">BUILDING</th>
+                      <th scope="col" class="px-4 py-3.5">FLOOR</th>
+                      <th scope="col" class="px-4 py-3.5">ROOM</th>
+                      <th scope="col" class="px-4 py-3.5">AC CONTROL</th>
+                      <th scope="col" class="px-4 py-3.5">TRIGGER / RULE</th>
+                      <th scope="col" class="px-4 py-3.5">RECORDED</th>
+                      <th scope="col" class="px-4 py-3.5 text-center">SEVERITY</th>
+                      <th scope="col" class="px-4 py-3.5 text-right pr-5">ACTION</th>
+                    </tr>
+                  </thead>
+                  <tbody id="violationHistoryTableBody" class="bg-white dark:bg-[#0c1328]/40 divide-y divide-gray-100 dark:divide-white/5 text-gray-800 dark:text-gray-200 text-xs">
+                    <!-- Populated via JavaScript -->
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Pagination Controls (20 items per page) -->
+              <div class="mt-4 pt-3 border-t border-gray-100 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                <div id="violationHistoryPageInfo" class="font-bold text-gray-500 dark:text-gray-400">
+                  Showing 0 to 0 of 0 violations
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <button id="violationPrevPageBtn" disabled class="group px-3 py-1.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 rounded-xl font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center gap-1.5">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="transition-transform group-hover:-translate-x-0.5"><polyline points="15 18 9 12 15 6"/></svg>
+                    <span>Previous</span>
+                  </button>
+                  <div id="violationPaginationPages" class="flex items-center gap-1">
+                    <!-- Dynamic Page Buttons -->
+                  </div>
+                  <button id="violationNextPageBtn" disabled class="group px-3 py-1.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 rounded-xl font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center gap-1.5">
+                    <span>Next</span>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="transition-transform group-hover:translate-x-0.5"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ACTIVE RULES MODAL -->
+  <div id="activeRulesModal" style="display: none; position: fixed; inset: 0; background-color: rgba(7, 13, 26, 0.75); backdrop-filter: blur(4px); z-index: 50;" class="flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-[#0c1328] dark:border dark:border-white/10 rounded-3xl w-full max-w-6xl p-6 sm:p-8 max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col eco-slim-scrollbar">
+      <!-- Modal Header -->
+      <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-100 dark:border-white/5">
+        <div class="flex items-center gap-3">
+          <div class="bg-[#18392B] dark:bg-emerald-950/60 text-[#10b981] dark:text-[#34d399] p-2.5 rounded-xl border border-emerald-500/20 flex items-center justify-center">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="eco-primary-text text-xl font-bold text-[#18392B] dark:text-cyan-400">Configured Automation Rules</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Evaluate sensor conditions and trigger automatic telemetry alerts</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button id="addRuleBtn" class="px-4 py-2 bg-[#10b981] hover:bg-emerald-600 text-white rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 border-0 cursor-pointer shadow-md hover:shadow-lg" style="color: #ffffff !important;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ffffff" stroke-width="2.5" style="stroke: #ffffff !important;">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            <span style="color: #ffffff !important;">Create New Rule</span>
+          </button>
+          <button id="closeActiveRulesModal" class="text-gray-400 hover:text-black dark:hover:text-white transition-colors text-2xl font-bold border-0 bg-transparent cursor-pointer p-1" title="Close">✕</button>
+        </div>
+      </div>
+
+      <!-- Filters and Clear All Action Bar -->
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div class="flex gap-2">
+          <button class="ruleFilterBtn px-4 py-1.5 bg-[#18392B] dark:bg-[#10b981] text-white border border-[#18392B] dark:border-[#10b981]/20 rounded-xl text-xs font-bold transition-colors cursor-pointer" data-filter="all">All</button>
+          <button class="ruleFilterBtn px-4 py-1.5 border border-[#10b981] dark:border-[#10b981]/40 text-gray-500 dark:text-gray-400 hover:border-[#10b981] rounded-xl text-xs font-bold transition-colors cursor-pointer" data-filter="temperature">Temperature</button>
+          <button class="ruleFilterBtn px-4 py-1.5 border border-[#10b981] dark:border-[#10b981]/40 text-gray-500 dark:text-gray-400 hover:border-[#10b981] rounded-xl text-xs font-bold transition-colors cursor-pointer" data-filter="battery">Battery</button>
+          <button class="ruleFilterBtn px-4 py-1.5 border border-[#10b981] dark:border-[#10b981]/40 text-gray-500 dark:text-gray-400 hover:border-[#10b981] rounded-xl text-xs font-bold transition-colors cursor-pointer" data-filter="disabled">Disabled</button>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="deactivateAllRulesBtn" class="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold transition-colors bg-white dark:bg-slate-900 border border-amber-400 dark:border-amber-600/40 text-amber-600 dark:text-amber-400 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-950/20 cursor-pointer shadow-xs" title="Deactivate all rules" aria-label="Deactivate all rules">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+            </svg>
+            Deactivate All
+          </button>
+          <button id="clearRulesBtn" class="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold transition-colors bg-white dark:bg-slate-900 border border-red-400 dark:border-red-800/40 text-red-500 dark:text-red-400 rounded-xl hover:bg-red-50 dark:hover:bg-slate-800/20 cursor-pointer shadow-xs" title="Clear all rules" aria-label="Clear all rules">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18" />
+              <path d="M8 6V4h8v2" />
+              <path d="M6 6l1 14h10l1-14" />
+            </svg>
+            Clear All Rules
+          </button>
+        </div>
+      </div>
+
+      <!-- Rules Table -->
+      <div class="eco-table-frame overflow-x-auto rounded-2xl border border-gray-200 dark:border-white/10 eco-slim-scrollbar min-h-[300px]">
+        <table class="eco-data-table w-full text-left border-collapse text-xs">
+          <thead class="bg-[#0b291d] dark:bg-[#081a14] text-white dark:text-[#a7f3d0] sticky top-0 z-10">
+            <tr class="text-[11px] font-bold uppercase tracking-wider">
+              <th scope="col" class="px-5 py-4 w-12 text-center">#</th>
+              <th scope="col" class="px-5 py-4">TYPE</th>
+              <th scope="col" class="px-5 py-4">BUILDING</th>
+              <th scope="col" class="px-5 py-4">FLOOR</th>
+              <th scope="col" class="px-5 py-4">ROOM</th>
+              <th scope="col" class="px-5 py-4">AC CONTROL(S)</th>
+              <th scope="col" class="px-5 py-4">CONDITION</th>
+              <th scope="col" class="px-5 py-4">VALUE</th>
+              <th scope="col" class="px-5 py-4">TIME</th>
+              <th scope="col" class="px-5 py-4 text-center">STATUS</th>
+              <th scope="col" class="px-5 py-4 text-right pr-6 min-w-[100px]">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody id="rulesTableBody" class="bg-white dark:bg-[#0c1328]/40 divide-y divide-gray-100 dark:divide-white/5 text-gray-800 dark:text-gray-200">
+            <tr class="text-center">
+              <td colspan="11" class="px-5 py-8 text-gray-500 dark:text-gray-400 font-medium">No rules created yet. Click "Create New Rule" to get started.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Controls for Active Rules Modal (20 items per page) -->
+      <div class="mt-4 pt-3 border-t border-gray-100 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+        <div id="rulesPageInfo" class="font-bold text-gray-500 dark:text-gray-400">
+          Showing 0 to 0 of 0 rules
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button id="rulesPrevPageBtn" disabled class="group px-3 py-1.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 rounded-xl font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center gap-1.5">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="transition-transform group-hover:-translate-x-0.5"><polyline points="15 18 9 12 15 6"/></svg>
+            <span>Previous</span>
+          </button>
+          <div id="rulesPaginationPages" class="flex items-center gap-1">
+            <!-- Dynamic Page Buttons -->
+          </div>
+          <button id="rulesNextPageBtn" disabled class="group px-3 py-1.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 rounded-xl font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center gap-1.5">
+            <span>Next</span>
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="transition-transform group-hover:translate-x-0.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="ruleModal"
+    style="display: none; position: fixed; inset: 0; background-color: rgba(7, 13, 26, 0.75); backdrop-filter: blur(4px); z-index: 60;"
+    class="flex items-center justify-center p-4">
+    <div
+      class="bg-white dark:bg-[#0c1328] dark:border dark:border-white/10 rounded-3xl w-full max-w-2xl p-8 max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="eco-primary-text text-2xl font-bold text-black dark:text-cyan-400 flex items-center gap-3">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"
+            class="text-[#10b981]">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+          </svg>
+          <span id="modalTitle">Add New Rule</span>
+        </h3>
+        <button id="closeRuleModal"
+          class="text-gray-400 hover:text-black dark:hover:text-white transition-colors text-2xl font-bold border-0 bg-transparent cursor-pointer">✕</button>
+      </div>
+
+      <!-- Rule Type Selection -->
+      <div class="mb-5">
+        <label class="block text-sm font-bold text-black dark:text-gray-300 mb-2">Rule Type</label>
+        <select id="ruleType"
+          class="w-full px-4 py-3 bg-white dark:bg-slate-950/40 border-2 border-[#10b981] dark:border-[#10b981]/40 focus:border-[#059669] hover:border-[#34d399] rounded-xl text-black dark:text-gray-100 outline-none transition-colors appearance-none font-medium cursor-pointer">
+          <option value="">Select a rule type...</option>
+          <option value="temperature">Temperature Threshold</option>
+          <option value="battery">Battery Level Alert</option>
+        </select>
+      </div>
+
+      <!-- Location Selection (Building -> Floor -> Room) -->
+      <div id="locationSelection" class="mb-5 hidden">
+        <div class="mb-4">
+          <label class="block text-sm font-bold text-black dark:text-gray-300 mb-2">Select Building</label>
+          <select id="ruleBuilding"
+            class="w-full px-4 py-3 bg-white dark:bg-slate-950/40 border-2 border-[#10b981] dark:border-[#10b981]/40 focus:border-[#059669] hover:border-[#34d399] rounded-xl text-black dark:text-gray-100 outline-none transition-colors appearance-none font-medium cursor-pointer">
+            <option value="">Choose a building...</option>
+          </select>
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-bold text-black dark:text-gray-300 mb-2">Select Floor</label>
+          <select id="ruleFloor"
+            class="w-full px-4 py-3 bg-white dark:bg-slate-950/40 border-2 border-[#10b981] dark:border-[#10b981]/40 focus:border-[#059669] hover:border-[#34d399] rounded-xl text-black dark:text-gray-100 outline-none transition-colors appearance-none font-medium cursor-pointer">
+            <option value="">Choose a floor...</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-bold text-black dark:text-gray-300 mb-2">Select Room</label>
+          <select id="ruleRoom"
+            class="w-full px-4 py-3 bg-white dark:bg-slate-950/40 border-2 border-[#10b981] dark:border-[#10b981]/40 focus:border-[#059669] hover:border-[#34d399] rounded-xl text-black dark:text-gray-100 outline-none transition-colors appearance-none font-medium cursor-pointer">
+            <option value="">Choose a room...</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Available AC Controls in Room (for Temperature) -->
+      <div id="roomNodesSelection" class="mb-5 hidden">
+        <label class="block text-sm font-bold text-black dark:text-gray-300 mb-2">Select AC Control(s) <span
+            class="text-xs text-gray-500 font-medium ml-1">(Hold Ctrl/Cmd to select multiple)</span></label>
+        <select id="ruleRoomNode" multiple
+          class="w-full px-4 py-3 bg-white dark:bg-slate-950/40 border-2 border-[#10b981] dark:border-[#10b981]/40 focus:border-[#059669] hover:border-[#34d399] rounded-xl text-black dark:text-gray-100 outline-none transition-colors font-medium cursor-pointer"
+          size="4">
+          <option value="">Choose node(s)...</option>
+        </select>
+      </div>
+
+      <!-- AC Control Selection (for Battery) -->
+      <div id="nodeSelection" class="mb-5 hidden">
+        <label class="block text-sm font-bold text-black dark:text-gray-300 mb-2">Select AC Control</label>
+        <select id="ruleNode"
+          class="w-full px-4 py-3 bg-white dark:bg-slate-950/40 border-2 border-[#10b981] dark:border-[#10b981]/40 focus:border-[#059669] hover:border-[#34d399] rounded-xl text-black dark:text-gray-100 outline-none transition-colors appearance-none font-medium cursor-pointer">
+          <option value="">Choose an AC control...</option>
+        </select>
+      </div>
+
+      <!-- Condition and Value (Grid) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+        <div>
+          <label class="block text-sm font-bold text-black dark:text-gray-300 mb-2">Condition</label>
+          <select id="ruleCondition"
+            class="w-full px-4 py-3 bg-white dark:bg-slate-950/40 border-2 border-[#10b981] dark:border-[#10b981]/40 focus:border-[#059669] hover:border-[#34d399] rounded-xl text-black dark:text-gray-100 outline-none transition-colors appearance-none font-medium cursor-pointer">
+            <option value="">Select condition...</option>
+            <option value="above">Above (&gt;)</option>
+            <option value="below">Below (&lt;)</option>
+            <option value="equals">Equals (==)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-bold text-black dark:text-gray-300 mb-2">Value</label>
+          <input type="number" id="ruleValue" placeholder="Enter value"
+            class="w-full px-4 py-3 bg-white dark:bg-slate-950/40 border-2 border-[#10b981] dark:border-[#10b981]/40 focus:border-[#059669] hover:border-[#34d399] rounded-xl text-black dark:text-gray-100 outline-none transition-colors font-medium">
+        </div>
+        <div>
+          <label class="block text-sm font-bold text-black dark:text-gray-300 mb-2">Unit</label>
+          <select id="ruleUnit"
+            class="w-full px-4 py-3 bg-white dark:bg-slate-950/40 border-2 border-[#10b981] dark:border-[#10b981]/40 focus:border-[#059669] hover:border-[#34d399] rounded-xl text-black dark:text-gray-100 outline-none transition-colors appearance-none font-medium cursor-pointer">
+            <option value="">Unit...</option>
+            <option value="°C">°C (Temp)</option>
+            <option value="%">% (Battery)</option>
+          </select>
+        </div>
+        <div id="durationSection" class="hidden">
+          <label class="block text-sm font-bold text-black dark:text-gray-300 mb-2">Duration (mins)</label>
+          <input type="number" id="ruleDuration" placeholder="e.g. 15"
+            class="w-full px-4 py-3 bg-white dark:bg-slate-950/40 border-2 border-[#10b981] dark:border-[#10b981]/40 focus:border-[#059669] hover:border-[#34d399] rounded-xl text-black dark:text-gray-100 outline-none transition-colors font-medium">
+        </div>
+      </div>
+
+      <!-- Schedule Section -->
+      <div
+        class="mb-6 p-6 bg-white dark:bg-slate-950/20 border-2 border-[#10b981] dark:border-[#10b981]/20 rounded-2xl relative overflow-hidden">
+        <!-- Decoration -->
+
+
+        <h4 class="eco-primary-text text-black dark:text-cyan-400 font-bold flex items-center gap-2 mb-4 text-sm">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          Schedule (Optional)
+        </h4>
+        <div class="grid grid-cols-2 gap-4 relative z-10">
+          <div>
+            <label class="block text-xs font-bold text-[#10b981] mb-1.5 uppercase tracking-wider">Start Date</label>
+            <input type="date" id="ruleStartDate"
+              class="w-full px-3 py-2.5 bg-white dark:bg-slate-950/40 border-2 border-[#10b981] dark:border-[#10b981]/40 rounded-xl text-black dark:text-gray-100 text-sm font-medium outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-[#10b981] mb-1.5 uppercase tracking-wider">Start Time</label>
+            <input type="time" id="ruleStartTime"
+              class="w-full px-3 py-2.5 bg-white dark:bg-slate-950/40 border-2 border-[#10b981] dark:border-[#10b981]/40 rounded-xl text-black dark:text-gray-100 text-sm font-medium outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-[#10b981] mb-1.5 uppercase tracking-wider">End Date</label>
+            <input type="date" id="ruleEndDate"
+              class="w-full px-3 py-2.5 bg-white dark:bg-slate-950/40 border-2 border-[#10b981] dark:border-[#10b981]/40 rounded-xl text-black dark:text-gray-100 text-sm font-medium outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-[#10b981] mb-1.5 uppercase tracking-wider">End Time</label>
+            <input type="time" id="ruleEndTime"
+              class="w-full px-3 py-2.5 bg-white dark:bg-slate-950/40 border-2 border-[#10b981] dark:border-[#10b981]/40 rounded-xl text-black dark:text-gray-100 text-sm font-medium outline-none">
+          </div>
+        </div>
+        <p class="text-xs text-black/70 dark:text-gray-400 mt-3 font-medium relative z-10">Rule will only trigger within
+          this date/time range (leave blank for always active)</p>
+      </div>
+
+
+      <!-- Enabled Toggle -->
+      <label for="ruleEnabled"
+        class="mb-8 flex items-center gap-3 bg-white dark:bg-slate-950/20 p-4 rounded-xl border-2 border-[#10b981] dark:border-[#10b981]/25 cursor-pointer select-none">
+        <input type="checkbox" id="ruleEnabled" checked class="w-5 h-5 accent-[#10b981] cursor-pointer">
+        <span class="text-sm font-bold text-black dark:text-gray-200 cursor-pointer">Enable this rule immediately</span>
+      </label>
+
+      <!-- Buttons -->
+      <div class="flex gap-4">
+        <button id="saveRuleBtn"
+          class="flex-1 px-4 py-3.5 bg-[#10b981] hover:bg-[#059669] text-white rounded-xl text-sm font-bold transition-colors shadow-sm flex items-center justify-center gap-2 border-0 cursor-pointer">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+          Save Rule
+        </button>
+        <button id="closeRuleModalBtn"
+          class="flex-1 px-4 py-3.5 bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800 border-2 border-[#10b981] dark:border-[#10b981]/40 text-black dark:text-gray-200 rounded-xl text-sm font-bold transition-colors cursor-pointer">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Confirm Deletion -->
+  <div id="confirmDeleteModal"
+    style="display: none; position: fixed; inset: 0; z-index: 99999; background-color: rgba(7, 13, 26, 0.75); backdrop-filter: blur(6px);"
+    class="flex items-center justify-center p-4 transition-opacity duration-200">
+    <div class="bg-white dark:bg-[#0c1328] border border-gray-200 dark:border-white/10 rounded-3xl p-6 sm:p-7 w-full max-w-sm shadow-2xl text-left">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0 border border-red-200 dark:border-red-800/40">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+        <h3 class="eco-primary-text text-lg font-bold text-gray-900 dark:text-white">Confirm Deletion</h3>
+      </div>
+      <p id="deleteConfirmMessage" class="text-gray-600 dark:text-gray-300 text-xs sm:text-sm mb-6 leading-relaxed">
+        Are you sure you want to delete this rule? This action cannot be undone.
+      </p>
+      <div class="flex gap-3">
+        <button id="cancelDeleteBtn"
+          class="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors border-0 cursor-pointer text-xs sm:text-sm">
+          Cancel
+        </button>
+        <button id="confirmDeleteBtn"
+          class="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-colors border-0 cursor-pointer shadow-md text-xs sm:text-sm" style="color: #ffffff !important;">
+          Delete Rule
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Confirm Clear Violation History -->
+  <div id="confirmClearViolationHistoryModal"
+    style="display: none; position: fixed; inset: 0; z-index: 99999; background-color: rgba(7, 13, 26, 0.75); backdrop-filter: blur(6px);"
+    class="flex items-center justify-center p-4 transition-opacity duration-200">
+    <div class="bg-white dark:bg-[#0c1328] border border-gray-200 dark:border-white/10 rounded-3xl p-6 sm:p-7 w-full max-w-sm shadow-2xl text-left">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-200 dark:border-rose-800/40">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            <line x1="10" y1="11" x2="10" y2="17"></line>
+            <line x1="14" y1="11" x2="14" y2="17"></line>
+          </svg>
+        </div>
+        <h3 class="eco-primary-text text-lg font-bold text-gray-900 dark:text-white">Erase Violation History</h3>
+      </div>
+      <p class="text-gray-600 dark:text-gray-300 text-xs sm:text-sm mb-6 leading-relaxed">
+        Are you sure you want to permanently erase all violation history logs? This action will clear all recorded environmental breaches and reset the violation board.
+      </p>
+      <div class="flex gap-3">
+        <button id="cancelClearViolationHistoryBtn"
+          class="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors border-0 cursor-pointer text-xs sm:text-sm">
+          Cancel
+        </button>
+        <button id="confirmClearViolationHistoryBtn"
+          class="flex-1 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl transition-colors border-0 cursor-pointer shadow-md text-xs sm:text-sm" style="color: #ffffff !important;">
+          Erase History
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GLOBAL NOTIFICATION POPUP -->
+  <div id="globalNotificationDialog"
+    style="display: none; position: fixed; top: 1.25rem; left: 1.25rem; background: transparent !important; background-color: transparent !important; z-index: 99999; pointer-events: none; max-width: 28rem; width: calc(100% - 2.5rem);"
+    class="flex flex-col">
+    <div
+      class="bg-white dark:bg-[#0c1328] border-2 border-[#10b981] dark:border-[#10b981]/50 rounded-2xl p-5 shadow-2xl backdrop-blur-md pointer-events-auto">
+      <div class="flex items-center gap-3 mb-3">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"
+          class="text-rose-500">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+        <h3 class="eco-primary-text text-xl font-bold text-[#18392B] dark:text-cyan-400">New Notification!</h3>
+      </div>
+      <p id="globalNotificationMessage"
+        class="text-gray-700 dark:text-gray-200 text-sm font-medium mb-5 leading-relaxed">A scheduled message has been
+        triggered.</p>
+      <div class="flex gap-3">
+        <a href="Notification.html"
+          class="flex-1 px-4 py-2 bg-[#10b981] hover:bg-emerald-400 text-white font-bold rounded-xl text-sm transition-colors text-center shadow-md border-0 cursor-pointer">
+          View Notifications
+        </a>
+        <button id="dismissNotificationBtn"
+          class="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 font-bold rounded-xl text-sm transition-colors border-0 cursor-pointer">
+          Dismiss
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Violation Details -->
+  <div id="violationDetailModal"
+    style="display: none; position: fixed; inset: 0; background-color: rgba(7, 13, 26, 0.78); backdrop-filter: blur(6px); z-index: 70;"
+    class="flex items-center justify-center p-4 sm:p-6 transition-all duration-200">
+    <div
+      class="bg-white dark:bg-[#0c1328] border-2 border-rose-500/40 dark:border-rose-500/30 rounded-3xl w-full max-w-2xl p-6 sm:p-8 max-h-[90vh] overflow-y-auto shadow-2xl relative animate-fadeIn eco-slim-scrollbar">
+      <!-- Modal Header -->
+      <div class="mb-5 flex items-start justify-between gap-4 pb-4 border-b border-gray-100 dark:border-white/10">
+        <div class="flex items-center gap-3">
+          <div id="modalSeverityIcon" class="w-11 h-11 rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="eco-primary-text text-xl font-bold text-[#18392B] dark:text-cyan-400">Violation Event Details</h3>
+              <span id="modalSeverityBadge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400 border border-rose-300 dark:border-rose-500/30">Critical</span>
+            </div>
+            <p id="modalEventIdText" class="text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5">Event #--</p>
+          </div>
+        </div>
+        <button id="closeViolationDetailModal" class="text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors text-2xl font-bold border-0 bg-transparent cursor-pointer p-1" title="Close">✕</button>
+      </div>
+
+      <!-- Diagnostic Grid -->
+      <div class="space-y-4 text-sm">
+        <!-- Location Banner -->
+        <div class="bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-white/5 rounded-2xl p-4">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-400 block mb-1">Location Hierarchy</span>
+          <div class="flex items-center gap-2 flex-wrap font-bold text-gray-800 dark:text-gray-100">
+            <span id="modalBuildingName" class="px-2.5 py-1 bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-white/10 shadow-xs">Building</span>
+            <span class="text-gray-400">›</span>
+            <span id="modalFloorName" class="px-2.5 py-1 bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-white/10 shadow-xs">Floor</span>
+            <span class="text-gray-400">›</span>
+            <span id="modalRoomName" class="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 rounded-lg border border-emerald-300 dark:border-emerald-500/30 shadow-xs">Room</span>
+          </div>
+        </div>
+
+        <!-- Telemetry & Control Diagnostics -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-white/5 rounded-2xl p-4">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-400 block mb-1">AC Control Unit</span>
+            <p id="modalControlName" class="text-base font-extrabold text-gray-800 dark:text-white">--</p>
+            <span id="modalControlId" class="text-[11px] font-mono text-gray-500 dark:text-gray-400">ID: --</span>
+          </div>
+          <div class="bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-white/5 rounded-2xl p-4">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-400 block mb-1">Telemetry Reading</span>
+            <div class="flex items-baseline gap-2">
+              <span id="modalRecordedValue" class="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono">--</span>
+              <span id="modalThresholdComparison" class="text-xs font-semibold text-gray-500 dark:text-gray-400">vs threshold</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rule Condition Breached -->
+        <div class="bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-white/5 rounded-2xl p-4">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-400 block mb-1">Rule Condition Breached</span>
+          <p id="modalRuleCondition" class="font-bold text-gray-800 dark:text-gray-200">--</p>
+        </div>
+
+        <!-- Timestamp & Log Message -->
+        <div class="bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-white/5 rounded-2xl p-4">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-400 block mb-1">Event Timestamp</span>
+          <p id="modalTimestamp" class="font-semibold text-gray-700 dark:text-gray-300">--</p>
+        </div>
+
+        <div class="bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-white/5 rounded-2xl p-4">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-400 block mb-1">System Notification Message</span>
+          <p id="modalNotificationMessage" class="text-xs font-mono text-gray-700 dark:text-gray-300 leading-relaxed break-words bg-white dark:bg-slate-950 p-3 rounded-xl border border-gray-200 dark:border-white/5">--</p>
+        </div>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="mt-6 pt-4 border-t border-gray-100 dark:border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-2 flex-wrap">
+          <a id="modalViewInNotificationsBtn" href="Notification.html" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs sm:text-sm font-bold transition-colors inline-flex items-center gap-2 shadow-sm border-0 cursor-pointer">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+            <span>View in Notification Inbox</span>
+          </a>
+          <button id="modalDeleteViolationBtn" type="button" class="px-3.5 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 hover:border-rose-500/50 rounded-xl text-xs sm:text-sm font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            <span>Delete Record</span>
+          </button>
+        </div>
+        <button id="closeViolationDetailModalBtn" class="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer border-0">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Cloud Database Engine (Supabase) -->
+  <script src="./js/supabase.umd.js"></script>
+  <script>
+    if (!window.supabase) {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"><\/script>');
+    }
+  </script>
+  <script src="./js/shared.js"></script>
+  <script src="./js/global-notifications.js"></script>
+  <script src="./js/sidebar.js"></script>
+  <script src="./js/tooltip-positioning.js"></script>
+  <script src="./js/rule-persistence.js?v=1"></script>
+  <script src="./js/rules.js?v=13"></script>
+</body>
+
+</html>

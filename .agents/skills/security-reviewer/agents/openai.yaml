@@ -1,0 +1,6 @@
+interface:
+  display_name: "Security Reviewer"
+  short_description: "Review application security"
+  default_prompt: "Perform a focused security review and report concrete findings with severity and remediation."
+policy:
+  allow_implicit_invocation: false

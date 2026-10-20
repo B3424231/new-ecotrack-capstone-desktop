@@ -1,0 +1,57 @@
+const {app,BrowserWindow}=require('electron'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const root=path.resolve(__dirname,'..'),out=path.join(root,'reports/notification-composer-removal');
+app.setPath('userData',path.join(root,'scratch/notification-removal-electron'));app.disableHardwareAcceleration();
+app.on('window-all-closed',()=>{});
+app.whenReady().then(async()=>{
+ fs.mkdirSync(out,{recursive:true});fs.mkdirSync(path.join(root,'scratch'),{recursive:true});
+ let html=fs.readFileSync(path.join(root,'public/Notification.html'),'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'').replace(/<link\b[^>]*>/gi,'');
+ const css=fs.readFileSync(path.join(root,'public/styles.css'),'utf8');
+ html=html.replace('</head>','<style>'+css+'</style></head>');
+ const fixture=path.join(root,'scratch/notification-removal-fixture.html');fs.writeFileSync(fixture,html);
+ const win=new BrowserWindow({width:1440,height:900,show:false,webPreferences:{contextIsolation:true,nodeIntegration:false,offscreen:true,backgroundThrottling:false}});
+ const errors=[];win.webContents.on('console-message',(_e,level,msg)=>{if(level>=3&&!String(msg).includes('Content Security Policy')){errors.push(msg);console.error('Renderer: '+msg);}});
+ win.webContents.session.webRequest.onBeforeRequest({urls:['http://*/*','https://*/*']},(_d,cb)=>cb({cancel:true}));
+ await win.loadFile(fixture);
+ await win.webContents.executeJavaScript(`
+ window.__records=[];window.__calls=[];window.__intervals=[];window.__alerts=[];
+ window.setInterval=(fn,ms)=>{__intervals.push({fn,ms});return __intervals.length;};
+ window.ensureLocationHierarchy=()=>{};window.triggerGlobalNotification=msg=>__alerts.push(msg);
+ window.electron={invoke:async(name,payload)=>{__calls.push({name,payload});
+ if(name==='scheduler-fetch-data')return {success:true,buildings:[{id:'b',name:'IC Building'}],floors:[{id:'f',name:'First Floor',building_id:'b'}],rooms:[{id:'r',name:'Room A',floor_id:'f'}],nodes:[{id:'n',name:'ESP32',room_id:'r'}]};
+ if(name==='notifications-fetch-all')return {success:true,data:structuredClone(__records)};
+ if(name==='notifications-update')return {success:true};
+ return {success:false};
+ }};
+ `+fs.readFileSync(path.join(root,'public/js/notifications.js'),'utf8')+'\ntrue;');
+ await win.webContents.executeJavaScript('setupNotificationsPage()');
+ const checks=[];
+ let state=await win.webContents.executeJavaScript(`({composer:!!document.getElementById('messageModal'),text:document.getElementById('messagesTableBody').textContent,buttons:document.getElementById('messagesTableBody').querySelectorAll('button').length,selected:selectedRoomId,poll:__intervals.some(t=>t.ms===2500)})`);
+ assert.equal(state.composer,false);assert.equal(state.buttons,0);assert(state.text.includes('Automatic alerts'));assert.equal(state.selected,'r');assert(state.poll);
+ checks.push('Empty room renders automatic alert guidance without a composer or broadcast action; room selection and live refresh start.');
+ fs.writeFileSync(path.join(out,'notifications-empty.png'),(await win.webContents.capturePage()).toPNG());
+ state=await win.webContents.executeJavaScript(`(async()=>{
+ __records=[{id:'rule',room_id:'r',rule_id:'rule-1',content:'Temperature threshold exceeded',triggered:true,created:new Date().toISOString()},{id:'schedule',room_id:'r',content:'Controller wake schedule applied',triggered:true,created:new Date().toISOString()}];
+ await loadNotificationMessages();updateMessagesTable();
+ const loaded=document.getElementById('messagesTableBody').textContent;
+ document.getElementById('notificationFilterScheduleBtn').click();
+ const filtered=document.getElementById('messagesTableBody').textContent;
+ document.getElementById('notificationFilterAllBtn').click();
+ document.querySelector('tr[data-id="rule"]').click();
+ const read=messages.find(m=>m.id==='rule').read,details=document.getElementById('viewMessageModal').style.display;
+ document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}));
+ return {loaded,filtered,read,details,closed:document.getElementById('viewMessageModal').style.display};
+ })()`);
+ assert(state.loaded.includes('threshold exceeded')&&state.loaded.includes('wake schedule'));assert(!state.filtered.includes('threshold exceeded')&&state.filtered.includes('wake schedule'));
+ assert(state.read&&state.details==='flex'&&state.closed==='none');
+ checks.push('Rule and schedule records still load; filters, detail modal, read persistence and Escape dismissal work.');
+ state=await win.webContents.executeJavaScript(`(async()=>{
+ isNotifying=true;lastTriggeredIds=new Set();
+ await __intervals.find(t=>t.ms===10000).fn();await __intervals.find(t=>t.ms===10000).fn();
+ return {alerts:__alerts.length,created:__calls.filter(c=>c.name==='notification-create').length,readSaved:JSON.parse(localStorage.getItem(notificationReadStateKey)).rule};
+ })()`);
+ assert.equal(state.alerts,2);assert.equal(state.created,0);assert(state.readSaved);
+ checks.push('Automatic delivery triggers each existing alert once; no manual-create calls or notification data deletion occur.');
+ assert.deepEqual(errors,[]);
+ fs.writeFileSync(path.join(out,'native-results.json'),JSON.stringify({passed:checks.length,checks,errors,live_database_modified:false},null,2));
+ console.log('Notification removal: '+checks.length+' native workflow checks passed.');win.destroy();app.exit(0);
+}).catch(e=>{console.error(e);app.exit(1);});

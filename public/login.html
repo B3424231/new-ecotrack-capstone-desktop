@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+  <script src="./js/app-mode.js?v=6"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoTrack - Universal Aircon Controller</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // EcoTrack Login Page: Permanently locked to the dusk cinematic aesthetic shown in reference
+        document.documentElement.classList.add('dark');
+        const themeLockObserver = new MutationObserver(() => {
+            if (!document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.add('dark');
+            }
+        });
+        themeLockObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+        
+        tailwind.config = {
+          darkMode: 'class',
+          theme: {
+            extend: {
+              colors: {
+                brand: {
+                  50: '#ecfdf5',
+                  100: '#d1fae5',
+                  200: '#a7f3d0',
+                  300: '#6ee7b7',
+                  400: '#34d399',
+                  500: '#10b981',
+                  600: '#059669',
+                  700: '#047857',
+                  800: '#065f46',
+                  900: '#064e3b',
+                  950: '#022c22',
+                },
+                accent: {
+                  cyan: '#22d3ee',
+                  teal: '#2dd4bf',
+                }
+              }
+            }
+          }
+        }
+    </script>
+    <link rel="stylesheet" href="styles.css?v=62">
+
+    <!-- Supabase Client & Dual Database Router -->
+    <script src="./js/supabase.umd.js"></script>
+    <script>
+      if (!window.supabase) {
+        document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"><\/script>');
+      }
+    </script>
+    <script src="./js/supabase-client.js"></script>
+    <script src="./js/shared.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+        * {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            background-color: #03140e !important;
+            transition: none;
+        }
+
+        body::before {
+            display: none !important;
+        }
+
+        /* Glassmorphism Auth Card - Permanently locked to dark dusk aesthetic */
+        .auth-glass-card {
+            background: rgba(8, 28, 22, 0.78) !important;
+            backdrop-filter: blur(24px) !important;
+            -webkit-backdrop-filter: blur(24px) !important;
+            border: 1px solid rgba(45, 212, 191, 0.25) !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 
+                        0 0 40px -10px rgba(20, 184, 166, 0.25),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+        }
+
+        /* Gradient Submit Button */
+        .btn-gradient-submit {
+            background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 20px -2px rgba(16, 185, 129, 0.45);
+        }
+
+        .btn-gradient-submit:hover {
+            background: linear-gradient(135deg, #34d399 0%, #22d3ee 100%);
+            box-shadow: 0 6px 28px -2px rgba(34, 211, 238, 0.55);
+            transform: translateY(-1px);
+        }
+
+        .btn-gradient-submit:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 10px rgba(16, 185, 129, 0.35);
+        }
+
+        /* Custom Input Glow - Permanently locked */
+        .auth-input-field {
+            background: rgba(3, 18, 14, 0.65) !important;
+            border: 1.5px solid rgba(45, 212, 191, 0.3) !important;
+            color: #f0fdf4 !important;
+            transition: all 0.2s ease;
+        }
+
+        .auth-input-field:focus {
+            background: rgba(2, 28, 20, 0.85) !important;
+            border-color: #22d3ee !important;
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2) !important;
+            outline: none;
+        }
+
+        /* Subtle Feature Bullets */
+        .feature-icon-wrapper {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(20, 184, 166, 0.12) !important;
+            border: 1.5px solid rgba(45, 212, 191, 0.35) !important;
+            color: #2dd4bf !important;
+            flex-shrink: 0;
+            transition: transform 0.2s ease;
+        }
+
+        .feature-item:hover .feature-icon-wrapper {
+            transform: scale(1.08);
+            background: rgba(20, 184, 166, 0.2) !important;
+            border-color: #22d3ee !important;
+            color: #22d3ee !important;
+        }
+
+        /* Custom Checkbox */
+        .custom-checkbox {
+            appearance: none;
+            background-color: rgba(3, 18, 14, 0.65) !important;
+            margin: 0;
+            font: inherit;
+            color: currentColor;
+            width: 1.15em;
+            height: 1.15em;
+            border: 1.5px solid rgba(45, 212, 191, 0.35) !important;
+            border-radius: 0.3em;
+            display: grid;
+            place-content: center;
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+
+        .custom-checkbox::before {
+            content: "";
+            width: 0.65em;
+            height: 0.65em;
+            transform: scale(0);
+            transition: 120ms transform ease-in-out;
+            box-shadow: inset 1em 1em white;
+            background-color: currentColor;
+            transform-origin: bottom left;
+            clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+        }
+
+        .custom-checkbox:checked {
+            background-color: #10b981 !important;
+            border-color: #10b981 !important;
+        }
+
+        .custom-checkbox:checked::before {
+            transform: scale(1);
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.35; transform: scale(1); }
+            50% { opacity: 0.55; transform: scale(1.03); }
+        }
+
+        .bg-glow-pulse {
+            animation: pulseGlow 8s ease-in-out infinite;
+        }
+
+        /* Ensure no solid black screen or container overrides on login page */
+        html body,
+        html main,
+        html #login-main-grid,
+        .login-main,
+        #login-main-grid {
+            background-color: transparent !important;
+            background: transparent !important;
+            background-image: none !important;
+        }
+    </style>
+</head>
+
+<body class="login-page selection:bg-emerald-500 selection:text-white relative bg-transparent" style="background-color: transparent !important;">
+
+    <!-- MAIN SPLIT SCREEN WRAPPER -->
+    <div class="min-h-screen w-full relative flex flex-col justify-between bg-transparent">
+
+        <!-- BACKGROUND IMAGE & OVERLAYS -->
+        <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+            <!-- Photographic AC & Home Background -->
+            <div class="absolute inset-0 bg-cover bg-no-repeat transition-opacity duration-500" 
+                 style="background-image: url('assets/login-bg.jpg'); background-position: center 25%;"></div>
+            
+            <!-- Atmospheric Dark Teal Overlay: Always active to keep AC unit, glowing airflow, and architecture crisp -->
+            <div class="absolute inset-0 bg-gradient-to-r from-[#031711]/85 via-[#041c14]/50 to-[#02110c]/40 block"></div>
+            
+            <!-- Atmospheric Teal Glow behind the AC blower -->
+            <div class="absolute top-1/4 left-1/3 w-[500px] h-[500px] bg-cyan-500/25 rounded-full filter blur-[100px] bg-glow-pulse block pointer-events-none"></div>
+        </div>
+
+        <!-- CONTENT CONTAINER -->
+        <div class="relative z-10 flex-1 max-w-7xl mx-auto w-full px-6 sm:px-10 lg:px-12 py-4 sm:py-5 flex flex-col justify-between min-h-screen bg-transparent">
+            
+            <!-- TOP BRAND BAR -->
+            <header class="flex items-center justify-between bg-transparent">
+                <div class="flex items-center gap-3">
+                    <img src="assets/ecoTrack.png" alt="EcoTrack Logo" class="brand-logo w-10 h-10 object-contain rounded-xl shadow-md" style="border-radius: 12px !important;">
+                    <div>
+                        <div class="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-1.5">
+                            <span>EcoTrack</span>
+                        </div>
+                        <p class="text-[11px] sm:text-xs font-medium text-teal-300/90">Universal Aircon Control & Monitoring</p>
+                    </div>
+                </div>
+            </header>
+
+            <!-- MAIN SPLIT CONTENT GRID -->
+            <main id="login-main-grid" class="login-main grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center my-auto py-2 bg-transparent" style="background: transparent !important; background-color: transparent !important;">
+                
+                <!-- LEFT COLUMN: HERO INFORMATION & FEATURES -->
+                <div class="lg:col-span-6 xl:col-span-7 flex flex-col justify-center text-left max-w-2xl">
+                    
+                    <!-- Main Headline (single line for first phrase) -->
+                    <h1 class="eco-primary-text text-3xl sm:text-4xl lg:text-[2.65rem] font-extrabold tracking-tight text-white leading-[1.18] mb-3 sm:mb-4">
+                        <span class="whitespace-nowrap">Universal Aircon Control</span><br>
+                        <span class="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent whitespace-nowrap">
+                            for a Greener Future.
+                        </span>
+                    </h1>
+
+                    <!-- Paragraph Description -->
+                    <p class="text-xs sm:text-sm lg:text-base text-slate-300 font-normal leading-relaxed mb-5 sm:mb-6 max-w-lg">
+                        Manage AC settings, schedules and controllers in one place.
+                    </p>
+
+                    <!-- Feature Bullets (3 items) -->
+                    <div class="flex flex-col gap-2.5 sm:gap-3">
+                        
+                        <!-- Feature 1: Universal Aircon Control -->
+                        <div class="feature-item flex items-center gap-3.5 transition-transform">
+                            <div class="feature-icon-wrapper w-8 h-8 sm:w-9 sm:h-9">
+                                <svg class="w-4 h-4 sm:w-4.5 sm:h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                            </div>
+                            <span class="text-xs sm:text-sm font-semibold text-slate-100">
+                                Dynamic Aircon Control & Monitoring
+                            </span>
+                        </div>
+
+                        <!-- Feature 2: Universal IR Remote Control -->
+                        <div class="feature-item flex items-center gap-3.5 transition-transform">
+                            <div class="feature-icon-wrapper w-8 h-8 sm:w-9 sm:h-9">
+                                <svg class="w-4 h-4 sm:w-4.5 sm:h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="5" y="2" width="14" height="20" rx="3"></rect>
+                                    <line x1="12" y1="18" x2="12.01" y2="18" stroke-width="3"></line>
+                                    <circle cx="9" cy="7" r="1"></circle>
+                                    <circle cx="15" cy="7" r="1"></circle>
+                                    <circle cx="9" cy="11" r="1"></circle>
+                                    <circle cx="15" cy="11" r="1"></circle>
+                                </svg>
+                            </div>
+                            <span class="text-xs sm:text-sm font-semibold text-slate-100">
+                                Universal IR Remote Control & Learning
+                            </span>
+                            </span>
+                        </div>
+
+                        <!-- Feature 3: AI Energy Prediction -->
+                        <div class="feature-item flex items-center gap-3.5 transition-transform">
+                            <div class="feature-icon-wrapper w-8 h-8 sm:w-9 sm:h-9">
+                                <svg class="w-4 h-4 sm:w-4.5 sm:h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                                    <path d="M9 9h6v6H9z"></path>
+                                    <line x1="9" y1="1" x2="9" y2="4"></line>
+                                    <line x1="15" y1="1" x2="15" y2="4"></line>
+                                    <line x1="9" y1="20" x2="9" y2="23"></line>
+                                    <line x1="15" y1="20" x2="15" y2="23"></line>
+                                    <line x1="20" y1="9" x2="23" y2="9"></line>
+                                    <line x1="20" y1="15" x2="23" y2="15"></line>
+                                    <line x1="1" y1="9" x2="4" y2="9"></line>
+                                    <line x1="1" y1="15" x2="4" y2="15"></line>
+                                </svg>
+                            </div>
+                            <span class="text-xs sm:text-sm font-semibold text-slate-100">
+                                AI Energy Prediction
+                            </span>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN: GLASSMORPHIC AUTH CARD -->
+                <div class="lg:col-span-6 xl:col-span-5 flex justify-center lg:justify-end w-full">
+                    <div class="auth-glass-card rounded-[1.75rem] w-full max-w-[430px] p-5 sm:p-6 lg:p-7 relative overflow-hidden">
+                        
+                        <!-- Top Card Header: Brand Icon & Title -->
+                        <div class="text-center mb-3 sm:mb-4">
+                            <div class="flex items-center justify-center gap-2.5 mb-1.5">
+                                <img src="assets/ecoTrack.png" alt="EcoTrack Logo" class="brand-logo w-8 h-8 object-contain rounded-lg shadow-sm" style="border-radius: 8px !important;">
+                                <span class="text-xl font-black tracking-tight text-white">EcoTrack</span>
+                            </div>
+                            <p class="text-[10px] sm:text-xs font-semibold text-teal-400/90 tracking-wide uppercase">Smart Aircon Monitoring & Control</p>
+                        </div>
+
+                        <!-- Card Welcome Title & Subtitle -->
+                        <div class="text-center mb-4">
+                            <h2 id="card-main-title" class="eco-primary-text text-xl sm:text-2xl font-bold text-white mb-1">
+                                Welcome back!
+                            </h2>
+                            <p id="form-subtitle" class="text-xs text-slate-400">
+                                Enter your credentials to access your EcoTrack account.
+                            </p>
+                        </div>
+
+                        <!-- Alert Banner -->
+                        <div id="auth-alert" class="hidden mb-3 p-3 rounded-xl text-xs sm:text-sm font-medium flex items-start gap-2 transition-all"></div>
+
+                        <!-- 1. LOGIN FORM -->
+                        <form id="login-form" autocomplete="on">
+                            
+                            <!-- Username or Email Field with Mail Icon -->
+                            <div class="mb-3.5">
+                                <label for="username" class="block text-xs font-semibold text-slate-300 mb-1.5">
+                                    Username or Email
+                                </label>
+                                <div class="relative flex items-center">
+                                    <div class="absolute left-3.5 pointer-events-none text-teal-400">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                        </svg>
+                                    </div>
+                                    <input type="text" id="username" name="username" placeholder="Gmail, username, or phone number" required autocomplete="username"
+                                        class="auth-input-field w-full rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm font-medium placeholder-slate-400">
+                                </div>
+                            </div>
+
+                            <!-- Password Field with Lock Icon & Forgot Password Link -->
+                            <div class="mb-3.5">
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <label for="password" class="block text-xs font-semibold text-slate-300">
+                                        Password
+                                    </label>
+                                    <button type="button" id="forgot-password-btn" class="text-xs font-semibold text-teal-400 hover:text-cyan-300 transition-colors bg-transparent border-0 cursor-pointer">
+                                        Forgot password?
+                                    </button>
+                                </div>
+                                <div class="relative flex items-center">
+                                    <div class="absolute left-3.5 pointer-events-none text-teal-400">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                            <path d="M7 11V7a5 5 0 0110 0v4"></path>
+                                        </svg>
+                                    </div>
+                                    <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password"
+                                        class="auth-input-field w-full rounded-xl pl-10 pr-10 py-2.5 text-xs sm:text-sm font-medium placeholder-slate-400">
+                                    <button type="button" class="password-toggle-btn absolute right-2.5 p-1.5 text-slate-400 hover:text-teal-300 transition-colors border-0 bg-transparent cursor-pointer" aria-label="Toggle password visibility">
+                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Remember Me & Version Check -->
+                            <div class="flex items-center justify-between mb-4">
+                                <label class="flex items-center gap-2 cursor-pointer select-none">
+                                    <input type="checkbox" id="remember-me" name="remember" class="custom-checkbox">
+                                    <span class="text-xs font-medium text-slate-300">Remember me</span>
+                                </label>
+                                <span class="text-[11px] text-teal-300/80 font-medium">Desktop v2.4</span>
+                            </div>
+
+                            <!-- Sign In Gradient Pill Button -->
+                            <button type="submit" class="submit-btn btn-gradient-submit w-full rounded-full py-2.5 sm:py-3 text-white font-extrabold text-xs sm:text-sm tracking-wider uppercase flex items-center justify-center gap-2 border-0 cursor-pointer">
+                                <span>SIGN IN</span>
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                </svg>
+                            </button>
+
+                            <!-- Bottom Link to Registration -->
+                            <div class="mt-3.5 text-center text-xs text-slate-300">
+                                First time here? 
+                                <a href="#" id="show-register-btn" class="font-bold text-teal-400 hover:text-cyan-300 transition-colors ml-1">
+                                    Register your account
+                                </a>
+                            </div>
+                        </form>
+
+                        <!-- 2. REGISTRATION FORM (Hidden by default) -->
+                        <form id="register-form" style="display: none;" autocomplete="on">
+                            
+                            <div class="mb-2.5">
+                                <label for="reg-username" class="block text-xs font-semibold text-slate-300 mb-1">
+                                    Username
+                                </label>
+                                <div class="relative flex items-center">
+                                    <div class="absolute left-3.5 pointer-events-none text-teal-400">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="12" cy="7" r="4"></circle>
+                                        </svg>
+                                    </div>
+                                    <input type="text" id="reg-username" name="username" placeholder="e.g. admin2" required autocomplete="username" minlength="3"
+                                        class="auth-input-field w-full rounded-xl pl-10 pr-4 py-2 text-xs sm:text-sm font-medium placeholder-slate-400">
+                                </div>
+                            </div>
+
+                            <div class="mb-2.5">
+                                <label for="reg-email" class="block text-xs font-semibold text-slate-300 mb-1">
+                                    Email Address
+                                </label>
+                                <div class="relative flex items-center">
+                                    <div class="absolute left-3.5 pointer-events-none text-teal-400">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                        </svg>
+                                    </div>
+                                    <input type="email" id="reg-email" name="email" placeholder="admin@ecotrack.local" required autocomplete="email"
+                                        class="auth-input-field w-full rounded-xl pl-10 pr-4 py-2 text-xs sm:text-sm font-medium placeholder-slate-400">
+                                </div>
+                            </div>
+
+                            <div class="mb-2.5">
+                                <label for="reg-password" class="block text-xs font-semibold text-slate-300 mb-1">
+                                    Password
+                                </label>
+                                <div class="relative flex items-center">
+                                    <div class="absolute left-3.5 pointer-events-none text-teal-400">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                            <path d="M7 11V7a5 5 0 0110 0v4"></path>
+                                        </svg>
+                                    </div>
+                                    <input type="password" id="reg-password" name="password" placeholder="••••••••" required minlength="8" autocomplete="new-password"
+                                        class="auth-input-field w-full rounded-xl pl-10 pr-10 py-2 text-xs sm:text-sm font-medium placeholder-slate-400">
+                                    <button type="button" class="password-toggle-btn absolute right-2.5 p-1.5 text-slate-400 hover:text-teal-300 transition-colors border-0 bg-transparent cursor-pointer" aria-label="Toggle password visibility">
+                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mb-3.5">
+                                <label for="reg-password-confirm" class="block text-xs font-semibold text-slate-300 mb-1">
+                                    Confirm Password
+                                </label>
+                                <div class="relative flex items-center">
+                                    <div class="absolute left-3.5 pointer-events-none text-teal-400">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                            <path d="M7 11V7a5 5 0 0110 0v4"></path>
+                                        </svg>
+                                    </div>
+                                    <input type="password" id="reg-password-confirm" name="passwordConfirm" placeholder="••••••••" required minlength="8" autocomplete="new-password"
+                                        class="auth-input-field w-full rounded-xl pl-10 pr-10 py-2 text-xs sm:text-sm font-medium placeholder-slate-400">
+                                    <button type="button" class="password-toggle-btn absolute right-2.5 p-1.5 text-slate-400 hover:text-teal-300 transition-colors border-0 bg-transparent cursor-pointer" aria-label="Toggle password visibility">
+                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Register Gradient Pill Button -->
+                            <button type="submit" class="submit-btn btn-gradient-submit w-full rounded-full py-2.5 sm:py-3 text-white font-extrabold text-xs sm:text-sm tracking-wider uppercase flex items-center justify-center gap-2 border-0 cursor-pointer">
+                                <span>REGISTER ACCOUNT</span>
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                </svg>
+                            </button>
+
+                            <!-- Bottom Link to Login -->
+                            <div class="mt-3.5 text-center text-xs text-slate-300">
+                                Already have an account? 
+                                <a href="#" id="show-login-btn" class="font-bold text-teal-400 hover:text-cyan-300 transition-colors ml-1">
+                                    Sign in
+                                </a>
+                            </div>
+                        </form>
+
+                    </div>
+                </div>
+
+            </main>
+
+            <!-- FOOTER BAR -->
+            <footer class="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 sm:pt-3 border-t border-white/10 text-[11px] sm:text-xs text-slate-400">
+                <div>
+                    &copy; 2026 EcoTrack. All rights reserved.
+                </div>
+                <div class="flex items-center gap-5">
+                    <button type="button" id="privacy-policy-btn" class="hover:text-teal-300 transition-colors bg-transparent border-0 cursor-pointer text-[11px] sm:text-xs text-slate-400">
+                        Privacy Policy
+                    </button>
+                    <button type="button" id="terms-service-btn" class="hover:text-teal-300 transition-colors bg-transparent border-0 cursor-pointer text-[11px] sm:text-xs text-slate-400">
+                        Terms of Service
+                    </button>
+                </div>
+            </footer>
+
+        </div>
+    </div>
+
+    <!-- FORGOT PASSWORD MODAL -->
+    <div id="forgot-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="auth-glass-card rounded-2xl p-6 sm:p-8 max-w-md w-full border border-teal-500/40">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="eco-primary-text text-xl font-bold text-white flex items-center gap-2">
+                    <svg class="w-6 h-6 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Password Recovery
+                </h3>
+                <button type="button" id="close-forgot-modal" class="text-slate-400 hover:text-white text-xl bg-transparent border-0 cursor-pointer">&times;</button>
+            </div>
+            <p class="text-sm text-slate-300 leading-relaxed mb-6">
+                To reset an administrator credential, please contact your primary system administrator or run the master account recovery protocol on your local Supabase database instance.
+            </p>
+            <div class="bg-teal-950/40 border border-teal-500/20 rounded-xl p-3.5 mb-6 text-xs text-teal-200">
+                Default local administrator access: <br>
+                <code class="font-mono text-cyan-300">admin / admin</code> or <code class="font-mono text-cyan-300">admin@ecotrack.local</code>
+            </div>
+            <button type="button" id="dismiss-forgot-modal" class="w-full py-2.5 rounded-xl btn-gradient-submit text-white font-bold text-sm cursor-pointer border-0">
+                Got It
+            </button>
+        </div>
+    </div>
+
+    <!-- PRIVACY / TERMS INFO MODAL -->
+    <div id="info-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="auth-glass-card rounded-2xl p-6 sm:p-8 max-w-lg w-full border border-teal-500/40">
+            <div class="flex items-center justify-between mb-4">
+                <h3 id="info-modal-title" class="eco-primary-text text-xl font-bold text-white">EcoTrack Policy</h3>
+                <button type="button" id="close-info-modal" class="text-slate-400 hover:text-white text-xl bg-transparent border-0 cursor-pointer">&times;</button>
+            </div>
+            <div id="info-modal-body" class="text-sm text-slate-300 leading-relaxed mb-6 space-y-3 max-h-72 overflow-y-auto pr-2">
+                <!-- Content injected dynamically -->
+            </div>
+            <button type="button" id="dismiss-info-modal" class="w-full py-2.5 rounded-xl btn-gradient-submit text-white font-bold text-sm cursor-pointer border-0">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <script src="js/login.js"></script>
+</body>
+</html>

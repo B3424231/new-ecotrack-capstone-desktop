@@ -1,0 +1,31 @@
+{
+  "model": "xgboost",
+  "workspace": "monitoring",
+  "source_file": "hvac_xgboost_final_XGBoost_RegressionFinal.pkl",
+  "sha256": "1956722c5fd97667e2f7534406cb10c2d461e50509696cf13aa77261d478ea1a",
+  "features": [
+    "status_mode",
+    "pressure_high",
+    "pressure_low",
+    "pressure_diff",
+    "ambient_temp",
+    "hour",
+    "day_of_week",
+    "energy_lag_1",
+    "pressure_high_roll3",
+    "ambient_temp_roll3"
+  ],
+  "output_unit": null,
+  "horizon_hours": null,
+  "input_contract_verified": false,
+  "physical_accuracy_validated": false,
+  "status": "requires_recorded_inputs_and_training_contract",
+  "load_warning_count": 3,
+  "runtime_versions": {
+    "xgboost": "3.4.1",
+    "scikit-learn": "1.9.0",
+    "joblib": "1.5.3",
+    "numpy": "2.5.2"
+  },
+  "note": "Original Sensor project model preserved. Training target unit/horizon and sensor mappings are undocumented. Do not supply fixed values for absent features or reinterpret pressure/temperature fields."
+}

@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "scenarios": [
+    "Six mode transitions, preparation modal, local persistence, shared Rules/Profile Device Mode",
+    "Monitoring direct controller URL redirects before controller UI; old navigation absent",
+    "Desktop-reference Telemetry cabinet and sensor interface, no available panel, dropdown or duplicate registration button, real authenticated sensor registry and no credential caching",
+    "Centered empty charts without axes; matching export dialog, visible stage progress and Cancel/Escape without download in dark/light at desktop/mobile widths",
+    "Empty sensor logs retain 12 columns; CSV removed; highlighted PDF/Excel export empty reports; Top Consumers categories stay truthful and keyboard accessible",
+    "Temperature chart empty scale 0–40 °C; real values remain in range; Cool/Fan Only use reported modes, ON/OFF use power feedback, unknown data stays empty",
+    "Single shared AC Device Scheduler, registered aircon name, monitoring fields, Minutes/Hours units and persisted overnight schedule",
+    "Controller forecast card/chart template, 12 sensor columns, pagination, full filtered PDF/Excel exports and shared tariff",
+    "Selected NREL XGBoost estimates real isolated temperature histories; output stays explicitly experimental",
+    "Compact controller-format forecast filters, preset/custom dates, active periods, UTC+08 time range and clear action",
+    "Cross-tab preparation and synchronization; controller direct sensor URL redirects",
+    "Devices IR Monitoring column hidden in Monitoring/Both and retained in Controller mode",
+    "Controller/Both use desktop controls directly despite an old remote preference; remote view, layout switcher, arrows and quick status pill removed",
+    "Storage failure keeps previous mode and provides an accessible error dialog",
+    "Mode switching and local sensor logs remain usable while every cloud request hangs",
+    "Five screens at desktop/mobile in dark/light; no document overflow; keyboard navigation drawer"
+  ],
+  "runtime_errors": [],
+  "live_external_requests": 0
+}

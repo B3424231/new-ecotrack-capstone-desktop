@@ -1,0 +1,44 @@
+[
+  {
+    "name": "test_schedule_pipeline.py",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 3.4
+  },
+  {
+    "name": "test_cloud_telemetry_sync.py",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 2.6
+  },
+  {
+    "name": "test_monitoring.py",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 6.5
+  },
+  {
+    "name": "test_registry_reconciliation.py",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 8.2
+  },
+  {
+    "name": "test_energy_prediction.py",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 10.5
+  },
+  {
+    "name": "test_sensor_reference.py",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 9.1
+  }
+]

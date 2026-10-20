@@ -1,0 +1,38 @@
+{
+  "results": [
+    {
+      "id": "removed-sensor-filter-scope",
+      "status": "PASS",
+      "last_analytics_query": {
+        "path": "analytics",
+        "node": "audit-a"
+      },
+      "displayed": {
+        "selection": "audit-a",
+        "scope": "Experimental XGBoost · covered sensor intervals · Audit sensor A · Audit AC A (Unavailable)",
+        "rows": 2
+      }
+    },
+    {
+      "id": "incomplete-monitoring-export",
+      "status": "PASS",
+      "downloads": 0
+    },
+    {
+      "id": "growing-unfrozen-history",
+      "status": "PASS",
+      "downloads": 0
+    },
+    {
+      "id": "frozen-history-export",
+      "status": "PASS",
+      "exported": {
+        "rows": 201,
+        "unique_rows": 201
+      }
+    }
+  ],
+  "runtime_errors": [],
+  "live_external_requests": 0,
+  "production_writes": 0
+}

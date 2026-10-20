@@ -1,0 +1,30 @@
+{
+    "model_name": "EcoTrack AC Power XGBoost",
+    "model_type": "XGBRegressor",
+    "model_target": "power_kw",
+    "categorical_features": [
+        "ac_id"
+    ],
+    "numeric_features": [
+        "room_temp_c",
+        "outdoor_temp_c",
+        "humidity",
+        "hour",
+        "day_of_week",
+        "month",
+        "is_weekend",
+        "indoor_outdoor_temp_diff"
+    ],
+    "output_unit": "kW",
+    "energy_formula": "energy_kwh = predicted_power_kw * runtime_hours",
+    "deployment_logic": {
+        "ac_off": "Return 0 kW without calling the model.",
+        "ac_on": "Predict power using the XGBoost model."
+    },
+    "notes": [
+        "Current, voltage and Power_Factor were used only to derive ground-truth power during preprocessing.",
+        "Electrical measurements are not required by the deployed EcoTrack prediction model.",
+        "AC ON/OFF should come from the EcoTrack IR state.",
+        "Set temperature is not included because the current SplitSmart dataset does not provide reliable setpoint information."
+    ]
+}

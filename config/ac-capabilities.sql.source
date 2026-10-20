@@ -1,0 +1,143 @@
+-- Generated from config/ac-capabilities.json. Apply after cloud, realtime and registration migrations.
+-- Adds one capability document to each existing AC; no profiles or assignments are recreated.
+BEGIN;
+ALTER TABLE public.aircons ADD COLUMN IF NOT EXISTS capability_profile jsonb NOT NULL DEFAULT '{}'::jsonb;
+CREATE OR REPLACE FUNCTION public.ecotrack_ac_registry()
+RETURNS jsonb LANGUAGE sql IMMUTABLE SET search_path=public,pg_temp AS $registry$
+ SELECT $data$/* AC_REGISTRY_JSON */$data$::jsonb
+$registry$;
+CREATE OR REPLACE FUNCTION public.ecotrack_resolve_ac_capabilities(p_protocol text,p_model integer,p_saved jsonb DEFAULT '{}',p_receiver jsonb DEFAULT '{}')
+RETURNS jsonb LANGUAGE plpgsql IMMUTABLE SET search_path=public,pg_temp AS $$
+DECLARE registry jsonb:=public.ecotrack_ac_registry(); name text:=upper(btrim(p_protocol)); base jsonb; rule jsonb; k text; v jsonb; matching boolean;
+BEGIN
+ name:=coalesce(registry->'aliases'->>name,name);
+ base:=registry->'protocols'->name;
+ IF base IS NULL THEN RETURN jsonb_build_object('protocol','UNKNOWN','can_transmit',false,'features','{}'::jsonb,'modes','[]'::jsonb,'fan_map','{}'::jsonb); END IF;
+ rule:=base->'model_rules'->p_model::text;
+ IF rule IS NOT NULL THEN
+  FOR k,v IN SELECT key,value FROM jsonb_each(rule) LOOP
+   base:=jsonb_set(base,ARRAY[k],CASE WHEN jsonb_typeof(v)='object' THEN coalesce(base->k,'{}')||v ELSE v END);
+  END LOOP;
+ END IF;
+ matching:=p_saved->>'protocol'=name AND (p_saved->'remote_model' IS NULL OR p_saved->'remote_model'='null'::jsonb OR p_saved->>'remote_model'=p_model::text);
+ FOR k IN SELECT jsonb_array_elements_text(registry->'features') LOOP
+  IF p_receiver->k='false'::jsonb OR (k='swing_vertical' AND p_receiver->'swing'='false'::jsonb) THEN
+    IF NOT (matching AND p_saved->'features'->k->>'status'='verified_supported') THEN base:=jsonb_set(base,ARRAY['features',k],'false'); END IF;
+  END IF;
+  IF matching AND p_saved->'features'->k->>'status'='verified_unsupported' THEN base:=jsonb_set(base,ARRAY['features',k],'false'); END IF;
+ END LOOP;
+ IF matching THEN
+  FOR k,v IN SELECT key,value FROM jsonb_each(coalesce(p_saved->'options'->'fan','{}')) LOOP
+   IF v->>'status'='verified_unsupported' THEN base:=jsonb_set(base,ARRAY['fan_map'],(base->'fan_map')-k); END IF;
+  END LOOP;
+  base:=jsonb_set(base,ARRAY['modes'],coalesce((SELECT jsonb_agg(value) FROM jsonb_array_elements(base->'modes') WHERE coalesce(p_saved->'options'->'mode'->(value#>>'{}')->>'status','')<>'verified_unsupported'),'[]'));
+  IF p_saved->'temperature'->>'status'='verified_supported' THEN
+   base:=jsonb_set(base,ARRAY['temperature'],(base->'temperature')||jsonb_build_object('min',p_saved->'temperature'->'min','max',p_saved->'temperature'->'max','step',p_saved->'temperature'->'step'));
+  END IF;
+ END IF;
+ RETURN base||jsonb_build_object('protocol',name,'remote_model',p_model,'can_transmit',coalesce((base->>'requires_model')::boolean,false)=false OR coalesce(base->'models' ? p_model::text,false));
+END $$;
+
+CREATE OR REPLACE FUNCTION public.ecotrack_validate_ac_intent(p_ac public.aircons,p_live jsonb,p_payload jsonb)
+RETURNS jsonb LANGUAGE plpgsql SET search_path=public,pg_temp AS $$
+DECLARE registry jsonb:=public.ecotrack_ac_registry(); name text; model integer; caps jsonb; state jsonb:=p_payload->'state'; rule jsonb; temp numeric; lo numeric; hi numeric; step numeric; k text; feat text;
+BEGIN
+ name:=coalesce(nullif(p_live->>'protocol','UNKNOWN'),p_ac.protocol_name,p_ac.protocol,'UNKNOWN');
+ name:=coalesce(registry->'aliases'->>upper(name),upper(name));
+ IF coalesce(registry->'aliases'->>upper(p_payload->>'protocol'),upper(p_payload->>'protocol')) IS DISTINCT FROM name THEN RAISE EXCEPTION 'Protocol differs from the active receiver/profile'; END IF;
+ IF p_ac.capability_profile->>'protocol'=name AND p_ac.capability_profile->'model_verified'='true'::jsonb THEN
+  model:=(p_ac.capability_profile->>'remote_model')::integer;
+ ELSE model:=coalesce((p_live->>'remote_model')::integer,(p_ac.capability_profile->>'remote_model')::integer); END IF;
+ IF p_payload->'model' IS NOT NULL AND p_payload->'model'<>'null'::jsonb AND (jsonb_typeof(p_payload->'model')<>'number' OR (p_payload->>'model')::numeric IS DISTINCT FROM model) THEN RAISE EXCEPTION 'Remote model differs from the active profile'; END IF;
+ IF p_payload ? 'capability_revision' AND (jsonb_typeof(p_payload->'capability_revision') IS DISTINCT FROM 'number' OR coalesce(p_payload->>'capability_revision','') !~ '^[0-9]{1,9}$' OR (p_payload->>'capability_revision')::integer<>coalesce((p_ac.capability_profile->>'revision')::integer,0)) THEN RAISE EXCEPTION 'Capabilities changed; refresh this AC before sending'; END IF;
+ IF p_payload ? 'registry_version' AND p_payload->>'registry_version' IS DISTINCT FROM registry->>'registry_version' THEN RAISE EXCEPTION 'Capability registry version differs; refresh the application'; END IF;
+ caps:=public.ecotrack_resolve_ac_capabilities(name,model,p_ac.capability_profile,p_live->'ac_capabilities');
+ IF caps->'can_transmit'<>'true'::jsonb THEN RAISE EXCEPTION 'Choose a supported exact protocol/model'; END IF;
+ IF jsonb_typeof(state) IS DISTINCT FROM 'object' OR coalesce(state->>'power','') NOT IN ('on','off') OR
+  NOT (caps->'modes' ? coalesce(state->>'mode','')) OR NOT(caps->'fan_map' ? coalesce(state->>'fan','')) OR jsonb_typeof(state->'temp') IS DISTINCT FROM 'number' THEN RAISE EXCEPTION 'Invalid full AC state or unsupported mode/fan'; END IF;
+ IF p_payload ? 'requested_feature' THEN
+  k:=lower(p_payload->>'requested_feature');feat:=CASE WHEN k='temp' THEN 'temperature' WHEN k='swing' THEN 'swing_vertical' ELSE k END;
+  IF k NOT IN ('mode','fan') AND (NOT(registry->'features' ? feat) OR caps->'features'->feat IS DISTINCT FROM 'true'::jsonb) THEN RAISE EXCEPTION 'Requested feature is unsupported: %',k; END IF;
+  IF feat='temperature' AND (coalesce(caps->'mode_rules'->(state->>'mode')->'temperature_control','true')<>'true'::jsonb OR NOT(caps->'temperature'->'modes' ? (state->>'mode'))) THEN RAISE EXCEPTION 'Temperature is not adjustable in this mode'; END IF;
+ END IF;
+ rule:=coalesce(caps->'mode_rules'->(state->>'mode'),'{}');
+ lo:=greatest((caps->'temperature'->>'min')::numeric,(rule->>'min')::numeric);
+ hi:=least((caps->'temperature'->>'max')::numeric,(rule->>'max')::numeric);
+ lo:=coalesce((rule->>'fixed_temp')::numeric,lo);hi:=coalesce((rule->>'fixed_temp')::numeric,hi);
+ step:=(caps->'temperature'->>'step')::numeric;temp:=(state->>'temp')::numeric;
+ IF lo IS NULL OR hi IS NULL OR step IS NULL OR temp<lo OR temp>hi OR abs((temp-lo)/step-round((temp-lo)/step))>0.000001 THEN RAISE EXCEPTION 'Temperature must be %..% C in % degree steps',lo,hi,step; END IF;
+ IF rule ? 'fixed_fan' AND state->>'fan'<>rule->>'fixed_fan' THEN RAISE EXCEPTION 'This mode requires % fan',rule->>'fixed_fan'; END IF;
+ FOR k IN SELECT jsonb_object_keys(state) LOOP
+  IF k IN ('power','temp','mode','fan') THEN CONTINUE; END IF;
+  feat:=CASE WHEN k='swing' THEN 'swing_vertical' ELSE k END;
+  IF NOT(registry->'features' ? feat) OR coalesce(state->>k,'') NOT IN ('on','off') OR (state->>k='on' AND caps->'features'->feat IS DISTINCT FROM 'true'::jsonb) THEN RAISE EXCEPTION 'Unsupported or invalid AC setting: %',k; END IF;
+ END LOOP;
+ RETURN jsonb_build_object('resolved_model',model,'capability_constraints',jsonb_build_object('protocol',name,'model',model,'min',lo,'max',hi,'step',step,'revision',coalesce((p_ac.capability_profile->>'revision')::integer,0)));
+END $$;
+
+CREATE OR REPLACE FUNCTION public.ecotrack_verify_ac_capabilities(p_aircon_id text,p_expected_revision integer,p_profile jsonb)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
+DECLARE ac public.aircons; live jsonb; registry jsonb:=public.ecotrack_ac_registry(); caps jsonb; clean jsonb; kind text; k text; v jsonb; status text; model integer; t jsonb; b jsonb;
+BEGIN
+ IF auth.uid() IS NULL OR NOT public.ecotrack_is_admin() THEN RAISE EXCEPTION 'Administrator required' USING ERRCODE='42501'; END IF;
+ SELECT * INTO ac FROM public.aircons WHERE id=p_aircon_id FOR UPDATE;
+ IF ac.id IS NULL THEN RAISE EXCEPTION 'AC profile no longer exists'; END IF;
+ IF p_expected_revision IS NULL OR p_expected_revision<0 THEN RAISE EXCEPTION 'Invalid capability revision'; END IF;
+ IF coalesce((ac.capability_profile->>'revision')::integer,0)<>p_expected_revision THEN RAISE EXCEPTION 'Capabilities changed; reopen verification before saving'; END IF;
+ IF jsonb_typeof(p_profile) IS DISTINCT FROM 'object' OR octet_length(p_profile::text)>12000 OR EXISTS(SELECT 1 FROM jsonb_object_keys(p_profile) AS keys(item) WHERE keys.item NOT IN ('protocol','remote_model','model_verified','ac_model','features','options','temperature')) THEN RAISE EXCEPTION 'Invalid capability document'; END IF;
+ SELECT s.latest_ir INTO live FROM public.ecotrack_device_state s JOIN public.nodes n ON n.id=s.node_id
+  WHERE ac.controller_node_id=n.id OR ac.node_id IN(n.id,n.name) LIMIT 1;
+ IF coalesce(live->>'protocol','UNKNOWN')<>'UNKNOWN' AND p_profile->>'protocol' IS DISTINCT FROM live->>'protocol' THEN RAISE EXCEPTION 'Protocol differs from this controller receiver'; END IF;
+ IF NOT(registry->'protocols' ? coalesce(p_profile->>'protocol','')) THEN RAISE EXCEPTION 'Select an audited exact protocol'; END IF;
+ IF p_profile->'remote_model' IS NOT NULL AND p_profile->'remote_model'<>'null'::jsonb THEN
+  IF jsonb_typeof(p_profile->'remote_model')<>'number' OR (p_profile->>'remote_model') !~ '^[1-9][0-9]{0,4}$' THEN RAISE EXCEPTION 'Invalid remote model'; END IF;
+  model:=(p_profile->>'remote_model')::integer;
+  IF NOT(registry->'protocols'->(p_profile->>'protocol')->'models' ? model::text) THEN RAISE EXCEPTION 'Remote model is not defined by this protocol'; END IF;
+ END IF;
+ IF p_profile ? 'model_verified' AND jsonb_typeof(p_profile->'model_verified')<>'boolean' THEN RAISE EXCEPTION 'Invalid model confirmation'; END IF;
+ IF coalesce(p_profile->>'ac_model','') ~ '[<>[:cntrl:]]' OR length(coalesce(p_profile->>'ac_model',''))>100 THEN RAISE EXCEPTION 'Invalid physical AC model'; END IF;
+ caps:=public.ecotrack_resolve_ac_capabilities(p_profile->>'protocol',model,'{}');
+ clean:=jsonb_build_object('protocol',p_profile->>'protocol','remote_model',model,'model_verified',coalesce(p_profile->'model_verified','false'::jsonb),'ac_model',p_profile->>'ac_model','features','{}'::jsonb,'options',jsonb_build_object('mode','{}'::jsonb,'fan','{}'::jsonb));
+ IF p_profile ? 'features' AND jsonb_typeof(p_profile->'features')<>'object' THEN RAISE EXCEPTION 'Invalid feature results'; END IF;
+ FOR k,v IN SELECT key,value FROM jsonb_each(coalesce(p_profile->'features','{}')) LOOP
+  status:=v->>'status';
+  IF NOT(registry->'features' ? k) OR coalesce(status,'') NOT IN ('verified_supported','verified_unsupported','unknown','library_unverified') THEN RAISE EXCEPTION 'Invalid feature result'; END IF;
+  IF status LIKE 'verified_%' THEN clean:=jsonb_set(clean,ARRAY['features',k],jsonb_build_object('status',status,'source','physical_test','confidence','user_confirmed','verified_by',auth.uid(),'verified_at',clock_timestamp())); END IF;
+ END LOOP;
+ IF p_profile ? 'options' AND (jsonb_typeof(p_profile->'options')<>'object' OR EXISTS(SELECT 1 FROM jsonb_object_keys(p_profile->'options') AS keys(item) WHERE keys.item NOT IN ('mode','fan'))) THEN RAISE EXCEPTION 'Invalid option results'; END IF;
+ FOREACH kind IN ARRAY ARRAY['mode','fan'] LOOP
+  FOR k,v IN SELECT key,value FROM jsonb_each(coalesce(p_profile->'options'->kind,'{}')) LOOP
+   status:=v->>'status';
+   IF NOT(CASE WHEN kind='mode' THEN caps->'modes' ELSE caps->'fan_map' END ? k) OR coalesce(status,'') NOT IN ('verified_supported','verified_unsupported','unknown','library_unverified') THEN RAISE EXCEPTION 'Invalid mode/fan result'; END IF;
+   IF status LIKE 'verified_%' THEN clean:=jsonb_set(clean,ARRAY['options',kind,k],jsonb_build_object('status',status,'source','physical_test','confidence','user_confirmed','verified_by',auth.uid(),'verified_at',clock_timestamp())); END IF;
+  END LOOP;
+ END LOOP;
+ t:=p_profile->'temperature';b:=caps->'temperature';
+ IF t IS NOT NULL AND t<>'null'::jsonb THEN
+  IF t->>'status' IS DISTINCT FROM 'verified_supported' OR jsonb_typeof(t->'min')<>'number' OR jsonb_typeof(t->'max')<>'number' OR jsonb_typeof(t->'step')<>'number' THEN RAISE EXCEPTION 'Invalid verified temperature range'; END IF;
+  IF (t->>'min')::numeric<(b->>'min')::numeric OR (t->>'max')::numeric>(b->>'max')::numeric OR (t->>'min')::numeric>(t->>'max')::numeric OR (t->>'step')::numeric<(b->>'step')::numeric OR mod((t->>'step')::numeric,(b->>'step')::numeric)<>0 OR mod((t->>'min')::numeric-(b->>'min')::numeric,(b->>'step')::numeric)<>0 THEN RAISE EXCEPTION 'Verified range must fit the encoder range and steps'; END IF;
+  clean:=clean||jsonb_build_object('temperature',jsonb_build_object('status','verified_supported','min',t->'min','max',t->'max','step',t->'step','unit','C','source','physical_test','confidence','user_confirmed','verified_at',clock_timestamp(),'verified_by',auth.uid()));
+ END IF;
+ clean:=clean||jsonb_build_object('revision',p_expected_revision+1,'updated_at',clock_timestamp(),'registry_version',registry->>'registry_version');
+ PERFORM set_config('ecotrack.capability_write','on',true);
+ UPDATE public.aircons SET capability_profile=clean WHERE id=ac.id RETURNING * INTO ac;
+ RETURN jsonb_build_object('success',true,'aircon',to_jsonb(ac));
+END $$;
+CREATE OR REPLACE FUNCTION public.ecotrack_guard_ac_capabilities()
+RETURNS trigger LANGUAGE plpgsql SET search_path=public,pg_temp AS $$
+BEGIN
+ IF TG_OP='INSERT' THEN
+  IF NEW.capability_profile<>'{}'::jsonb AND coalesce(current_setting('ecotrack.capability_write',true),'')<>'on' THEN
+   RAISE EXCEPTION 'Use the admin capability verification action' USING ERRCODE='42501';
+  END IF;
+ ELSIF NEW.capability_profile IS DISTINCT FROM OLD.capability_profile AND coalesce(current_setting('ecotrack.capability_write',true),'')<>'on' THEN
+  RAISE EXCEPTION 'Use the admin capability verification action' USING ERRCODE='42501';
+ END IF;RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS ecotrack_ac_capabilities_guard ON public.aircons;
+CREATE TRIGGER ecotrack_ac_capabilities_guard BEFORE INSERT OR UPDATE ON public.aircons FOR EACH ROW EXECUTE FUNCTION public.ecotrack_guard_ac_capabilities();
+REVOKE ALL ON FUNCTION public.ecotrack_verify_ac_capabilities(text,integer,jsonb),public.ecotrack_validate_ac_intent(public.aircons,jsonb,jsonb),public.ecotrack_guard_ac_capabilities() FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.ecotrack_verify_ac_capabilities(text,integer,jsonb) TO authenticated;
+/* GENERATED_COMMAND_AND_OBSERVATION_FUNCTIONS */
+NOTIFY pgrst,'reload schema';
+COMMIT;

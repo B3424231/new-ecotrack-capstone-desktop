@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prompt Enhancer"
+  short_description: "Clarify coding requests before editing code"
+  default_prompt: "Use $prompt-enhancer to clarify my coding request and propose a scoped, evidence-based plan before editing code."

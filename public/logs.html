@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <script src="./js/app-mode.js?v=6"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aircon Energy Analytics - EcoTrack</title>
+  <script src="./vendor/tailwindcss.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
+  <script src="./vendor/chart.umd.js"></script>
+  <script src="./vendor/jspdf.umd.min.js"></script>
+  <script src="./vendor/jspdf.plugin.autotable.min.js"></script>
+  <script src="./vendor/exceljs.min.js"></script>
+  <link rel="stylesheet" href="./css/future-cost.css?v=2">
+  <link rel="stylesheet" href="./styles.css?v=62">
+  <link rel="stylesheet" href="./css/export-progress.css?v=1">
+  <link rel="stylesheet" href="./css/clear-logs-dialog.css?v=1">
+  <style>
+    /* Custom Styling for Aircon Energy Analytics */
+    .analytics-glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+    }
+    .dark .analytics-glass-card {
+      background: #0c1328;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    .log-tab.active,
+    html:not(.dark) .log-tab.active {
+      background: var(--eco-action) !important;
+      background-color: var(--eco-action) !important;
+      color: #ffffff !important;
+      border: 2px solid var(--eco-action) !important;
+      box-shadow: none !important;
+    }
+
+    .log-tab.active *,
+    .log-tab.active .tab-label,
+    .log-tab.active svg {
+      color: #ffffff !important;
+      stroke: #ffffff !important;
+    }
+
+    .granularity-btn.active,
+    html:not(.dark) .granularity-btn.active {
+      background: var(--eco-action) !important;
+      color: #ffffff !important;
+      font-weight: 800 !important;
+      box-shadow: none !important;
+    }
+
+    #exportBtn,
+    html:not(.dark) #exportBtn {
+      background: var(--eco-action) !important;
+      background-color: var(--eco-action) !important;
+      color: #ffffff !important;
+      border: 2px solid var(--eco-action) !important;
+      box-shadow: none !important;
+    }
+
+    #exportBtn *,
+    html:not(.dark) #exportBtn * {
+      color: #ffffff !important;
+      stroke: #ffffff !important;
+    }
+
+    #exportExcelBtn,
+    html:not(.dark) #exportExcelBtn {
+      background: var(--eco-action) !important;
+      background-color: #059669 !important;
+      color: #ffffff !important;
+      border: 2px solid var(--eco-action) !important;
+      box-shadow: none !important;
+    }
+
+    #exportExcelBtn *,
+    html:not(.dark) #exportExcelBtn * {
+      color: #ffffff !important;
+      stroke: #ffffff !important;
+    }
+
+    /* Header Period Pills (Daily, Weekly, Monthly) */
+    .header-period-btn.active,
+    html:not(.dark) .header-period-btn.active {
+      background-color: var(--eco-action) !important;
+      color: #ffffff !important;
+      border: 1px solid var(--eco-action) !important;
+      box-shadow: none !important;
+    }
+    .header-period-btn.active svg,
+    .header-period-btn.active span {
+      color: #ffffff !important;
+      stroke: #ffffff !important;
+    }
+    .header-period-btn:not(.active) {
+      background-color: transparent !important;
+      border: 1px solid transparent !important;
+      box-shadow: none !important;
+    }
+    .dark .header-period-btn:not(.active) {
+      color: #94a3b8 !important;
+    }
+    html:not(.dark) .header-period-btn:not(.active) {
+      color: #475569 !important;
+    }
+    .header-period-btn:not(.active):hover {
+      background-color: rgba(16, 185, 129, 0.08) !important;
+      color: #10b981 !important;
+    }
+    .header-period-btn:not(.active):hover svg {
+      stroke: #10b981 !important;
+    }
+
+    /* Header Export Buttons */
+    #headerExportPdfBtn,
+    #headerExportExcelBtn,
+    html:not(.dark) #headerExportPdfBtn,
+    html:not(.dark) #headerExportExcelBtn {
+      background-color: var(--eco-action) !important;
+      color: #ffffff !important;
+      border: 1px solid var(--eco-action) !important;
+      box-shadow: none !important;
+    }
+    #headerExportPdfBtn *,
+    #headerExportExcelBtn *,
+    html:not(.dark) #headerExportPdfBtn *,
+    html:not(.dark) #headerExportExcelBtn * {
+      color: #ffffff !important;
+      stroke: #ffffff !important;
+    }
+    #headerExportPdfBtn:hover,
+    #headerExportExcelBtn:hover {
+      background-color: #059669 !important;
+      border-color: #059669 !important;
+    }
+
+    /* Header Global Filter Controls (Uniform 38px Emerald Border Pill style matching reference) */
+    .header-filter-pill-select {
+      height: 38px !important;
+      border: 1.5px solid #10b981 !important;
+      border-radius: 12px !important;
+      font-weight: 700 !important;
+      font-size: 0.75rem !important;
+      line-height: 38px !important;
+      padding: 0 2rem 0 0.85rem !important;
+      appearance: none !important;
+      -webkit-appearance: none !important;
+      -moz-appearance: none !important;
+      background-repeat: no-repeat !important;
+      background-position: right 0.75rem center !important;
+      cursor: pointer !important;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      box-sizing: border-box !important;
+    }
+
+    html:not(.dark) .header-filter-pill-select {
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%230f172a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+    }
+
+    .dark .header-filter-pill-select {
+      background-color: #0c1328 !important;
+      color: #ffffff !important;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+    }
+
+    .header-filter-pill-select:hover {
+      border-color: #34d399 !important;
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.25) !important;
+    }
+
+    .header-filter-pill-select:focus {
+      outline: none !important;
+      border-color: #10b981 !important;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.35) !important;
+    }
+
+    .dark .header-filter-pill-select option {
+      background-color: #0c1328 !important;
+      color: #f8fafc !important;
+    }
+
+    html:not(.dark) .header-filter-pill-select option {
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+    }
+
+    /* Time Filter Pill Container - Uniform 38px height and matching emerald border */
+    .header-time-pill {
+      height: 38px !important;
+      border: 1.5px solid #10b981 !important;
+      border-radius: 12px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 0.4rem !important;
+      padding: 0 0.75rem !important;
+      cursor: pointer !important;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+      box-sizing: border-box !important;
+    }
+
+    .dark .header-time-pill {
+      background-color: #0c1328 !important;
+      color: #ffffff !important;
+    }
+
+    html:not(.dark) .header-time-pill {
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+    }
+
+    .header-time-pill:hover {
+      border-color: #34d399 !important;
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.25) !important;
+    }
+
+    .header-time-pill:focus-within {
+      outline: none !important;
+      border-color: #10b981 !important;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.35) !important;
+    }
+
+    .header-time-pill input[type="time"],
+    html:not(.dark) .header-time-pill input[type="time"],
+    .dark .header-time-pill input[type="time"],
+    html:not(.dark) input[type="time"].header-time-input {
+      background: transparent !important;
+      background-color: transparent !important;
+      border: none !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      font-size: 0.78rem !important;
+      font-weight: 700 !important;
+      outline: none !important;
+      cursor: pointer !important;
+      padding: 0 2px !important;
+      margin: 0 !important;
+      height: 100% !important;
+      line-height: normal !important;
+      -webkit-appearance: none !important;
+      -moz-appearance: none !important;
+      appearance: none !important;
+    }
+
+    .header-time-pill input[type="time"]::-webkit-datetime-edit,
+    .header-time-pill input[type="time"]::-webkit-datetime-edit-fields-wrapper,
+    .header-time-pill input[type="time"]::-webkit-datetime-edit-text,
+    .header-time-pill input[type="time"]::-webkit-datetime-edit-hour-field,
+    .header-time-pill input[type="time"]::-webkit-datetime-edit-minute-field,
+    .header-time-pill input[type="time"]::-webkit-datetime-edit-ampm-field {
+      background: transparent !important;
+      background-color: transparent !important;
+      border: none !important;
+      outline: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    .dark .header-time-pill input[type="time"] {
+      color: #f8fafc !important;
+      color-scheme: dark;
+    }
+
+    html:not(.dark) .header-time-pill input[type="time"] {
+      color: #0f172a !important;
+      color-scheme: light;
+    }
+
+    .header-time-pill input[type="time"]::-webkit-calendar-picker-indicator,
+    #startTimeFilter::-webkit-calendar-picker-indicator,
+    #endTimeFilter::-webkit-calendar-picker-indicator {
+      cursor: pointer !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      margin-left: 2px !important;
+      filter: invert(56%) sepia(85%) saturate(415%) hue-rotate(114deg) brightness(92%) contrast(92%) !important;
+    }
+
+    /* Modal Animation */
+    .modal-pop {
+      animation: modalPopAnim 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes modalPopAnim {
+      0% { opacity: 0; transform: scale(0.95) translateY(8px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* Top Consumers Modal Tab Buttons */
+    .consumer-tab-btn.active {
+      background-color: var(--eco-action) !important;
+      color: #ffffff !important;
+      box-shadow: none !important;
+    }
+  </style>
+  <script src="./js/sidebar.js"></script>
+  <script src="./js/sidebar-loader.js?v=25"></script>
+  <script src="./js/eco-network.js"></script>
+  <script src="./js/eco-data-bus.js"></script>
+  <script src="./js/skeletons.js?v=1"></script>
+  <script src="./js/icons.js"></script>
+  <script src="./js/maintenance-modal.js?v=72"></script>
+  <script src="./js/aircon-system.js?v=23"></script>
+</head>
+
+<body class="app-shell bg-gray-50 dark:bg-[#070d1b] transition-colors duration-200">
+  <div class="flex h-screen overflow-hidden">
+    <!-- Sidebar will be injected here by sidebar-loader.js -->
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+      <!-- HEADER -->
+      <header
+        class="bg-white dark:bg-[#0c1328] border-b border-gray-200 dark:border-white/5 px-6 py-3.5 flex flex-col gap-3 z-10 shadow-xs relative flex-shrink-0">
+        <!-- ROW 1: TITLE, PERIOD SWITCHER, TARIFF & EXPORT ACTIONS (UNIFORM 38PX CONTROLS) -->
+        <div class="flex flex-wrap justify-between items-center gap-3 w-full">
+          <!-- LEFT: Page Title & Live Status Indicator -->
+          <div class="flex items-center gap-2.5 shrink-0 h-[38px]">
+            <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 dark:bg-emerald-400 shadow-[0_0_10px_#10b981] animate-pulse shrink-0"></div>
+            <h1 id="logsPageHeading" class="eco-primary-text text-base sm:text-lg font-black text-[#18392B] dark:text-white tracking-tight leading-none whitespace-nowrap">
+              Aircon Energy Analytics
+            </h1>
+            <span class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">LIVE</span>
+          </div>
+
+          <!-- CENTER: Period Toggle Segmented Control (Daily, Weekly, Monthly) -->
+          <div class="flex items-center justify-center shrink-0 order-3 lg:order-2" id="headerPeriodTabsWrapper">
+            <div class="h-[38px] p-1 bg-slate-100 dark:bg-slate-900/90 rounded-xl border border-slate-200 dark:border-white/10 shadow-inner inline-flex items-center gap-1" id="headerPeriodTabs">
+              <button type="button" class="header-period-btn active h-[30px] px-3.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                data-period="daily" id="headerPeriodDailyBtn">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                <span>Daily</span>
+              </button>
+
+              <button type="button" class="header-period-btn h-[30px] px-3.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 cursor-pointer bg-transparent text-slate-700 dark:text-gray-300 hover:text-[#10b981]"
+                data-period="weekly" id="headerPeriodWeeklyBtn">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+                <span>Weekly</span>
+              </button>
+
+              <button type="button" class="header-period-btn h-[30px] px-3.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 cursor-pointer bg-transparent text-slate-700 dark:text-gray-300 hover:text-[#10b981]"
+                data-period="monthly" id="headerPeriodMonthlyBtn">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                <span>Monthly</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- RIGHT: Actions Bar (Top Consumers, Tariff, Export PDF, Export Excel) -->
+          <div class="flex flex-wrap max-w-full items-center gap-2 ml-auto order-2 lg:order-3">
+            <!-- Peak Energy Consumers Info Button -->
+            <button id="openTopConsumersModalBtn" type="button"
+              class="eco-primary-action h-[38px] px-3.5 rounded-xl text-xs font-bold transition-all duration-200 hover:scale-[1.02] active:scale-95 cursor-pointer flex items-center gap-2 bg-gradient-to-r from-teal-500/15 to-emerald-500/15 hover:from-teal-500/25 hover:to-emerald-500/25 text-teal-800 dark:text-teal-300 border border-teal-500/30 shadow-xs"
+              title="View highest energy consuming building, floor, room, AC controls, and aircon equipment">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" class="text-teal-600 dark:text-teal-400 shrink-0">
+                <path d="M18 20V10" />
+                <path d="M12 20V4" />
+                <path d="M6 20v-6" />
+              </svg>
+              <span>Top Consumers</span>
+              <span class="eco-status-info px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase bg-teal-500 text-white shadow-xs">INFO</span>
+            </button>
+
+            <!-- Active Tariff Button -->
+            <button id="openTariffModalBtn" type="button"
+              class="h-[38px] px-3.5 rounded-xl text-xs font-bold transition-all duration-200 hover:scale-[1.02] active:scale-95 cursor-pointer flex items-center gap-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 shadow-xs"
+              title="Click to change and save the Electricity Tariff rate">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" class="text-amber-500 shrink-0">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+              </svg>
+              <span>Tariff: <strong id="headerTariffDisplay" class="font-mono font-black text-amber-600 dark:text-amber-400">Not configured</strong></span>
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" class="opacity-70 shrink-0">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+            </button>
+
+            <!-- Export PDF -->
+            <button id="headerExportPdfBtn" type="button"
+              class="h-[38px] px-3.5 rounded-xl text-xs font-bold text-white transition-all duration-200 hover:scale-[1.02] active:scale-95 cursor-pointer flex items-center gap-2 shadow-xs border-0"
+              style="background-color: var(--eco-action) !important; color: var(--eco-on-action) !important;"
+              title="Export professional PDF Analytics & Audit report">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ffffff" stroke-width="2" class="shrink-0" style="stroke: #ffffff !important;">
+                <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
+                <path d="M12 12v9" />
+                <path d="m8 17 4 4 4-4" />
+              </svg>
+              <span>Export PDF</span>
+            </button>
+
+            <!-- Export Excel -->
+            <button id="headerExportExcelBtn" type="button"
+              class="h-[38px] px-3.5 rounded-xl text-xs font-bold text-white transition-all duration-200 hover:scale-[1.02] active:scale-95 cursor-pointer flex items-center gap-2 shadow-xs border-0"
+              style="background-color: var(--eco-action) !important; color: var(--eco-on-action) !important;"
+              title="Export structured Excel Analytics workbook">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ffffff" stroke-width="2" class="shrink-0" style="stroke: #ffffff !important;">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              <span>Export Excel</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ROW 2: GLOBAL ANALYTICS & LOGS FILTER BAR (UNIFORMLY SIZED 38PX PILLS) -->
+        <div data-sidebar-divider="top" class="flex flex-wrap items-center justify-between gap-3 w-full pt-3 border-t border-slate-200/80 dark:border-white/10">
+          <div class="flex flex-wrap items-center gap-4 sm:gap-6">
+            
+            <!-- Filter Control -->
+            <div class="flex items-center gap-2">
+              <label for="nodeFilter" class="text-xs font-bold text-slate-700 dark:text-gray-200 flex items-center gap-1.5 shrink-0 cursor-pointer">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="text-emerald-500 shrink-0">
+                  <path d="M12 12c-2.8 0-5-2.2-5-5s2.2-5 5-5c1.4 0 2.6.6 3.5 1.5M12 12c0 2.8 2.2 5 5 5s5-2.2 5-5c0-1.4-.6-2.6-1.5-3.5M12 12c0-2.8-2.2-5-5-5S2 9.2 2 12c0 1.4.6 2.6 1.5 3.5M12 12c2.8 0 5 2.2 5 5s-2.2 5-5 5c-1.4 0-2.6-.6-3.5-1.5"/>
+                </svg>
+                <span>Filter Control:</span>
+              </label>
+              <select id="nodeFilter" class="header-filter-pill-select min-w-[9.5rem]" title="Filter by AC Control Unit">
+                <option value="">All Controls</option>
+              </select>
+            </div>
+
+            <!-- Date Picker -->
+            <div class="flex items-center gap-2">
+              <label for="dateRangeSelect" class="text-xs font-bold text-slate-700 dark:text-gray-200 flex items-center gap-1.5 shrink-0 cursor-pointer">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="text-emerald-500 shrink-0">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                <span>Date:</span>
+              </label>
+              <select id="dateRangeSelect" class="header-filter-pill-select min-w-[10.5rem]" title="Select Observation Date"></select>
+              <input id="historyDatePicker" type="date" class="header-filter-pill-select" style="display: none;" aria-label="Choose an older observation date" title="Choose an older observation date">
+            </div>
+
+            <!-- Time Range Filter -->
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-slate-700 dark:text-gray-200 flex items-center gap-1.5 shrink-0">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="text-emerald-500 shrink-0">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                <span>Time:</span>
+              </span>
+              <div class="header-time-pill flex items-center gap-1.5" title="Filter by Time Range (HH:MM)">
+                <input type="time" id="startTimeFilter" title="Start Time (HH:MM)" aria-label="Start Time"
+                  style="background: transparent !important; background-color: transparent !important; border: none !important; border-width: 0 !important; border-radius: 0 !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; height: auto !important; outline: none !important;"
+                  class="header-time-input bg-transparent border-0 text-xs font-bold text-gray-800 dark:text-gray-100 focus:outline-none cursor-pointer">
+                <span class="text-xs text-gray-400 dark:text-gray-500 font-bold px-0.5 select-none">to</span>
+                <input type="time" id="endTimeFilter" title="End Time (HH:MM)" aria-label="End Time"
+                  style="background: transparent !important; background-color: transparent !important; border: none !important; border-width: 0 !important; border-radius: 0 !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; height: auto !important; outline: none !important;"
+                  class="header-time-input bg-transparent border-0 text-xs font-bold text-gray-800 dark:text-gray-100 focus:outline-none cursor-pointer">
+                <button id="clearTimeFilterBtn" type="button" title="Clear Time Filter"
+                  class="p-1 text-gray-400 hover:text-rose-500 dark:hover:text-rose-400 rounded-lg hover:bg-rose-500/10 transition-colors border-0 bg-transparent cursor-pointer flex items-center justify-center">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+          </div>
+          <button id="openFutureCostBtn" type="button" aria-haspopup="dialog" class="eco-primary-action fc-launch-button h-[38px] px-3.5 rounded-xl text-xs font-bold flex items-center gap-2 cursor-pointer shrink-0">Future Cost</button>
+        </div>
+      </header>
+
+      <!-- SCROLLABLE ANALYTICS & LOGS CONTAINER -->
+      <div id="telemetryLogsView" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+
+        <!-- ======================================================== -->
+        <!-- ROW 1: 4 KPI METRIC CARDS (MATCHING REFERENCE DESIGN)    -->
+        <!-- ======================================================== -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- KPI CARD 1: ENERGY CONSUMED -->
+          <div class="analytics-glass-card rounded-2xl p-5 flex flex-col justify-between min-h-[160px] relative overflow-hidden transition-all duration-200 hover:border-amber-500/40">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500 dark:text-gray-400 text-[11px] font-bold uppercase tracking-wider">
+                <span id="kpiEnergyLabel">ESTIMATED ENERGY</span>
+              </span>
+              <div class="w-8 h-8 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 flex items-center justify-center text-amber-500">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                </svg>
+              </div>
+            </div>
+            <div class="my-2">
+              <div class="flex items-baseline gap-1.5">
+                <span id="kpiEnergyVal" class="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight font-mono">--</span>
+                <span id="kpiEnergyUnit" class="text-sm font-bold text-slate-400 dark:text-gray-400">kWh</span>
+              </div>
+              <div class="flex items-center gap-1.5 mt-1 text-xs">
+                <span id="kpiEnergyTrend" class="font-extrabold text-emerald-600 dark:text-emerald-400">--</span>
+                <span id="kpiEnergyTrendLabel" class="text-slate-500 dark:text-gray-400">synchronizing telemetry...</span>
+              </div>
+            </div>
+            <div class="pt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[11px]">
+              <span class="text-slate-500 dark:text-gray-400">Average Hourly Draw</span>
+              <span id="kpiAvgLoad" class="font-mono font-bold text-slate-700 dark:text-gray-300">-- kW</span>
+            </div>
+            <!-- Hidden backward-compatibility elements for ML energy model -->
+            <div class="hidden" id="kpiTargetBudget"></div>
+            <div class="hidden" id="kpiBudgetOver"></div>
+            <div class="hidden" id="energyConsumption">--</div>
+            <div class="hidden" id="aiSuggestion">Calculated draw</div>
+          </div>
+
+          <!-- KPI CARD 2: ESTIMATED COST -->
+          <div class="analytics-glass-card rounded-2xl p-5 flex flex-col justify-between min-h-[160px] relative overflow-hidden transition-all duration-200 hover:border-emerald-500/40">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500 dark:text-gray-400 text-[11px] font-bold uppercase tracking-wider">
+                <span id="kpiCostLabel">ESTIMATED COST</span>
+              </span>
+              <div class="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="6" width="20" height="12" rx="2" />
+                  <circle cx="12" cy="12" r="2.5" />
+                  <path d="M6 12h.01M18 12h.01" />
+                </svg>
+              </div>
+            </div>
+            <div class="my-2">
+              <div class="flex items-baseline">
+                <span id="kpiCostVal" class="text-3xl lg:text-4xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight font-mono">--</span>
+              </div>
+              <div class="flex items-center gap-1.5 mt-1 text-xs">
+                <span id="kpiCostTrend" class="font-extrabold text-emerald-600 dark:text-emerald-400">--</span>
+                <span id="kpiCostTrendLabel" class="text-slate-500 dark:text-gray-400">synchronizing telemetry...</span>
+              </div>
+            </div>
+            <div class="pt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[11px]">
+              <span class="text-slate-500 dark:text-gray-400">Calculated base rate</span>
+              <span id="kpiCostRate" class="font-mono font-bold text-emerald-600 dark:text-emerald-400">Not configured</span>
+            </div>
+            <!-- Hidden backward-compatibility elements -->
+            <div class="hidden" id="estBillValue">--</div>
+            <div class="hidden" id="estBillPeriod">Daily</div>
+          </div>
+
+          <!-- KPI CARD 3: AIRCON RUNTIME -->
+          <div class="analytics-glass-card rounded-2xl p-5 flex flex-col justify-between min-h-[160px] relative overflow-hidden transition-all duration-200 hover:border-cyan-500/40">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500 dark:text-gray-400 text-[11px] font-bold uppercase tracking-wider"
+                title="Observed span from the first to last confirmed AC-on reading each day. Utilization sums bounded sessions per unit; long gaps are excluded from utilization.">
+                <span id="kpiRuntimeLabel">FACILITY OPERATIONAL SPAN</span>
+              </span>
+              <div class="w-8 h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 flex items-center justify-center text-cyan-500">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+              </div>
+            </div>
+            <div class="my-2">
+              <div class="flex items-baseline gap-1.5">
+                <span id="kpiRuntimeVal" class="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">--</span>
+                <span id="kpiRuntimeUnit" class="text-sm font-bold text-slate-400 dark:text-gray-400">hrs</span>
+              </div>
+              <div class="flex items-center gap-1.5 mt-1 text-xs">
+                <span id="kpiRuntimeTrend" class="font-extrabold text-cyan-600 dark:text-cyan-400">--</span>
+                <span id="kpiRuntimeTrendLabel" class="text-slate-500 dark:text-gray-400">synchronizing telemetry...</span>
+              </div>
+            </div>
+            <div class="pt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[11px]">
+              <span id="kpiUtilizationLabel" class="text-slate-500 dark:text-gray-400">Daily utilization factor</span>
+              <span id="kpiUtilization" class="font-mono font-bold text-cyan-600 dark:text-cyan-400">-- hrs / unit</span>
+            </div>
+            <!-- Hidden backward-compatibility elements -->
+            <div class="hidden" id="avgTemp">--</div>
+          </div>
+
+          <!-- KPI CARD 4: ACTIVE AIRCONS -->
+          <div class="analytics-glass-card rounded-2xl p-5 flex flex-col justify-between min-h-[160px] relative overflow-hidden transition-all duration-200 hover:border-emerald-500/40">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500 dark:text-gray-400 text-[11px] font-bold uppercase tracking-wider">
+                <span id="kpiActiveLabel">ACTIVE AIRCONS</span>
+              </span>
+              <div class="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 12c-2.8 0-5-2.2-5-5s2.2-5 5-5c1.4 0 2.6.6 3.5 1.5M12 12c0 2.8 2.2 5 5 5s5-2.2 5-5c0-1.4-.6-2.6-1.5-3.5M12 12c0-2.8-2.2-5-5-5S2 9.2 2 12c0 1.4.6 2.6 1.5 3.5M12 12c2.8 0 5 2.2 5 5s-2.2 5-5 5c-1.4 0-2.6-.6-3.5-1.5" />
+                </svg>
+              </div>
+            </div>
+            <div class="my-2">
+              <div class="flex items-baseline">
+                <span id="kpiActiveUnits" class="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">--</span>
+                <span id="kpiTotalUnits" class="text-xl font-bold text-slate-400 dark:text-gray-400"></span>
+              </div>
+              <div class="flex items-center gap-1.5 mt-1 text-xs">
+                <span id="kpiCapacityPct" class="font-extrabold text-emerald-600 dark:text-emerald-400">--</span>
+                <span id="kpiFleetStatusLabel" class="text-slate-500 dark:text-gray-400">Loading live fleet telemetry...</span>
+              </div>
+            </div>
+            <div class="pt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[11px]">
+              <span class="text-slate-500 dark:text-gray-400" id="kpiIdleLabel">Standby / Idle Units</span>
+              <span id="kpiIdleUnits" class="font-mono font-bold text-slate-700 dark:text-gray-300">--</span>
+            </div>
+            <!-- Hidden backward-compatibility elements -->
+            <div class="hidden" id="avgPressure">--</div>
+            <div class="hidden" id="totalRecords">0</div>
+            <div class="hidden" id="kpiCapacityBar"></div>
+          </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- ROW 2: MIDDLE 2-COLUMN CHARTS GRID                       -->
+        <!-- ======================================================== -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          <!-- LEFT CHART: ENERGY CONSUMPTION TREND -->
+          <div class="analytics-glass-card rounded-2xl p-5 sm:p-6 flex flex-col justify-between">
+            <div>
+              <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
+                <div>
+                  <h3 class="eco-primary-text text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                    Energy Consumption Trend
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]"></span>
+                  </h3>
+                  <p class="text-xs text-slate-500 dark:text-gray-400 mt-0.5" id="energyTrendSubtitle">Aircon electricity usage over time across all zones</p>
+                </div>
+              </div>
+
+              <!-- Custom Legend -->
+              <div class="flex items-center gap-5 text-xs text-slate-500 dark:text-gray-400 my-3">
+                <span class="flex items-center gap-2">
+                  <span class="w-3.5 h-1 rounded-full bg-emerald-400"></span>
+                  <span class="font-medium text-slate-700 dark:text-gray-300">Estimated Energy (kWh)</span>
+                </span>
+                <span class="flex items-center gap-2">
+                  <span class="w-3.5 h-0.5 border-t border-dashed border-slate-400 dark:border-gray-500"></span>
+                  <span id="trendBaselineLegend">Prev. Period Baseline (-- kWh avg)</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Canvas -->
+            <div class="relative w-full h-64 sm:h-72 my-2">
+              <canvas id="energyTrendChart"></canvas>
+              <div id="energyTrendEmpty" role="status" class="absolute inset-0 items-center justify-center flex-col gap-1 pointer-events-none text-sm text-slate-500 dark:text-gray-400" style="display: none;"><strong>Unavailable</strong><span class="text-xs">Awaiting usable confirmed operating data</span></div>
+            </div>
+
+            <!-- Footer Stats -->
+            <div class="pt-4 border-t border-slate-100 dark:border-white/5 flex flex-wrap items-center justify-between text-xs text-slate-500 dark:text-gray-400 gap-2">
+              <div><span id="trendLowPrefix">Daily Low</span>: <strong id="trendLow" class="text-slate-800 dark:text-white font-mono font-bold">--</strong></div>
+              <div><span id="trendPeakPrefix">Daily Peak</span>: <strong id="trendPeak" class="text-amber-500 dark:text-amber-400 font-mono font-bold">--</strong></div>
+              <div><span id="trendTotalPrefix">Daily Total</span>: <strong id="trendTotal" class="text-emerald-600 dark:text-emerald-400 font-mono font-bold">--</strong></div>
+            </div>
+          </div>
+
+          <!-- RIGHT CHART: ESTIMATED ELECTRICITY COST -->
+          <div class="analytics-glass-card rounded-2xl p-5 sm:p-6 flex flex-col justify-between">
+            <div>
+              <div class="flex items-start justify-between gap-3 mb-2">
+                <div>
+                  <h3 class="eco-primary-text text-base font-extrabold text-slate-900 dark:text-white">Estimated Electricity Cost</h3>
+                  <p class="text-xs text-slate-500 dark:text-gray-400" id="estimatedCostSubtitle">
+                    Electricity Rate: <span id="costCardRate" class="font-bold text-amber-600 dark:text-amber-400">Not configured</span>
+                  </p>
+                </div>
+                <!-- Highlight Stat -->
+                <div class="text-right">
+                  <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-gray-500 tracking-wider">Selected Period Cost</span>
+                  <div id="costTodayCost" class="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">--</div>
+                </div>
+              </div>
+
+              <!-- Cycle / Prev Period / Variance Stats -->
+              <div class="flex flex-wrap items-center gap-6 text-xs text-slate-500 dark:text-gray-400 my-3">
+                <div>Selected Period: <strong id="costCurrentCycle" class="font-mono text-slate-800 dark:text-white">--</strong></div>
+                <div>Prev. Period: <strong id="costPrevPeriod" class="font-mono text-slate-600 dark:text-gray-400">--</strong></div>
+                <div>Variance: <strong id="costVariance" class="font-mono text-slate-500 dark:text-gray-400 font-extrabold">--</strong></div>
+              </div>
+            </div>
+
+            <!-- Canvas -->
+            <div class="relative w-full h-64 sm:h-72 my-2">
+              <canvas id="estimatedCostChart"></canvas>
+              <div id="estimatedCostEmpty" role="status" class="absolute inset-0 items-center justify-center flex-col gap-1 pointer-events-none text-sm text-slate-500 dark:text-gray-400" style="display: none;"><strong>Unavailable</strong><span class="text-xs">Awaiting usable confirmed operating data</span></div>
+            </div>
+
+            <!-- Footer -->
+            <div class="pt-4 border-t border-slate-100 dark:border-white/5 text-center text-xs text-slate-400 dark:text-gray-500">
+              Estimated cost uses confirmed operating data and the selected electricity rate.
+            </div>
+          </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- ROW 3: CONSUMPTION VS COST (DUAL-AXIS CORRELATION)       -->
+        <!-- ======================================================== -->
+        <div class="analytics-glass-card rounded-2xl p-5 sm:p-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="eco-primary-text text-base font-extrabold text-slate-900 dark:text-white">Consumption vs Cost</h3>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+                  Dual-Axis Correlation
+                </span>
+              </div>
+              <p class="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+                Direct relationship between Energy Consumption (kWh) and Estimated Electricity Cost (₱)
+              </p>
+            </div>
+            <div class="text-xs font-semibold text-slate-600 dark:text-gray-300">
+              Correlation: <strong id="correlationScore" class="font-mono text-emerald-600 dark:text-emerald-400 font-extrabold">Unavailable</strong> (Direct Linear Tariff)
+            </div>
+          </div>
+
+          <!-- Alert Banner -->
+          <div class="p-3 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/25 flex items-center gap-2.5 text-xs text-amber-800 dark:text-amber-300 font-medium">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" class="text-amber-500 shrink-0">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+            </svg>
+            <span>Estimated cost rises with energy use at the selected electricity rate.</span>
+          </div>
+
+          <!-- Legend & Tag -->
+          <div class="flex flex-wrap items-center justify-between gap-4 text-xs text-slate-500 dark:text-gray-400 pt-1">
+            <div class="flex items-center gap-5">
+              <span class="flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-full bg-cyan-400"></span>
+                <span id="dualAxisEnergyLegend" class="text-slate-700 dark:text-gray-300 font-medium">Energy (Left Axis)</span>
+              </span>
+              <span class="flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-sm bg-emerald-500"></span>
+                <span id="dualAxisCostLegend" class="text-slate-700 dark:text-gray-300 font-medium">Cost (Right Axis)</span>
+              </span>
+            </div>
+            <span class="text-slate-400 dark:text-gray-500 text-[11px] font-medium" id="dualAxisPeriodBadge">
+              Synchronized 7-Day Observation Interval
+            </span>
+          </div>
+
+          <!-- Canvas -->
+          <div class="relative w-full h-64 sm:h-80">
+            <canvas id="dualAxisChart"></canvas>
+              <div id="dualAxisEmpty" role="status" class="absolute inset-0 items-center justify-center flex-col gap-1 pointer-events-none text-sm text-slate-500 dark:text-gray-400" style="display: none;"><strong>Unavailable</strong><span class="text-xs">Awaiting usable confirmed operating data</span></div>
+          </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- ROW 4: COMPLETE AIRCON CONTROL & TELEMETRY LOGS TABLE     -->
+        <!-- (EXPLICITLY PRESERVED AS REQUESTED)                     -->
+        <!-- ======================================================== -->
+        <div class="eco-data-panel bg-white dark:bg-[#0c1328]/90 border-[2px] border-[#10b981] dark:border-[#10b981]/25 rounded-2xl overflow-hidden flex flex-col shadow-sm">
+          
+          <!-- TABLE SECTION HEADER -->
+          <div class="eco-table-toolbar p-4 sm:p-5 border-b-[2px] border-[#10b981] dark:border-[#10b981]/25 bg-slate-50/70 dark:bg-[#0c1328] flex flex-wrap gap-4 items-center justify-between">
+            <div>
+              <h3 class="eco-primary-text text-lg font-bold text-[#18392B] dark:text-cyan-400 flex items-center gap-2" id="logsTitle">
+                Aircon Control & Telemetry Logs
+              </h3>
+              <p class="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+                Historical record of operating modes, blower fan settings, temperatures, and hardware readings
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="clearAllLogsBtn" type="button" aria-haspopup="dialog" aria-controls="clearLogsDialog"
+                class="h-[36px] px-3.5 rounded-xl text-xs font-bold transition-all duration-200 hover:scale-[1.02] active:scale-95 cursor-pointer flex items-center gap-1.5 border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 shadow-xs"
+                title="Permanently clear all telemetry and operating logs">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+                <span id="clearAllLogsBtnText">Clear All Logs</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- TABLE -->
+          <div class="eco-table-frame overflow-x-auto max-h-[460px] overflow-y-auto relative">
+            <table class="eco-data-table w-full border-separate border-spacing-0">
+              <thead class="sticky top-0 z-20 bg-[#0b291d] dark:bg-[#081a14] shadow-sm">
+                <tr class="text-left text-xs font-bold text-white dark:text-[#a7f3d0] uppercase tracking-wider">
+                  <th scope="col" class="px-5 py-3.5 bg-[#0b291d] dark:bg-[#081a14]">Timestamp</th>
+                  <th scope="col" class="px-5 py-3.5 bg-[#0b291d] dark:bg-[#081a14]">Control Name</th>
+                  <th scope="col" class="px-5 py-3.5 bg-[#0b291d] dark:bg-[#081a14]">Building</th>
+                  <th scope="col" class="px-5 py-3.5 bg-[#0b291d] dark:bg-[#081a14]">Floor</th>
+                  <th scope="col" class="px-5 py-3.5 bg-[#0b291d] dark:bg-[#081a14]">Room</th>
+                  <th scope="col" class="px-5 py-3.5 bg-[#0b291d] dark:bg-[#081a14] whitespace-nowrap">Attached Aircon Type</th>
+                  <th scope="col" class="px-5 py-3.5 bg-[#0b291d] dark:bg-[#081a14] whitespace-nowrap">Target Temperature</th>
+                  <th scope="col" class="px-5 py-3.5 bg-[#0b291d] dark:bg-[#081a14] whitespace-nowrap">Operating Mode</th>
+                  <th scope="col" class="px-5 py-3.5 bg-[#0b291d] dark:bg-[#081a14] whitespace-nowrap">Blower Fan Mode</th>
+                  <th scope="col" class="px-5 py-3.5 bg-[#0b291d] dark:bg-[#081a14] whitespace-nowrap">Special Functions</th>
+                  <th scope="col" class="px-5 py-3.5 bg-[#0b291d] dark:bg-[#081a14]">Battery</th>
+                  <th scope="col" class="px-5 py-3.5 bg-[#0b291d] dark:bg-[#081a14]">RSSI</th>
+                  <th scope="col" class="px-5 py-3.5 bg-[#0b291d] dark:bg-[#081a14]">Status</th>
+                </tr>
+              </thead>
+              <tbody id="logsTableBody"
+                class="divide-y-[2px] divide-[#10b981]/20 dark:divide-white/5 text-gray-800 dark:text-gray-200 bg-white dark:bg-[#0c1328]">
+                <!-- Rows injected dynamically by logs.js -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- PAGINATION -->
+          <div class="eco-table-footer p-4 border-t-[2px] border-[#10b981] dark:border-white/5 flex justify-between items-center bg-white dark:bg-[#0c1328]">
+            <span id="pageInfo" class="text-xs sm:text-sm font-bold text-gray-600 dark:text-gray-400">Showing 0 of 0</span>
+            <div class="flex gap-2">
+              <button id="prevPageBtn" disabled
+                class="px-4 py-1.5 bg-white dark:bg-slate-900 border-[2px] border-[#10b981] dark:border-[#10b981]/40 rounded-lg text-xs sm:text-sm font-bold text-[#18392B] dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer">Previous</button>
+              <button id="nextPageBtn" disabled
+                class="px-4 py-1.5 bg-[#0b291d] dark:bg-[#10b981] border-[2px] border-[#10b981] dark:border-[#10b981]/40 rounded-lg text-xs sm:text-sm font-bold text-white hover:bg-[#18392B] dark:hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer">Next</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- CLEAR ALL LOGS CONFIRMATION -->
+  <dialog id="clearLogsDialog" class="clear-logs-dialog" aria-labelledby="clearLogsTitle" aria-describedby="clearLogsDescription clearLogsScope">
+    <div class="clear-logs-dialog__header">
+      <div class="clear-logs-dialog__icon" aria-hidden="true">
+        <svg class="clear-logs-dialog__trash" viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"/></svg>
+        <svg class="clear-logs-dialog__check" viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg>
+      </div>
+      <button type="button" id="clearLogsClose" class="clear-logs-dialog__close" aria-label="Close confirmation"><svg aria-hidden="true" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div class="clear-logs-dialog__body">
+      <p class="clear-logs-dialog__eyebrow">AC Energy Analytics</p>
+      <h2 id="clearLogsTitle">Clear all logs?</h2>
+      <p id="clearLogsDescription">Permanently remove telemetry history and daily operating logs. This will also reset the analytics audit.</p>
+      <div id="clearLogsWarning" class="clear-logs-dialog__warning">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 10 17H2L12 3ZM12 9v4M12 16h.01"/></svg>
+        <div><strong>This action cannot be undone.</strong><p id="clearLogsScope">Includes records from every date and controller.</p></div>
+      </div>
+      <p id="clearLogsFeedback" class="clear-logs-dialog__feedback" role="status" aria-live="polite" aria-atomic="true" hidden></p>
+    </div>
+    <div class="clear-logs-dialog__footer">
+      <button type="button" id="clearLogsCancel" class="clear-logs-dialog__cancel" autofocus>Cancel</button>
+      <button type="button" id="clearLogsConfirm" class="clear-logs-dialog__confirm"><span class="clear-logs-dialog__spinner" aria-hidden="true"></span><span id="clearLogsConfirmLabel">Clear all logs</span></button>
+    </div>
+  </dialog>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: ELECTRICITY TARIFF CONFIGURATION (ADMIN)          -->
+  <!-- ======================================================== -->
+  <div id="tariffSettingsModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 transition-all duration-200" role="dialog" aria-modal="true" aria-labelledby="tariffModalTitle">
+    <div class="modal-pop bg-white dark:bg-[#0c1328] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-amber-500/20 via-teal-500/10 to-transparent p-5 border-b border-slate-100 dark:border-white/10 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center font-bold">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+            </svg>
+          </div>
+          <div>
+            <h3 id="tariffModalTitle" class="eco-primary-text text-base font-extrabold text-slate-900 dark:text-white">
+              Electricity Tariff Configuration
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-gray-400">Customize the utility billing rate and utility provider details</p>
+          </div>
+        </div>
+        <button id="closeTariffModalBtn" type="button" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-colors border-0 bg-transparent cursor-pointer font-bold text-lg">&times;</button>
+      </div>
+
+      <!-- Modal Body -->
+      <form id="tariffConfigForm" class="p-5 sm:p-6 space-y-4">
+        <!-- Tariff Rate -->
+        <div>
+          <label for="tariffRateInput" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1.5">
+            Electricity Tariff Rate (₱ / kWh)
+          </label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400 font-bold text-sm">₱</span>
+            <input type="number" id="tariffRateInput" step="0.01" min="0.10" max="100.00" value="" required
+              class="w-full pl-8 pr-16 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500">
+            <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-xs font-bold text-slate-400">/ kWh</span>
+          </div>
+          <p class="text-[11px] text-slate-400 dark:text-gray-500 mt-1">
+            Enter your utility rate to enable cost estimates.
+          </p>
+        </div>
+
+        <input type="hidden" id="targetBudgetInput" value="">
+
+        <!-- Utility Provider / Notes -->
+        <div>
+          <label for="utilityProviderInput" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1.5">
+            Utility Provider & Region
+          </label>
+          <input type="text" id="utilityProviderInput" value=""
+            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500">
+        </div>
+
+        <!-- Dynamic Live Calculation Preview -->
+        <div class="p-3 rounded-xl bg-slate-100 dark:bg-black/30 border border-slate-200/60 dark:border-white/5 space-y-1.5">
+          <div class="text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Live Impact Preview</div>
+          <div class="text-xs text-slate-700 dark:text-gray-300 flex justify-between">
+            <span>Estimated Fleet Bill Impact:</span>
+            <strong id="tariffPreviewBill" class="font-mono text-emerald-600 dark:text-emerald-400 font-bold">--</strong>
+          </div>
+          <div class="text-[11px] text-slate-400 dark:text-gray-500">
+            The rate applies immediately to estimates and reports.
+          </div>
+        </div>
+
+        <!-- Modal Actions -->
+        <div class="pt-3 border-t border-slate-100 dark:border-white/10 flex items-center justify-between gap-3">
+          <button type="button" id="resetTariffDefaultBtn"
+            class="text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white underline bg-transparent border-0 cursor-pointer">
+            Clear tariff settings
+          </button>
+          <div class="flex items-center gap-2">
+            <button type="button" id="cancelTariffModalBtn"
+              class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 rounded-xl text-xs font-bold transition-colors border-0 cursor-pointer">
+              Cancel
+            </button>
+            <button type="submit" id="saveTariffBtn"
+              class="px-5 py-2 bg-[#10b981] hover:bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-500/20 transition-all border-0 cursor-pointer flex items-center gap-1.5">
+              <span>Save & Apply Tariff</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: HIGHEST CONSUMING ENERGY BREAKDOWN (INFO MODAL)   -->
+  <!-- ======================================================== -->
+  <div id="topConsumersModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 transition-all duration-200" role="dialog" aria-modal="true" aria-labelledby="topConsumersModalTitle">
+    <div class="modal-pop bg-white dark:bg-[#0c1328] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden">
+      
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-emerald-500/20 via-teal-500/15 to-transparent p-4 sm:p-5 border-b border-slate-100 dark:border-white/10 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-500 flex items-center justify-center font-bold shrink-0">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M18 20V10" />
+              <path d="M12 20V4" />
+              <path d="M6 20v-6" />
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 id="topConsumersModalTitle" class="eco-primary-text text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                Highest Energy Consumption Breakdown
+              </h3>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                Peak Insights
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+              Live consumption rankings across Buildings, Floors, Rooms, AC Controls, and Aircon Equipment
+            </p>
+          </div>
+        </div>
+        <button id="closeTopConsumersModalBtn" type="button" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-colors border-0 bg-transparent cursor-pointer font-bold text-xl leading-none">&times;</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-4 sm:p-6 space-y-6 overflow-y-auto flex-1">
+
+        <!-- Scope & Tariff Evaluation Banner -->
+        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="text-slate-600 dark:text-gray-300">
+              Active Scope: <strong id="modalScopePeriod" class="text-slate-900 dark:text-white uppercase font-black">Daily</strong> • Tariff Multiplier: <strong id="modalScopeTariff" class="text-amber-600 dark:text-amber-400 font-mono font-bold">Not configured</strong>
+            </span>
+          </div>
+          <div class="text-slate-500 dark:text-gray-400 text-xs">
+            Evaluated Fleet Total: <strong id="modalScopeTotalKwh" class="text-emerald-600 dark:text-emerald-400 font-mono font-black">--</strong> (<strong id="modalScopeTotalCost" class="text-emerald-600 dark:text-emerald-400 font-mono font-black">--</strong>)
+          </div>
+        </div>
+
+        <!-- 5 Top Category Highlights Cards -->
+        <div>
+          <div class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400 mb-2.5 flex items-center gap-1.5">
+            <span>🏆 Primary Energy Consumers (#1 In Each Category)</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            
+            <!-- 1. Top Building -->
+            <div class="p-3.5 rounded-xl bg-gradient-to-b from-blue-500/10 to-transparent border border-blue-500/30 flex flex-col justify-between space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400 tracking-wider">Top Building</span>
+                <span class="w-6 h-6 rounded-lg bg-blue-500/20 text-blue-500 flex items-center justify-center text-xs">🏢</span>
+              </div>
+              <div>
+                <div id="topBuildingName" class="text-xs font-black text-slate-900 dark:text-white truncate" title="Top Building">--</div>
+                <div class="flex items-baseline gap-1 mt-1">
+                  <span id="topBuildingKwh" class="text-xl font-black text-blue-600 dark:text-blue-400 font-mono">--</span>
+                  <span class="text-[10px] text-slate-400 font-bold">kWh</span>
+                </div>
+              </div>
+              <div class="pt-2 border-t border-slate-200/50 dark:border-white/5 flex items-center justify-between text-[11px]">
+                <span id="topBuildingCost" class="font-mono font-bold text-slate-700 dark:text-gray-300">--</span>
+                <span id="topBuildingShare" class="font-black text-blue-600 dark:text-blue-400">--%</span>
+              </div>
+            </div>
+
+            <!-- 2. Top Floor -->
+            <div class="p-3.5 rounded-xl bg-gradient-to-b from-purple-500/10 to-transparent border border-purple-500/30 flex flex-col justify-between space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-black uppercase text-purple-600 dark:text-purple-400 tracking-wider">Top Floor</span>
+                <span class="w-6 h-6 rounded-lg bg-purple-500/20 text-purple-500 flex items-center justify-center text-xs">📑</span>
+              </div>
+              <div>
+                <div id="topFloorName" class="text-xs font-black text-slate-900 dark:text-white truncate" title="Top Floor">--</div>
+                <div class="flex items-baseline gap-1 mt-1">
+                  <span id="topFloorKwh" class="text-xl font-black text-purple-600 dark:text-purple-400 font-mono">--</span>
+                  <span class="text-[10px] text-slate-400 font-bold">kWh</span>
+                </div>
+              </div>
+              <div class="pt-2 border-t border-slate-200/50 dark:border-white/5 flex items-center justify-between text-[11px]">
+                <span id="topFloorCost" class="font-mono font-bold text-slate-700 dark:text-gray-300">--</span>
+                <span id="topFloorShare" class="font-black text-purple-600 dark:text-purple-400">--%</span>
+              </div>
+            </div>
+
+            <!-- 3. Top Room -->
+            <div class="p-3.5 rounded-xl bg-gradient-to-b from-amber-500/10 to-transparent border border-amber-500/30 flex flex-col justify-between space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider">Top Room</span>
+                <span class="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-500 flex items-center justify-center text-xs">🚪</span>
+              </div>
+              <div>
+                <div id="topRoomName" class="text-xs font-black text-slate-900 dark:text-white truncate" title="Top Room">--</div>
+                <div class="flex items-baseline gap-1 mt-1">
+                  <span id="topRoomKwh" class="text-xl font-black text-amber-600 dark:text-amber-400 font-mono">--</span>
+                  <span class="text-[10px] text-slate-400 font-bold">kWh</span>
+                </div>
+              </div>
+              <div class="pt-2 border-t border-slate-200/50 dark:border-white/5 flex items-center justify-between text-[11px]">
+                <span id="topRoomCost" class="font-mono font-bold text-slate-700 dark:text-gray-300">--</span>
+                <span id="topRoomShare" class="font-black text-amber-600 dark:text-amber-400">--%</span>
+              </div>
+            </div>
+
+            <!-- 4. Top AC Control -->
+            <div class="p-3.5 rounded-xl bg-gradient-to-b from-emerald-500/10 to-transparent border border-emerald-500/30 flex flex-col justify-between space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">Top AC Control</span>
+                <span class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-500 flex items-center justify-center text-xs">🎛</span>
+              </div>
+              <div>
+                <div id="topControlName" class="text-xs font-black text-slate-900 dark:text-white truncate" title="Top AC Control">--</div>
+                <div class="flex items-baseline gap-1 mt-1">
+                  <span id="topControlKwh" class="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono">--</span>
+                  <span class="text-[10px] text-slate-400 font-bold">kWh</span>
+                </div>
+              </div>
+              <div class="pt-2 border-t border-slate-200/50 dark:border-white/5 flex items-center justify-between text-[11px]">
+                <span id="topControlCost" class="font-mono font-bold text-slate-700 dark:text-gray-300">--</span>
+                <span id="topControlShare" class="font-black text-emerald-600 dark:text-emerald-400">--%</span>
+              </div>
+            </div>
+
+            <!-- 5. Top Aircon Type -->
+            <div class="p-3.5 rounded-xl bg-gradient-to-b from-cyan-500/10 to-transparent border border-cyan-500/30 flex flex-col justify-between space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-black uppercase text-cyan-600 dark:text-cyan-400 tracking-wider">Top Aircon Type</span>
+                <span class="w-6 h-6 rounded-lg bg-cyan-500/20 text-cyan-500 flex items-center justify-center text-xs">❄</span>
+              </div>
+              <div>
+                <div id="topAirconTypeName" class="text-xs font-black text-slate-900 dark:text-white truncate" title="Top Aircon Type">--</div>
+                <div class="flex items-baseline gap-1 mt-1">
+                  <span id="topAirconTypeKwh" class="text-xl font-black text-cyan-600 dark:text-cyan-400 font-mono">--</span>
+                  <span class="text-[10px] text-slate-400 font-bold">kWh</span>
+                </div>
+              </div>
+              <div class="pt-2 border-t border-slate-200/50 dark:border-white/5 flex items-center justify-between text-[11px]">
+                <span id="topAirconTypeCost" class="font-mono font-bold text-slate-700 dark:text-gray-300">--</span>
+                <span id="topAirconTypeShare" class="font-black text-cyan-600 dark:text-cyan-400">--%</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Interactive Category Switcher & Leaderboard Table -->
+        <div class="space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-white/10">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-gray-300">
+              📊 Category Consumption Leaderboard
+            </span>
+
+            <!-- Category Switcher Tabs -->
+            <div class="inline-flex p-1 bg-slate-100 dark:bg-slate-900/90 rounded-xl border border-slate-200 dark:border-white/10 gap-1 text-xs font-bold" id="consumersTabContainer">
+              <button type="button" class="consumer-tab-btn active px-3 py-1.5 rounded-lg transition-all cursor-pointer bg-[#10b981] text-white shadow-xs" data-category="buildings">
+                🏢 Buildings
+              </button>
+              <button type="button" class="consumer-tab-btn px-3 py-1.5 rounded-lg transition-all cursor-pointer text-slate-600 dark:text-gray-300 hover:text-[#10b981]" data-category="floors">
+                📑 Floors
+              </button>
+              <button type="button" class="consumer-tab-btn px-3 py-1.5 rounded-lg transition-all cursor-pointer text-slate-600 dark:text-gray-300 hover:text-[#10b981]" data-category="rooms">
+                🚪 Rooms
+              </button>
+              <button type="button" class="consumer-tab-btn px-3 py-1.5 rounded-lg transition-all cursor-pointer text-slate-600 dark:text-gray-300 hover:text-[#10b981]" data-category="controls">
+                🎛 AC Controls
+              </button>
+              <button type="button" class="consumer-tab-btn px-3 py-1.5 rounded-lg transition-all cursor-pointer text-slate-600 dark:text-gray-300 hover:text-[#10b981]" data-category="airconTypes">
+                ❄ Aircon Types
+              </button>
+            </div>
+          </div>
+
+          <!-- Leaderboard Table Card -->
+          <div class="eco-table-frame border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden shadow-xs">
+            <table class="eco-data-table w-full text-left border-collapse">
+              <thead class="bg-slate-50 dark:bg-[#070d1e] text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider border-b border-slate-200 dark:border-white/10">
+                <tr>
+                  <th scope="col" class="px-4 py-3">Rank</th>
+                  <th scope="col" class="px-4 py-3" id="leaderboardNameHeader">Entity Name</th>
+                  <th scope="col" class="px-4 py-3">Consumption Share</th>
+                  <th scope="col" class="px-4 py-3">Energy (kWh)</th>
+                  <th scope="col" class="px-4 py-3">Estimated Cost (₱)</th>
+                  <th scope="col" class="px-4 py-3 text-right">Draw Level</th>
+                </tr>
+              </thead>
+              <tbody id="topConsumersTableBody" class="divide-y divide-slate-100 dark:divide-white/5 text-xs text-slate-800 dark:text-gray-200">
+                <!-- Rows injected dynamically by logs.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-4 bg-slate-50 dark:bg-[#070d1e] border-t border-slate-100 dark:border-white/10 flex items-center justify-between gap-3 shrink-0">
+        <div class="text-[11px] text-slate-500 dark:text-gray-400">
+          Rankings are calculated dynamically from synchronized aircon telemetry and active electricity tariff.
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" id="closeTopConsumersBtn" class="px-5 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white rounded-xl text-xs font-bold transition-all border-0 cursor-pointer">
+            Close
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- NOTICE MODAL -->
+  <div id="noticeModal" class="hidden fixed inset-0 bg-slate-950/70 flex items-center justify-center z-50">
+    <div class="bg-slate-800 border border-cyan-500/50 rounded-lg shadow-xl max-w-md w-11/12">
+      <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex justify-between items-center">
+        <h3 class="eco-primary-text text-xl font-bold text-white">📢 Notice</h3>
+        <button id="closeNoticeModal" class="text-white hover:text-gray-200 text-2xl leading-none">&times;</button>
+      </div>
+      <div class="px-6 py-4">
+        <p class="text-gray-300 mb-4">Important system notifications and maintenance schedules.</p>
+        <ul class="list-disc list-inside text-gray-400 text-sm space-y-2">
+          <li>Aircon Energy Analytics online and synchronizing</li>
+          <li>Tariff rates adjustable by system administrator</li>
+          <li>Please review your control configurations</li>
+        </ul>
+      </div>
+      <div class="bg-slate-700 px-6 py-4 flex justify-end gap-3">
+        <button id="closeNoticeBtn" class="px-4 py-2 bg-slate-600 hover:bg-slate-500 rounded text-sm font-semibold transition-colors text-gray-200">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GLOBAL NOTIFICATION POPUP -->
+  <div id="globalNotificationDialog"
+    style="display: none; position: fixed; top: 1.25rem; left: 1.25rem; background: transparent !important; background-color: transparent !important; z-index: 99999; pointer-events: none; max-width: 28rem; width: calc(100% - 2.5rem);"
+    class="flex flex-col">
+    <div class="bg-white dark:bg-[#0c1328] border-2 border-[#10b981] dark:border-[#10b981]/50 rounded-2xl p-5 shadow-2xl backdrop-blur-md pointer-events-auto">
+      <div class="flex items-center gap-3 mb-3">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" class="text-rose-500">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+        <h3 class="eco-primary-text text-xl font-bold text-[#18392B] dark:text-cyan-400">New Notification!</h3>
+      </div>
+      <p id="globalNotificationMessage" class="text-gray-700 dark:text-gray-200 text-sm font-medium mb-5 leading-relaxed">A scheduled message has been triggered.</p>
+      <div class="flex gap-3">
+        <a href="Notification.html" class="flex-1 px-4 py-2 bg-[#10b981] hover:bg-emerald-400 text-white font-bold rounded-xl text-sm transition-colors text-center shadow-md border-0 cursor-pointer">View Notifications</a>
+        <button id="dismissNotificationBtn" class="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 font-bold rounded-xl text-sm transition-colors border-0 cursor-pointer">Dismiss</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Download Progress/Cancel -->
+  <div id="downloadModal"
+    style="display: none; position: fixed; inset: 0; background-color: rgba(7, 13, 26, 0.80); z-index: 99999;"
+    class="flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-[#0c1328] border-[2px] border-gray-100 dark:border-[#10b981]/40 rounded-2xl w-full max-w-[340px] shadow-2xl shadow-emerald-500/10 text-center overflow-hidden flex flex-col">
+      <div class="pt-8 pb-5 px-6 flex flex-col items-center">
+        <div class="relative mb-5">
+          <div class="w-20 h-20 rounded-full border-[3px] border-[#10b981] flex items-center justify-center bg-emerald-50 dark:bg-emerald-950/40">
+            <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" class="text-[#10b981] animate-bounce">
+              <polyline points="8 17 12 21 16 17" />
+              <line x1="12" y1="12" x2="12" y2="21" />
+              <path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29" />
+            </svg>
+          </div>
+          <div class="absolute inset-0 w-20 h-20 rounded-full border-2 border-[#10b981]/30 animate-ping"></div>
+        </div>
+        <h3 class="eco-primary-text text-lg font-bold text-gray-800 dark:text-white mb-1" id="downloadModalTitle">Preparing Export</h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-0" id="downloadModalSubtitle">Generating your report...</p>
+      </div>
+      <div class="mx-6 h-[2px] bg-gradient-to-r from-transparent via-[#10b981]/60 to-transparent"></div>
+      <div class="px-6 pt-5 pb-6">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Progress</span>
+          <span id="downloadProgressPercent" class="text-sm font-bold text-[#10b981]">0%</span>
+        </div>
+        <div class="w-full bg-gray-100 dark:bg-slate-900 h-2.5 rounded-full overflow-hidden mb-6 relative">
+          <div id="downloadProgressBar" class="h-full bg-gradient-to-r from-[#10b981] to-cyan-400 rounded-full transition-all duration-200" style="width: 0%;"></div>
+        </div>
+        <button id="cancelDownloadBtn" class="w-full px-5 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-bold transition-all duration-200 hover:scale-[1.02] active:scale-95 border-0 cursor-pointer uppercase tracking-wider">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cloud Database Engine (Supabase) -->
+  <script src="./js/supabase.umd.js"></script>
+  <script src="./js/supabase-client.js"></script>
+  <script src="./js/hardware-cloud.js?v=11"></script>
+  <script src="./js/node-sync.js?v=5"></script>
+  <script src="./js/shared.js"></script>
+  <script src="./js/global-notifications.js"></script>
+  <script src="./js/sidebar.js"></script>
+  <script src="./js/clear-logs-dialog.js?v=1"></script>
+  <script src="./js/energy-prediction.js?v=4"></script>
+  <script src="./js/telemetry-history.js?v=1"></script>
+  <script src="./js/future-cost.js?v=2"></script>
+  <script src="./js/logs.js?v=59"></script>
+</body>
+
+</html>

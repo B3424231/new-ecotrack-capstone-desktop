@@ -1,0 +1,58 @@
+/* Shared Location cabinet: Notifications is the visual reference. */
+html body.app-shell .eco-location-panel {
+  display:flex; flex-direction:column; flex-shrink:0; box-sizing:border-box;
+  width:280px; max-width:100%; min-width:0; min-height:0;
+  padding:24px!important; border:2px solid var(--eco-accent,#10b981)!important;
+  border-radius:24px!important; background:var(--eco-canvas,#0b1220)!important;
+  overflow:hidden;
+}
+html body.app-shell .eco-location-title {
+  display:flex; align-items:center; gap:8px; flex-shrink:0;
+  margin:0 0 16px!important; font-size:20px!important; line-height:1.4;
+  font-weight:800; color:var(--eco-text)!important;
+}
+html body.app-shell .eco-location-title>svg { width:20px; height:24px; flex-shrink:0; color:var(--eco-accent)!important; }
+html body.app-shell .eco-location-tree { flex:1; min-height:0; overflow:auto; padding:8px 8px 0 0; }
+html body.app-shell .eco-location-building-group { margin:0 0 12px; padding:0; border:0; border-radius:4px; }
+html body.app-shell .eco-location-building {
+  display:flex; align-items:center; gap:8px; width:100%; padding:10px 12px!important;
+  border:0; border-bottom:1px solid var(--eco-border)!important; border-radius:4px 4px 0 0;
+  background:color-mix(in srgb,var(--eco-accent) 8%,transparent)!important;
+  color:var(--eco-accent)!important; font-size:14px; font-weight:800; cursor:pointer;
+}
+html body.app-shell .eco-location-building span { color:inherit!important; }
+html body.app-shell .eco-location-building>svg { width:16px; height:16px; flex-shrink:0; }
+html body.app-shell .eco-location-floors {
+  display:flex; flex-direction:column; gap:8px; margin:0!important; padding:8px!important;
+  border:1px solid var(--eco-border)!important; border-top:0!important; border-radius:0 0 4px 4px;
+  background:var(--eco-canvas)!important;
+}
+html body.app-shell .eco-location-floor { padding:0; border:1px solid var(--eco-border)!important; border-radius:4px; background:var(--eco-canvas)!important; }
+html body.app-shell .eco-location-floor-heading {
+  display:flex; align-items:center; gap:5px; padding:6px 8px!important;
+  border:0; border-bottom:1px solid var(--eco-border)!important; cursor:pointer;
+  color:var(--eco-secondary)!important; font-size:12px; font-weight:700;
+}
+html body.app-shell .eco-location-floor-heading span { color:inherit!important; }
+html body.app-shell .eco-location-floor-heading svg { width:12px; height:12px; color:var(--eco-muted)!important; flex-shrink:0; }
+html body.app-shell .eco-location-rooms { display:flex; flex-direction:column; gap:4px; margin:0!important; padding:4px!important; border:0!important; }
+html body.app-shell .eco-location-room {
+  display:block; box-sizing:border-box; width:100%; padding:10px!important; margin:0!important;
+  border:2px solid transparent!important; border-radius:14px!important;
+  background:var(--eco-surface)!important; color:var(--eco-text)!important;
+  text-align:left; cursor:pointer; box-shadow:none!important; overflow-wrap:anywhere;
+}
+html body.app-shell .eco-location-room p:first-child,html body.app-shell .eco-location-room>span { font-size:12px!important; font-weight:800; color:var(--eco-text)!important; }
+html body.app-shell .eco-location-room p:nth-child(2),html body.app-shell .eco-location-room>small { display:block; margin-top:2px; font-size:10px!important; font-weight:500; color:var(--eco-muted)!important; }
+html body.app-shell .eco-location-room:is([aria-selected="true"],[aria-pressed="true"]) { border-color:var(--eco-accent)!important; background:var(--eco-selected)!important; }
+html body.app-shell .eco-location-room:hover { border-color:var(--eco-accent)!important; }
+html body.app-shell :is(.eco-location-room,.eco-location-building,.eco-location-floor-heading):focus-visible { outline:2px solid var(--eco-accent); outline-offset:2px; }
+.eco-location-layout { min-width:0; min-height:0; }
+.eco-location-layout>div { min-width:0; }
+.sensor-telemetry-layout { grid-template-columns:280px minmax(0,1fr); }
+@media(max-width:900px) {
+  html body.app-shell .eco-location-panel { width:100%; max-height:280px; flex:none; padding:18px!important; }
+  .eco-location-layout { flex-direction:column!important; overflow:auto!important; }
+  .eco-location-layout>.eco-location-panel+div { flex:none; min-height:420px; }
+  .sensor-telemetry-layout { grid-template-columns:1fr; }
+}

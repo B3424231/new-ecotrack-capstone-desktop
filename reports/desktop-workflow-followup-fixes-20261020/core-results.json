@@ -1,0 +1,93 @@
+[
+  {
+    "name": "test_dashboard_workflows.js",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 0.2
+  },
+  {
+    "name": "test_page_connections.js",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 0.5
+  },
+  {
+    "name": "test_registration_progress.js",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 0.2
+  },
+  {
+    "name": "test_runtime_engine.js",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 0.1
+  },
+  {
+    "name": "test_telemetry_cadence.js",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 0.1
+  },
+  {
+    "name": "test_logs_stability.js",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 0.3
+  },
+  {
+    "name": "test_report_deletion.js",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 0.2
+  },
+  {
+    "name": "test_notification_dismissal.js",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 0.3
+  },
+  {
+    "name": "test_workflow_repairs.js",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 0.6
+  },
+  {
+    "name": "test_scheduler_device_identity.js",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 0.2
+  },
+  {
+    "name": "test_ac_power_history.js",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 0.2
+  },
+  {
+    "name": "test_future_cost.js",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 0.2
+  },
+  {
+    "name": "verify_no_mock_data.js",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 0.1
+  }
+]

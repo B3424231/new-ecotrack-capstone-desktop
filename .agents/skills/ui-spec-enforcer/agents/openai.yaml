@@ -1,0 +1,6 @@
+interface:
+  display_name: "UI Spec Enforcer"
+  short_description: "Enforce the provided UI specification"
+  default_prompt: "Inspect the UI specification and verify or implement the interface exactly against it."
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Code Reviewer"
+  short_description: "Review quality and regression risk"
+  default_prompt: "Review the current implementation and identify concrete quality or regression issues."
+policy:
+  allow_implicit_invocation: false

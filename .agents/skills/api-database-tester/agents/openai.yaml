@@ -1,0 +1,6 @@
+interface:
+  display_name: "API and Database Tester"
+  short_description: "Verify APIs and database integration"
+  default_prompt: "Inspect and test API and database behavior, including UI-to-backend integration."
+policy:
+  allow_implicit_invocation: true

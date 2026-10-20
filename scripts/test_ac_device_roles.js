@@ -1,0 +1,32 @@
+'use strict';
+// Real mobile registration transport and desktop registry mirror, with isolated network responses.
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),{createRequire}=require('node:module');
+const root=path.resolve(__dirname,'..'),mobile='C:/Users/reygay/Desktop/EcoTrackAppMobileNew-master-control',out=path.join(root,'reports/workspace-modes');
+const mobileRequire=createRequire(path.join(mobile,'package.json')),prefix=fs.readFileSync(path.join(mobile,'scripts/test-cloud-hardware-integration.cjs'),'utf8').split('\ntest(')[0];
+const sandbox={require:mobileRequire,console,exports:{}};process.chdir(mobile);vm.runInNewContext(prefix+';exports.harness=harness;',sandbox);const harness=sandbox.exports.harness;
+(async()=>{
+ const checks=[],nodeId='node-fixture',deviceId='esp32s3-001122334455',sensorId='11111111-1111-4111-8111-111111111111';
+ for(const role of ['monitoring','controller','both']){
+  const calls=[],h=harness(call=>{calls.push(call);if(call.table)return {data:{node_id:nodeId,device_id:deviceId,last_seen:'2026-10-11T08:00:00Z'},error:null};
+   if(call.rpc==='ecotrack_validate_ac_device_assignment')return {data:{valid:true},error:null};
+   if(call.rpc==='ecotrack_controller_registration_status')return {data:{requires_credentials:false,node:{id:nodeId}},error:null};
+   if(call.rpc==='ecotrack_finish_ac_device_registration'){assert.equal(call.args.p_setup.device_mode,role);if(role==='monitoring')assert.equal(call.args.p_capture,undefined);return {data:{success:true,connected:true,node:{id:nodeId,device_mode:role,monitor_aircon_id:role==='controller'?null:'ac'},aircon:{id:'ac',controller_node_id:role==='monitoring'?null:nodeId}},error:null};}
+   throw Error('Unexpected request '+call.rpc);
+  });
+  const saved=await h.load('src/services/cloud-hardware.ts').CloudHardware.register({device_id:deviceId,cloud_protocol:1,cloud_status:'verified',node_id:nodeId},{device_mode:role,controller_name:'Fixture',assignment_mode:'existing',aircon_id:'ac',room_id:'r',brand:'Fixture',aircon_type:'Window',sensor_config:role==='controller'?null:{pressure_sensor:'MPX5010DP',pressure_min_pa:0,pressure_max_pa:10000}},{ssid:'',pass:''},()=>{throw Error('Credential reuse must not write Bluetooth');},role==='monitoring'?{invalid:'IR capture must be ignored'}:undefined);
+  assert.equal(saved.node.device_mode,role);assert(!calls.some(call=>call.rpc==='ecotrack_prepare_controller_registration'));checks.push('Mobile '+role+': role-aware validation/save, verified identity and credential reuse');
+ }
+ const {syncRegisteredMonitors}=require('../src/ac-device-monitor');let writes=0;
+ const data={nodes:[{id:nodeId,name:'Verified sensor',device_mode:'monitoring',monitoring_id:sensorId,monitor_aircon_id:'ac',room_id:'r',sensor_config:{pressure_sensor:'MPX5010DP',pressure_min_pa:0,pressure_max_pa:10000}},{id:'controller',device_mode:'controller'}],aircons:[{id:'ac',name:'Verified AC',aircon_type:'Window'}],rooms:[{id:'r',name:'Room 1',floor_id:'f'}],floors:[{id:'f',name:'Floor 1',building_id:'b'}],buildings:[{id:'b',name:'Building'}]};
+ const result=await syncRegisteredMonitors({from:table=>({select:async()=>({data:data[table]})})},{backendUrl:'http://localhost:5000',adminToken:'fixture-admin-only-'.repeat(3),fetcher:async(url,init)=>{writes++;assert.equal(url.pathname,'/api/monitoring/registry/reconcile');const body=JSON.parse(init.body);assert.equal(body.devices.length,1);const entry=body.devices[0];assert.equal(entry.id,sensorId);assert.equal(entry.registry_node_id,nodeId);assert.equal(entry.device.aircon_name,'Verified AC');assert.equal(entry.device.location,'Building · Floor 1 · Room 1');assert.equal(entry.device.pressure_min_pa,0);assert(!Object.hasOwn(entry.device,'latest'));assert(!Object.hasOwn(entry.device,'status'));return {ok:true,json:async()=>({changed:1})};}});
+ assert.equal(result.data.changed,1);assert.equal(writes,1);checks.push('Desktop imports verified monitoring metadata only, with stable identity and no fabricated readings/status');
+ const React=mobileRequire('react'),Web=mobileRequire('react-native-web'),SSR=mobileRequire('react-dom/server'),ts=mobileRequire('typescript');
+ const load=(filename,theme)=>{const module={exports:{}};const code=ts.transpileModule(fs.readFileSync(path.join(mobile,filename),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.React,esModuleInterop:true}}).outputText;
+  vm.runInNewContext(code,{module,exports:module.exports,console,require:name=>{if(name==='react')return {...React,useState:()=>[true,()=>{}]};if(name==='react-native')return Web;if(name==='@/global.css')return {};if(name.includes('themed-text'))return {ThemedText:({style,...props})=>React.createElement(Web.Text,{...props,style:[{color:load('src/constants/theme.ts',theme).Colors[theme].text},style]})};if(name==='@/context/settings-context')return {useSettings:()=>({colors:load('src/constants/theme.ts',theme).Colors[theme]})};throw Error(name);}});return module.exports;};
+ for(const theme of ['dark','light'])for(const width of [390,320]){
+  const Picker=load('src/components/ac-device-type-picker.tsx',theme).AcDeviceTypePicker,colors=load('src/constants/theme.ts',theme).Colors[theme];const component=()=>React.createElement(Web.View,{style:{width,padding:16,backgroundColor:colors.background}},React.createElement(Picker,{value:'both',onChange(){},pressureSensor:'MPX5010DP',setPressureSensor(){},pressureMin:'0',setPressureMin(){},pressureMax:'10000',setPressureMax(){}}));
+  const key='Role'+theme+width;Web.AppRegistry.registerComponent(key,()=>component);const app=Web.AppRegistry.getApplication(key);fs.writeFileSync(path.join(out,`mobile-device-role-${width}-${theme}.html`),'<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+SSR.renderToStaticMarkup(app.getStyleElement())+'<style>body{margin:0;color:'+colors.text+';background:'+colors.background+'}</style>'+SSR.renderToStaticMarkup(app.element));
+ }
+ checks.push('Real mobile dropdown rendered in dark/light at 320/390 px using React Native Web; hardware behavior not simulated');
+ fs.writeFileSync(path.join(out,'device-role-verification.json'),JSON.stringify({status:'PASS',checks,live_external_requests:0,live_migration_run:false,physical_hardware_tested:false},null,2));checks.forEach(check=>console.log('PASS '+check));
+})().catch(error=>{console.error(error.stack);process.exitCode=1;});

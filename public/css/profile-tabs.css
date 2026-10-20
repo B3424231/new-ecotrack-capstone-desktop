@@ -1,0 +1,31 @@
+/* Keep Profile navigation flat and separate from global action-button effects. */
+body[data-device-mode-profile] .profile-tabs {
+  display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px;
+  padding:10px; border-bottom:1px solid var(--eco-border); background:var(--eco-raised);
+}
+html body.app-shell[data-device-mode-profile] .profile-nav-tab {
+  display:flex; align-items:center; justify-content:center; gap:9px; min-height:46px;
+  min-width:0; padding:10px 12px; border:1px solid transparent!important; border-radius:10px;
+  background:transparent!important; color:var(--eco-secondary)!important;
+  font:inherit; font-size:13px; font-weight:600; line-height:1.4; white-space:nowrap;
+  cursor:pointer; box-shadow:none!important; transform:none!important;
+  transition:background-color .15s,color .15s,border-color .15s;
+}
+html body.app-shell[data-device-mode-profile] .profile-nav-tab:hover {
+  background:var(--eco-surface)!important; color:var(--eco-text)!important;
+}
+html body.app-shell[data-device-mode-profile] .profile-nav-tab[aria-selected="true"] {
+  background:var(--eco-selected)!important; color:var(--eco-accent)!important;
+  border-color:var(--eco-accent)!important; font-weight:700;
+}
+body[data-device-mode-profile] .profile-nav-tab svg { flex-shrink:0; width:17px; height:17px; color:inherit; }
+html body.app-shell[data-device-mode-profile] .profile-nav-tab:focus-visible {
+  outline:2px solid var(--eco-accent)!important; outline-offset:2px;
+}
+@media(max-width:1050px) {
+  body[data-device-mode-profile] .profile-tabs { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  html body.app-shell[data-device-mode-profile] .profile-nav-tab { padding:10px 6px; gap:6px; font-size:12px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  html body.app-shell[data-device-mode-profile] .profile-nav-tab { transition:none; }
+}

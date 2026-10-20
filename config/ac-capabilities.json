@@ -1,0 +1,1416 @@
+{
+  "schema_version": 1,
+  "registry_version": "irremote-2.9.0-1",
+  "library_version": "2.9.0",
+  "reference": "https://github.com/crankyoldgit/IRremoteESP8266/tree/v2.9.0/src",
+  "features": [
+    "power",
+    "temperature",
+    "turbo",
+    "quiet",
+    "eco",
+    "swing_vertical",
+    "swing_horizontal",
+    "sleep",
+    "display",
+    "filter",
+    "clean",
+    "beep",
+    "timer",
+    "i_feel"
+  ],
+  "aliases": {
+    "MIDEA_IR": "MIDEA",
+    "MITSUBISHI": "MITSUBISHI_AC",
+    "PANASONIC": "PANASONIC_AC",
+    "SAMSUNG": "SAMSUNG_AC",
+    "CARRIER": "CARRIER_AC64",
+    "HAIER": "HAIER_AC",
+    "HITACHI": "HITACHI_AC",
+    "FUJITSU": "FUJITSU_AC",
+    "TOSHIBA": "TOSHIBA_AC",
+    "SHARP": "SHARP_AC",
+    "WHIRLPOOL": "WHIRLPOOL_AC"
+  },
+  "protocols": {
+    "TCL112AC": {
+      "protocol": "TCL112AC",
+      "source": "IRremoteESP8266 2.9.0",
+      "confidence": "library",
+      "features": {
+        "power": true,
+        "temperature": true,
+        "turbo": true,
+        "quiet": true,
+        "eco": true,
+        "swing_vertical": true,
+        "swing_horizontal": true,
+        "sleep": false,
+        "display": true,
+        "filter": true,
+        "clean": false,
+        "beep": false,
+        "timer": false,
+        "i_feel": false
+      },
+      "temperature": {
+        "min": 16,
+        "max": 31,
+        "step": 0.5,
+        "unit": "C",
+        "modes": [
+          "auto",
+          "cool",
+          "heat",
+          "dry"
+        ]
+      },
+      "modes": [
+        "auto",
+        "cool",
+        "heat",
+        "dry",
+        "fan"
+      ],
+      "fan_map": {
+        "auto": 0,
+        "low": 2,
+        "medium": 3,
+        "high": 4,
+        "quiet": 1
+      },
+      "fan_decode_aliases": {
+        "1": "quiet",
+        "5": "high"
+      },
+      "mode_rules": {
+        "fan": {
+          "temperature_control": false
+        }
+      },
+      "models": {
+        "1": "TAC09CHSD",
+        "2": "GZ055BE1"
+      },
+      "model_rules": {},
+      "decode_fields": [
+        "power",
+        "temp",
+        "mode",
+        "fan",
+        "turbo",
+        "eco",
+        "display",
+        "filter",
+        "swing_vertical",
+        "swing_horizontal"
+      ]
+    },
+    "DAIKIN": {
+      "protocol": "DAIKIN",
+      "source": "IRremoteESP8266 2.9.0",
+      "confidence": "library",
+      "features": {
+        "power": true,
+        "temperature": true,
+        "turbo": true,
+        "quiet": true,
+        "eco": true,
+        "swing_vertical": true,
+        "swing_horizontal": true,
+        "sleep": false,
+        "display": false,
+        "filter": false,
+        "clean": true,
+        "beep": false,
+        "timer": false,
+        "i_feel": false
+      },
+      "temperature": {
+        "min": 10,
+        "max": 32,
+        "step": 0.5,
+        "unit": "C",
+        "modes": [
+          "auto",
+          "cool",
+          "heat",
+          "dry"
+        ]
+      },
+      "modes": [
+        "auto",
+        "cool",
+        "heat",
+        "dry",
+        "fan"
+      ],
+      "fan_map": {
+        "auto": 0,
+        "low": 2,
+        "medium": 3,
+        "high": 4,
+        "quiet": 1,
+        "max": 5
+      },
+      "fan_decode_aliases": {
+        "1": "quiet",
+        "5": "max"
+      },
+      "mode_rules": {
+        "fan": {
+          "temperature_control": false
+        }
+      },
+      "models": {},
+      "model_rules": {},
+      "decode_fields": [
+        "power",
+        "temp",
+        "mode",
+        "fan",
+        "turbo",
+        "quiet",
+        "eco",
+        "clean",
+        "swing_vertical",
+        "swing_horizontal"
+      ]
+    },
+    "DAIKIN2": {
+      "protocol": "DAIKIN2",
+      "source": "IRremoteESP8266 2.9.0",
+      "confidence": "library",
+      "features": {
+        "power": true,
+        "temperature": true,
+        "turbo": true,
+        "quiet": true,
+        "eco": true,
+        "swing_vertical": true,
+        "swing_horizontal": true,
+        "sleep": false,
+        "display": true,
+        "filter": true,
+        "clean": true,
+        "beep": true,
+        "timer": false,
+        "i_feel": false
+      },
+      "temperature": {
+        "min": 10,
+        "max": 32,
+        "step": 1,
+        "unit": "C",
+        "modes": [
+          "auto",
+          "cool",
+          "heat",
+          "dry"
+        ]
+      },
+      "modes": [
+        "auto",
+        "cool",
+        "heat",
+        "dry",
+        "fan"
+      ],
+      "fan_map": {
+        "auto": 0,
+        "low": 2,
+        "medium": 3,
+        "high": 4,
+        "quiet": 1,
+        "max": 5
+      },
+      "fan_decode_aliases": {
+        "1": "quiet",
+        "5": "max"
+      },
+      "mode_rules": {
+        "fan": {
+          "temperature_control": false
+        },
+        "cool": {
+          "min": 18
+        }
+      },
+      "models": {},
+      "model_rules": {},
+      "decode_fields": [
+        "power",
+        "temp",
+        "mode",
+        "fan",
+        "turbo",
+        "quiet",
+        "eco",
+        "display",
+        "filter",
+        "clean",
+        "beep",
+        "sleep",
+        "swing_vertical",
+        "swing_horizontal"
+      ]
+    },
+    "DAIKIN64": {
+      "protocol": "DAIKIN64",
+      "source": "IRremoteESP8266 2.9.0",
+      "confidence": "library",
+      "features": {
+        "power": true,
+        "temperature": true,
+        "turbo": true,
+        "quiet": true,
+        "eco": false,
+        "swing_vertical": true,
+        "swing_horizontal": false,
+        "sleep": true,
+        "display": false,
+        "filter": false,
+        "clean": false,
+        "beep": false,
+        "timer": false,
+        "i_feel": false
+      },
+      "temperature": {
+        "min": 16,
+        "max": 30,
+        "step": 1,
+        "unit": "C",
+        "modes": [
+          "cool",
+          "heat",
+          "dry"
+        ]
+      },
+      "modes": [
+        "cool",
+        "heat",
+        "dry",
+        "fan"
+      ],
+      "fan_map": {
+        "auto": 0,
+        "low": 2,
+        "medium": 3,
+        "high": 4,
+        "quiet": 1,
+        "max": 5
+      },
+      "fan_decode_aliases": {
+        "1": "quiet",
+        "5": "max"
+      },
+      "mode_rules": {
+        "fan": {
+          "temperature_control": false
+        }
+      },
+      "models": {},
+      "model_rules": {},
+      "power_toggle": true,
+      "decode_fields": [
+        "temp",
+        "mode",
+        "fan",
+        "turbo",
+        "quiet",
+        "sleep",
+        "swing_vertical"
+      ]
+    },
+    "DAIKIN216": {
+      "protocol": "DAIKIN216",
+      "source": "IRremoteESP8266 2.9.0",
+      "confidence": "library",
+      "features": {
+        "power": true,
+        "temperature": true,
+        "turbo": true,
+        "quiet": true,
+        "eco": false,
+        "swing_vertical": true,
+        "swing_horizontal": true,
+        "sleep": false,
+        "display": false,
+        "filter": false,
+        "clean": false,
+        "beep": false,
+        "timer": false,
+        "i_feel": false
+      },
+      "temperature": {
+        "min": 10,
+        "max": 32,
+        "step": 1,
+        "unit": "C",
+        "modes": [
+          "auto",
+          "cool",
+          "heat",
+          "dry"
+        ]
+      },
+      "modes": [
+        "auto",
+        "cool",
+        "heat",
+        "dry",
+        "fan"
+      ],
+      "fan_map": {
+        "auto": 0,
+        "low": 2,
+        "medium": 3,
+        "high": 4,
+        "quiet": 1,
+        "max": 5
+      },
+      "fan_decode_aliases": {
+        "1": "quiet",
+        "5": "max"
+      },
+      "mode_rules": {
+        "fan": {
+          "temperature_control": false
+        }
+      },
+      "models": {},
+      "model_rules": {},
+      "decode_fields": [
+        "power",
+        "temp",
+        "mode",
+        "fan",
+        "turbo",
+        "quiet",
+        "swing_vertical",
+        "swing_horizontal"
+      ]
+    },
+    "GREE": {
+      "protocol": "GREE",
+      "source": "IRremoteESP8266 2.9.0",
+      "confidence": "library",
+      "features": {
+        "power": true,
+        "temperature": true,
+        "turbo": true,
+        "quiet": false,
+        "eco": true,
+        "swing_vertical": true,
+        "swing_horizontal": true,
+        "sleep": true,
+        "display": true,
+        "filter": false,
+        "clean": true,
+        "beep": false,
+        "timer": false,
+        "i_feel": true
+      },
+      "temperature": {
+        "min": 16,
+        "max": 30,
+        "step": 1,
+        "unit": "C",
+        "modes": [
+          "auto",
+          "cool",
+          "heat",
+          "dry"
+        ]
+      },
+      "modes": [
+        "auto",
+        "cool",
+        "heat",
+        "dry",
+        "fan"
+      ],
+      "fan_map": {
+        "auto": 0,
+        "low": 1,
+        "medium": 3,
+        "high": 4
+      },
+      "fan_decode_aliases": {
+        "1": "low",
+        "2": "medium",
+        "5": "high"
+      },
+      "mode_rules": {
+        "fan": {
+          "temperature_control": false
+        },
+        "auto": {
+          "temperature_control": false,
+          "fixed_temp": 25
+        },
+        "dry": {
+          "fixed_fan": "low"
+        }
+      },
+      "models": {
+        "1": "YAW1F",
+        "2": "YBOFB",
+        "3": "YX1FSF"
+      },
+      "model_rules": {},
+      "decode_fields": [
+        "power",
+        "temp",
+        "mode",
+        "fan",
+        "turbo",
+        "eco",
+        "display",
+        "clean",
+        "sleep",
+        "swing_vertical",
+        "swing_horizontal",
+        "i_feel"
+      ]
+    },
+    "MIDEA": {
+      "protocol": "MIDEA",
+      "source": "IRremoteESP8266 2.9.0",
+      "confidence": "library",
+      "features": {
+        "power": true,
+        "temperature": true,
+        "turbo": true,
+        "quiet": true,
+        "eco": true,
+        "swing_vertical": true,
+        "swing_horizontal": false,
+        "sleep": true,
+        "display": true,
+        "filter": false,
+        "clean": true,
+        "beep": false,
+        "timer": false,
+        "i_feel": true
+      },
+      "temperature": {
+        "min": 17,
+        "max": 30,
+        "step": 1,
+        "unit": "C",
+        "modes": [
+          "auto",
+          "cool",
+          "heat",
+          "dry"
+        ]
+      },
+      "modes": [
+        "auto",
+        "cool",
+        "heat",
+        "dry",
+        "fan"
+      ],
+      "fan_map": {
+        "auto": 0,
+        "low": 2,
+        "medium": 3,
+        "high": 4
+      },
+      "fan_decode_aliases": {
+        "1": "low",
+        "5": "high"
+      },
+      "mode_rules": {
+        "fan": {
+          "temperature_control": false
+        }
+      },
+      "models": {},
+      "model_rules": {},
+      "decode_fields": [
+        "power",
+        "temp",
+        "mode",
+        "fan",
+        "eco",
+        "sleep",
+        "swing_vertical"
+      ]
+    },
+    "PANASONIC_AC": {
+      "protocol": "PANASONIC_AC",
+      "source": "IRremoteESP8266 2.9.0",
+      "confidence": "library",
+      "features": {
+        "power": true,
+        "temperature": true,
+        "turbo": true,
+        "quiet": true,
+        "eco": false,
+        "swing_vertical": true,
+        "swing_horizontal": true,
+        "sleep": false,
+        "display": false,
+        "filter": true,
+        "clean": false,
+        "beep": false,
+        "timer": false,
+        "i_feel": false
+      },
+      "temperature": {
+        "min": 16,
+        "max": 30,
+        "step": 1,
+        "unit": "C",
+        "modes": [
+          "auto",
+          "cool",
+          "heat",
+          "dry"
+        ]
+      },
+      "modes": [
+        "auto",
+        "cool",
+        "heat",
+        "dry",
+        "fan"
+      ],
+      "fan_map": {
+        "auto": 0,
+        "low": 2,
+        "medium": 3,
+        "high": 4,
+        "quiet": 1,
+        "max": 5
+      },
+      "fan_decode_aliases": {
+        "1": "quiet",
+        "5": "max"
+      },
+      "mode_rules": {
+        "fan": {
+          "temperature_control": false
+        }
+      },
+      "models": {
+        "1": "kPanasonicLke",
+        "2": "kPanasonicNke",
+        "3": "kPanasonicDke",
+        "4": "kPanasonicJke",
+        "5": "kPanasonicCkp",
+        "6": "kPanasonicRkr"
+      },
+      "model_rules": {},
+      "decode_fields": [
+        "power",
+        "temp",
+        "mode",
+        "fan",
+        "turbo",
+        "quiet",
+        "filter",
+        "swing_vertical",
+        "swing_horizontal"
+      ]
+    },
+    "SAMSUNG_AC": {
+      "protocol": "SAMSUNG_AC",
+      "source": "IRremoteESP8266 2.9.0",
+      "confidence": "library",
+      "features": {
+        "power": true,
+        "temperature": true,
+        "turbo": true,
+        "quiet": true,
+        "eco": true,
+        "swing_vertical": true,
+        "swing_horizontal": true,
+        "sleep": false,
+        "display": true,
+        "filter": true,
+        "clean": true,
+        "beep": true,
+        "timer": false,
+        "i_feel": false
+      },
+      "temperature": {
+        "min": 16,
+        "max": 30,
+        "step": 1,
+        "unit": "C",
+        "modes": [
+          "auto",
+          "cool",
+          "heat",
+          "dry"
+        ]
+      },
+      "modes": [
+        "auto",
+        "cool",
+        "heat",
+        "dry",
+        "fan"
+      ],
+      "fan_map": {
+        "auto": 0,
+        "low": 2,
+        "medium": 3,
+        "high": 4,
+        "max": 5
+      },
+      "fan_decode_aliases": {
+        "1": "low",
+        "5": "max"
+      },
+      "mode_rules": {
+        "fan": {
+          "temperature_control": false
+        },
+        "auto": {
+          "fixed_fan": "auto"
+        }
+      },
+      "models": {},
+      "model_rules": {},
+      "notes": [
+        "Sleep requires a duration; boolean sleep is not encoded by this profile."
+      ],
+      "decode_fields": [
+        "power",
+        "temp",
+        "mode",
+        "fan",
+        "turbo",
+        "quiet",
+        "eco",
+        "display",
+        "filter",
+        "clean",
+        "beep",
+        "sleep",
+        "swing_vertical",
+        "swing_horizontal"
+      ]
+    },
+    "MITSUBISHI_AC": {
+      "protocol": "MITSUBISHI_AC",
+      "source": "IRremoteESP8266 2.9.0",
+      "confidence": "library",
+      "features": {
+        "power": true,
+        "temperature": true,
+        "turbo": false,
+        "quiet": true,
+        "eco": false,
+        "swing_vertical": true,
+        "swing_horizontal": true,
+        "sleep": false,
+        "display": false,
+        "filter": false,
+        "clean": false,
+        "beep": false,
+        "timer": false,
+        "i_feel": false
+      },
+      "temperature": {
+        "min": 16,
+        "max": 31,
+        "step": 0.5,
+        "unit": "C",
+        "modes": [
+          "auto",
+          "cool",
+          "heat",
+          "dry"
+        ]
+      },
+      "modes": [
+        "auto",
+        "cool",
+        "heat",
+        "dry",
+        "fan"
+      ],
+      "fan_map": {
+        "auto": 0,
+        "low": 2,
+        "medium": 3,
+        "high": 4,
+        "quiet": 1,
+        "max": 5
+      },
+      "fan_decode_aliases": {
+        "1": "quiet",
+        "5": "max"
+      },
+      "mode_rules": {
+        "fan": {
+          "temperature_control": false
+        }
+      },
+      "models": {},
+      "model_rules": {},
+      "decode_fields": [
+        "power",
+        "temp",
+        "mode",
+        "fan",
+        "quiet",
+        "swing_vertical",
+        "swing_horizontal"
+      ]
+    },
+    "CARRIER_AC64": {
+      "protocol": "CARRIER_AC64",
+      "source": "IRremoteESP8266 2.9.0",
+      "confidence": "library",
+      "features": {
+        "power": true,
+        "temperature": true,
+        "turbo": false,
+        "quiet": false,
+        "eco": false,
+        "swing_vertical": true,
+        "swing_horizontal": false,
+        "sleep": true,
+        "display": false,
+        "filter": false,
+        "clean": false,
+        "beep": false,
+        "timer": false,
+        "i_feel": false
+      },
+      "temperature": {
+        "min": 16,
+        "max": 30,
+        "step": 1,
+        "unit": "C",
+        "modes": [
+          "cool",
+          "heat"
+        ]
+      },
+      "modes": [
+        "cool",
+        "heat",
+        "fan"
+      ],
+      "fan_map": {
+        "auto": 0,
+        "low": 2,
+        "medium": 3,
+        "high": 4
+      },
+      "fan_decode_aliases": {
+        "1": "low",
+        "5": "high"
+      },
+      "mode_rules": {
+        "fan": {
+          "temperature_control": false
+        }
+      },
+      "models": {},
+      "model_rules": {},
+      "decode_fields": [
+        "power",
+        "temp",
+        "mode",
+        "fan",
+        "sleep",
+        "swing_vertical"
+      ]
+    },
+    "FUJITSU_AC": {
+      "protocol": "FUJITSU_AC",
+      "source": "IRremoteESP8266 2.9.0",
+      "confidence": "library",
+      "features": {
+        "power": true,
+        "temperature": true,
+        "turbo": false,
+        "quiet": true,
+        "eco": false,
+        "swing_vertical": true,
+        "swing_horizontal": false,
+        "sleep": false,
+        "display": false,
+        "filter": false,
+        "clean": false,
+        "beep": false,
+        "timer": false,
+        "i_feel": false
+      },
+      "temperature": {
+        "min": 16,
+        "max": 30,
+        "step": 1,
+        "unit": "C",
+        "modes": [
+          "auto",
+          "cool",
+          "heat",
+          "dry"
+        ]
+      },
+      "modes": [
+        "auto",
+        "cool",
+        "heat",
+        "dry",
+        "fan"
+      ],
+      "fan_map": {
+        "auto": 0,
+        "low": 2,
+        "medium": 3,
+        "high": 4,
+        "quiet": 1
+      },
+      "fan_decode_aliases": {
+        "1": "quiet",
+        "5": "high"
+      },
+      "mode_rules": {
+        "fan": {
+          "temperature_control": false
+        }
+      },
+      "models": {
+        "1": "ARRAH2E",
+        "2": "ARDB1",
+        "3": "ARREB1E",
+        "4": "ARJW2",
+        "5": "ARRY4",
+        "6": "ARREW4E"
+      },
+      "model_rules": {
+        "1": {
+          "temperature": {
+            "step": 0.25
+          },
+          "features": {
+            "turbo": false,
+            "eco": false,
+            "swing_horizontal": true
+          },
+          "full_state_min_bits": 128
+        },
+        "2": {
+          "temperature": {
+            "step": 0.25
+          },
+          "features": {
+            "turbo": false,
+            "eco": false,
+            "swing_horizontal": false
+          },
+          "full_state_min_bits": 120
+        },
+        "3": {
+          "temperature": {
+            "step": 0.25
+          },
+          "features": {
+            "turbo": true,
+            "eco": true,
+            "swing_horizontal": false
+          },
+          "full_state_min_bits": 128
+        },
+        "4": {
+          "temperature": {
+            "step": 0.25
+          },
+          "features": {
+            "turbo": false,
+            "eco": false,
+            "swing_horizontal": true
+          },
+          "full_state_min_bits": 120
+        },
+        "5": {
+          "temperature": {
+            "step": 0.25
+          },
+          "features": {
+            "turbo": false,
+            "eco": false,
+            "swing_horizontal": true
+          },
+          "full_state_min_bits": 128
+        },
+        "6": {
+          "temperature": {
+            "step": 0.5
+          },
+          "features": {
+            "turbo": false,
+            "eco": false,
+            "swing_horizontal": true
+          },
+          "full_state_min_bits": 128
+        }
+      },
+      "requires_model": true,
+      "full_state_min_bits": 128,
+      "decode_fields": [
+        "power",
+        "temp",
+        "mode",
+        "fan",
+        "turbo",
+        "quiet",
+        "eco",
+        "filter",
+        "clean",
+        "swing_vertical",
+        "swing_horizontal"
+      ]
+    },
+    "HAIER_AC": {
+      "protocol": "HAIER_AC",
+      "source": "IRremoteESP8266 2.9.0",
+      "confidence": "library",
+      "features": {
+        "power": true,
+        "temperature": true,
+        "turbo": false,
+        "quiet": false,
+        "eco": false,
+        "swing_vertical": true,
+        "swing_horizontal": false,
+        "sleep": true,
+        "display": false,
+        "filter": true,
+        "clean": false,
+        "beep": false,
+        "timer": false,
+        "i_feel": false
+      },
+      "temperature": {
+        "min": 16,
+        "max": 30,
+        "step": 1,
+        "unit": "C",
+        "modes": [
+          "auto",
+          "cool",
+          "heat",
+          "dry"
+        ]
+      },
+      "modes": [
+        "auto",
+        "cool",
+        "heat",
+        "dry",
+        "fan"
+      ],
+      "fan_map": {
+        "auto": 0,
+        "low": 2,
+        "medium": 3,
+        "high": 4
+      },
+      "fan_decode_aliases": {
+        "1": "low",
+        "5": "high"
+      },
+      "mode_rules": {
+        "fan": {
+          "temperature_control": false
+        }
+      },
+      "models": {},
+      "model_rules": {},
+      "decode_fields": [
+        "temp",
+        "mode",
+        "fan",
+        "filter",
+        "sleep",
+        "swing_vertical"
+      ]
+    },
+    "TOSHIBA_AC": {
+      "protocol": "TOSHIBA_AC",
+      "source": "IRremoteESP8266 2.9.0",
+      "confidence": "library",
+      "features": {
+        "power": true,
+        "temperature": true,
+        "turbo": true,
+        "quiet": false,
+        "eco": true,
+        "swing_vertical": true,
+        "swing_horizontal": false,
+        "sleep": false,
+        "display": false,
+        "filter": true,
+        "clean": false,
+        "beep": false,
+        "timer": false,
+        "i_feel": false
+      },
+      "temperature": {
+        "min": 17,
+        "max": 30,
+        "step": 1,
+        "unit": "C",
+        "modes": [
+          "auto",
+          "cool",
+          "heat",
+          "dry"
+        ]
+      },
+      "modes": [
+        "auto",
+        "cool",
+        "heat",
+        "dry",
+        "fan"
+      ],
+      "fan_map": {
+        "auto": 0,
+        "low": 2,
+        "medium": 3,
+        "high": 4,
+        "max": 5
+      },
+      "fan_decode_aliases": {
+        "1": "low",
+        "5": "max"
+      },
+      "mode_rules": {
+        "fan": {
+          "temperature_control": false
+        }
+      },
+      "models": {
+        "1": "kToshibaGenericRemote_B"
+      },
+      "model_rules": {},
+      "decode_fields": [
+        "power",
+        "temp",
+        "mode",
+        "fan",
+        "turbo",
+        "eco",
+        "filter"
+      ]
+    },
+    "SHARP_AC": {
+      "protocol": "SHARP_AC",
+      "source": "IRremoteESP8266 2.9.0",
+      "confidence": "library",
+      "features": {
+        "power": true,
+        "temperature": true,
+        "turbo": true,
+        "quiet": false,
+        "eco": false,
+        "swing_vertical": true,
+        "swing_horizontal": false,
+        "sleep": false,
+        "display": true,
+        "filter": true,
+        "clean": true,
+        "beep": false,
+        "timer": false,
+        "i_feel": false
+      },
+      "temperature": {
+        "min": 15,
+        "max": 30,
+        "step": 1,
+        "unit": "C",
+        "modes": [
+          "cool",
+          "heat"
+        ]
+      },
+      "modes": [
+        "auto",
+        "cool",
+        "heat",
+        "dry"
+      ],
+      "fan_map": {
+        "auto": 0,
+        "low": 2,
+        "medium": 3,
+        "high": 4,
+        "max": 5
+      },
+      "fan_decode_aliases": {
+        "1": "low",
+        "5": "max"
+      },
+      "mode_rules": {
+        "fan": {
+          "temperature_control": false
+        },
+        "auto": {
+          "temperature_control": false
+        },
+        "dry": {
+          "temperature_control": false
+        }
+      },
+      "models": {
+        "1": "A907",
+        "2": "A705",
+        "3": "A903"
+      },
+      "model_rules": {},
+      "decode_fields": [
+        "power",
+        "temp",
+        "mode",
+        "fan",
+        "turbo",
+        "eco",
+        "display",
+        "filter",
+        "clean",
+        "swing_vertical"
+      ]
+    },
+    "HITACHI_AC": {
+      "protocol": "HITACHI_AC",
+      "source": "IRremoteESP8266 2.9.0",
+      "confidence": "library",
+      "features": {
+        "power": true,
+        "temperature": true,
+        "turbo": false,
+        "quiet": false,
+        "eco": false,
+        "swing_vertical": true,
+        "swing_horizontal": true,
+        "sleep": false,
+        "display": false,
+        "filter": false,
+        "clean": false,
+        "beep": false,
+        "timer": false,
+        "i_feel": false
+      },
+      "temperature": {
+        "min": 16,
+        "max": 32,
+        "step": 1,
+        "unit": "C",
+        "modes": [
+          "auto",
+          "cool",
+          "heat",
+          "dry"
+        ]
+      },
+      "modes": [
+        "auto",
+        "cool",
+        "heat",
+        "dry",
+        "fan"
+      ],
+      "fan_map": {
+        "auto": 0,
+        "low": 2,
+        "medium": 3,
+        "high": 4,
+        "max": 5
+      },
+      "fan_decode_aliases": {
+        "1": "low",
+        "5": "max"
+      },
+      "mode_rules": {
+        "fan": {
+          "temperature_control": false
+        }
+      },
+      "models": {},
+      "model_rules": {},
+      "decode_fields": [
+        "power",
+        "temp",
+        "mode",
+        "fan",
+        "swing_vertical",
+        "swing_horizontal"
+      ]
+    },
+    "WHIRLPOOL_AC": {
+      "protocol": "WHIRLPOOL_AC",
+      "source": "IRremoteESP8266 2.9.0",
+      "confidence": "library",
+      "features": {
+        "power": true,
+        "temperature": true,
+        "turbo": true,
+        "quiet": false,
+        "eco": false,
+        "swing_vertical": true,
+        "swing_horizontal": false,
+        "sleep": true,
+        "display": true,
+        "filter": false,
+        "clean": false,
+        "beep": false,
+        "timer": false,
+        "i_feel": false
+      },
+      "temperature": {
+        "min": 18,
+        "max": 30,
+        "step": 1,
+        "unit": "C",
+        "modes": [
+          "auto",
+          "cool",
+          "heat",
+          "dry"
+        ]
+      },
+      "modes": [
+        "auto",
+        "cool",
+        "heat",
+        "dry",
+        "fan"
+      ],
+      "fan_map": {
+        "auto": 0,
+        "low": 2,
+        "medium": 3,
+        "high": 4
+      },
+      "fan_decode_aliases": {
+        "1": "low",
+        "5": "high"
+      },
+      "mode_rules": {
+        "fan": {
+          "temperature_control": false
+        },
+        "auto": {
+          "temperature_control": false,
+          "fixed_fan": "auto"
+        }
+      },
+      "models": {
+        "1": "DG11J13A",
+        "2": "DG11J191"
+      },
+      "model_rules": {
+        "1": {
+          "temperature": {
+            "min": 18,
+            "max": 32
+          }
+        },
+        "2": {
+          "temperature": {
+            "min": 16,
+            "max": 30
+          }
+        }
+      },
+      "power_toggle": true,
+      "decode_fields": [
+        "power",
+        "temp",
+        "mode",
+        "fan",
+        "turbo",
+        "display",
+        "sleep",
+        "swing_vertical"
+      ]
+    },
+    "TEKNOPOINT": {
+      "protocol": "TEKNOPOINT",
+      "source": "IRremoteESP8266 2.9.0",
+      "confidence": "library",
+      "features": {
+        "power": true,
+        "temperature": true,
+        "turbo": true,
+        "quiet": true,
+        "eco": true,
+        "swing_vertical": true,
+        "swing_horizontal": true,
+        "sleep": false,
+        "display": true,
+        "filter": true,
+        "clean": false,
+        "beep": false,
+        "timer": false,
+        "i_feel": false
+      },
+      "temperature": {
+        "min": 16,
+        "max": 31,
+        "step": 0.5,
+        "unit": "C",
+        "modes": [
+          "auto",
+          "cool",
+          "heat",
+          "dry"
+        ]
+      },
+      "modes": [
+        "auto",
+        "cool",
+        "heat",
+        "dry",
+        "fan"
+      ],
+      "fan_map": {
+        "auto": 0,
+        "low": 2,
+        "medium": 3,
+        "high": 4,
+        "quiet": 1
+      },
+      "fan_decode_aliases": {
+        "1": "quiet",
+        "5": "high"
+      },
+      "mode_rules": {
+        "fan": {
+          "temperature_control": false
+        }
+      },
+      "models": {
+        "1": "TAC09CHSD",
+        "2": "GZ055BE1"
+      },
+      "model_rules": {},
+      "decode_fields": [
+        "power",
+        "temp",
+        "mode",
+        "fan",
+        "turbo",
+        "eco",
+        "display",
+        "filter",
+        "swing_vertical",
+        "swing_horizontal"
+      ]
+    }
+  },
+  "verified_models": {}
+}

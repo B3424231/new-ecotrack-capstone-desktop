@@ -1,0 +1,85 @@
+'use strict';
+// Actual PostgreSQL RPCs in an isolated PGlite database; no production connection.
+const assert=require('node:assert/strict'),fs=require('node:fs'),crypto=require('node:crypto');
+const {PGlite}=require('../scratch/cloud-db-test-runtime/node_modules/@electric-sql/pglite');
+const read=f=>fs.readFileSync(f,'utf8').replace(/^\uFEFF/,'');
+async function main(){
+ const db=new PGlite(),checks=[];
+ const setup=read('scripts/test_cloud_hardware_database.js').match(/await db.exec\(`([\s\S]*?)`\);/)[1];
+ await db.exec(setup);await db.exec(read('supabase_cloud_hardware_migration.sql'));
+ const guard=read('supabase_ac_recording_migration.sql');await db.exec(guard);await db.exec(guard);
+ checks.push('Migration installs twice on PostgreSQL without deleting history.');
+ const call=async(name,args)=>(await db.query('SELECT public.'+name+'('+args.map((_,i)=>'$'+(i+1)).join(',')+') AS value',args)).rows[0].value;
+ const device=await call('ecotrack_register_cloud_device',['esp32s3-001122334455',{}]);
+ let seq=0;
+ const exchange=(extra={},ack=null)=>call('ecotrack_device_exchange',[device.device_id,device.device_token,{
+  firmware_version:'receiver-test',rssi:-55,ip_address:'192.168.1.66',capabilities:{ir_receiver:true,ir_transmitter:true},
+  report_id:device.device_id+'-1-'+(++seq),...extra},ack]);
+ const count=async()=>Number((await db.query('SELECT count(*) AS total FROM telemetry')).rows[0].total);
+ assert.equal((await exchange()).success,true);assert.equal(await count(),0);
+ assert.equal((await db.query('SELECT status FROM nodes WHERE id=$1',[device.node.id])).rows[0].status,'online');
+ checks.push('Unknown AC power produces no routine history; the ESP32 heartbeat remains online.');
+ await db.query("INSERT INTO aircons(id,node_id,desired_state,commanded_at) VALUES('ac-one',$1,'{\"power\":false}',now()-interval '1 minute')",[device.node.id]);
+ await exchange();assert.equal(await count(),0);
+ const ping=await call('ecotrack_cloud_request',[device.node.id,'ping',{},crypto.randomUUID()]);
+ assert.equal((await exchange()).command.id,ping.id);
+ await exchange({}, {command_id:ping.id,success:true});
+ assert.equal((await db.query('SELECT status FROM ecotrack_device_commands WHERE id=$1',[ping.id])).rows[0].status,'completed');
+ assert.equal(await count(),0);checks.push('AC OFF suppresses samples while ping delivery and acknowledgement still complete.');
+ await db.exec("UPDATE aircons SET desired_state='{\"power\":true,\"mode\":\"cool\",\"fan\":\"auto\"}',commanded_at=now()-interval '1 minute'");
+ await exchange();assert.equal(await count(),1);
+ let row=(await db.query('SELECT * FROM telemetry')).rows[0];
+ assert.equal(row.aircon_id,'ac-one');assert.equal(row.control_snapshot.desired_state.power,true);
+ assert.equal(row.ac_on,null);assert.equal(row.temperature,null);assert.equal(row.battery,null);
+ checks.push('AC ON saves a timestamped profile snapshot without inventing physical power, temperature or battery.');
+ const frame=power=>({protocol:'TCL112AC',raw_data:'3500,1750,450,1300',state:{power,mode:'cool',fan:'auto'},sequence:seq});
+ await exchange({latest_ir:frame(false)});assert.equal(await count(),1);
+ assert.equal((await db.query('SELECT latest_ir FROM ecotrack_device_state')).rows[0].latest_ir.state.power,false);
+ checks.push('A newer physical-remote OFF state stops routine recording and remains available to Realtime.');
+ await db.exec("UPDATE aircons SET desired_state='{\"power\":false}',commanded_at=now()-interval '1 minute'");
+ await exchange({latest_ir:frame(true)});assert.equal(await count(),2);
+ row=(await db.query('SELECT * FROM telemetry ORDER BY created DESC LIMIT 1')).rows[0];
+ assert.equal(row.control_snapshot.observed_remote_state.power,true);
+ checks.push('A newer physical-remote ON state resumes recording automatically.');
+ const partial={...frame(false),state:{power:false,fan:'low'},field_at:{power:'2020-01-01T00:00:00Z',fan:new Date().toISOString()}};
+ await db.exec("UPDATE aircons SET desired_state='{\"power\":true}',commanded_at=now()");
+ await exchange({latest_ir:partial});assert.equal(await count(),3);
+ checks.push('A fresh fan-only frame does not make its older OFF power field override a newer ON setting.');
+ await exchange({latest_ir:{...frame(false),captured_at_epoch_ms:Date.now()-60000,
+  field_at:{power:'2099-01-01T00:00:00Z'}}});assert.equal(await count(),4);
+ checks.push('Invalid future field timestamps fall back to the capture time, matching the live UI power selection.');
+ await db.query("UPDATE aircons SET node_id=$1,controller_node_id=NULL",[device.device_id]);
+ await exchange();assert.equal(await count(),5);
+ await db.query("UPDATE nodes SET name='Saved Controller Name' WHERE id=$1",[device.node.id]);
+ await db.exec("UPDATE aircons SET node_id='Saved Controller Name'");
+ await exchange();assert.equal(await count(),6);
+ await db.query("UPDATE aircons SET node_id=$1,controller_node_id=$1",[device.node.id]);
+ checks.push('Existing profiles bound by database ID, stable ESP32 ID or saved controller name retain ON recording.');
+ const beforeSleep=await count(),until=new Date(Date.now()+60000).toISOString();
+ await exchange({sleeping_until:until});assert.equal(await count(),beforeSleep);
+ assert((await db.query('SELECT sleeping_until FROM ecotrack_device_state')).rows[0].sleeping_until);
+ checks.push('A sleeping ESP32 stores its sleep announcement without generating routine readings.');
+ await db.exec("UPDATE aircons SET desired_state='{\"power\":false}',commanded_at=now()+interval '1 second'");
+ await exchange();assert.equal(await count(),beforeSleep);
+ const tx=await call('ecotrack_cloud_request',[device.node.id,'ac_intent',{aircon_id:'ac-one',protocol:'TCL112AC',state:{power:'off',mode:'cool',temp:20,fan:'auto'}},crypto.randomUUID()]);
+ assert.equal((await exchange()).command.id,tx.id);
+ await exchange({}, {command_id:tx.id,success:true,delivery_status:'transmitted',aircon_id:'ac-one'});
+ assert.equal((await db.query("SELECT command_status FROM aircons WHERE id='ac-one'")).rows[0].command_status,'transmitted');
+ assert.equal(await count(),beforeSleep);
+ checks.push('An OFF command still completes its IR dispatch audit, without adding an analytics sample.');
+ // Replacing the RPC (as an existing installation script does) must leave the table guard installed.
+ await db.exec(read('supabase_cloud_hardware_migration.sql'));await exchange();
+ assert.equal(await count(),beforeSleep);
+ await db.exec('SET ROLE anon');assert.equal((await exchange()).success,true);await db.exec('RESET ROLE');
+ await assert.rejects(()=>call('ecotrack_device_exchange',[device.device_id,'0'.repeat(64),{capabilities:{ir_receiver:true,ir_transmitter:true}},null]),/Invalid device credential/);
+ checks.push('RPC reinstall and anonymous credential-scoped access preserve OFF suppression and token checks.');
+ const snapshot={desired_state:{power:true},commanded_at:'2026-10-10T09:00:00Z',observed_remote_state:{power:false},observed_remote_at:'2026-10-10T09:01:00Z'};
+ assert.equal((await db.query('SELECT ecotrack_private.analytics_snapshot_power($1) AS power',[snapshot])).rows[0].power,false);
+ assert.equal((await db.query('SELECT ecotrack_private.analytics_snapshot_power($1) AS power',[{...snapshot,observed_remote_field_at:{power:'2026-10-10T08:00:00Z'}}])).rows[0].power,true);
+ assert.equal((await db.query('SELECT count(*) AS total FROM telemetry')).rows[0].total,beforeSleep);
+ checks.push('Per-field timestamp precedence is consistent, and existing ON history survives subsequent OFF changes.');
+ fs.mkdirSync('reports/ac-off-recording',{recursive:true});
+ fs.writeFileSync('reports/ac-off-recording/database-tests.json',JSON.stringify({engine:'PGlite PostgreSQL',passed:checks.length,checks,live_supabase_modified:false},null,2));
+ console.log('AC recording database: '+checks.length+' scenario groups passed.');await db.close();
+}
+main().catch(error=>{console.error(error);process.exitCode=1;});

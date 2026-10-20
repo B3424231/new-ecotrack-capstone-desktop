@@ -1,0 +1,19 @@
+feature,importance
+categorical__environment_type_ Computer Science Lab,0.75577945
+numeric__static_heat_load_btu,0.116469175
+numeric__people,0.06328133
+numeric__month,0.015911069
+numeric__tonnage,0.01430183
+numeric__room_temp_c,0.009890877
+numeric__indoor_outdoor_temp_diff,0.0071268464
+numeric__humidity,0.0058895056
+numeric__outdoor_temp_c,0.0034665545
+numeric__is_weekend,0.0019003277
+numeric__runtime_minutes,0.0018394822
+numeric__day_of_week,0.001338745
+categorical__environment_type_ Data Center,0.0011840506
+numeric__hour,0.00087702426
+numeric__room_temp_change_10m,0.00074368046
+categorical__environment_type_ Office,0.0
+categorical__activity_schedule_ Busy,0.0
+categorical__activity_schedule_ Busy (9:00 to 17:00),0.0

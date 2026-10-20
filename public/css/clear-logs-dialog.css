@@ -1,0 +1,64 @@
+/* Scoped analytics confirmation, independent of remote utility styles. */
+.clear-logs-dialog {
+  --clear-bg:#fff; --clear-fg:#122b21; --clear-muted:#596b63; --clear-border:#e1e9e5;
+  --clear-soft:#fff1f2; --clear-danger:#be123c; --clear-warning:#9f1239;
+  --clear-cancel:#f8fbf9; --clear-cancel-hover:#edf5f0; --clear-success:#047857;
+  box-sizing:border-box; position:fixed; inset:0; margin:auto!important;
+  width:min(500px,calc(100vw - 32px)); max-width:none; max-height:calc(100dvh - 32px);
+  padding:0; border:1px solid var(--clear-border); border-radius:22px;
+  background:var(--clear-bg); color:var(--clear-fg); overflow:auto;
+  font-family:Inter,Segoe UI,Arial,sans-serif; box-shadow:0 28px 90px rgba(3,27,17,.24);
+  text-align:left; color-scheme:light;
+}
+.dark .clear-logs-dialog {
+  --clear-bg:#0f1d1b; --clear-fg:#f1f7f4; --clear-muted:#acc0b5; --clear-border:#2a3c34;
+  --clear-soft:#2d1b23; --clear-danger:#fda4af; --clear-warning:#fecdd3;
+  --clear-cancel:#172a22; --clear-cancel-hover:#213a2d; --clear-success:#6ee7b7;
+  color-scheme:dark; box-shadow:0 28px 90px rgba(0,0,0,.5);
+}
+.clear-logs-dialog::backdrop {background:rgba(4,22,15,.53); backdrop-filter:blur(5px);}
+.clear-logs-dialog * {box-sizing:border-box;}
+.clear-logs-dialog [hidden] {display:none!important;}
+.clear-logs-dialog .clear-logs-dialog__header {display:flex;align-items:center;justify-content:space-between;padding:28px 28px 19px;gap:16px;}
+.clear-logs-dialog .clear-logs-dialog__icon {width:54px;height:54px;display:grid;place-items:center;border-radius:16px;background:var(--clear-soft);color:var(--clear-danger);border:1px solid color-mix(in srgb,var(--clear-danger) 15%,transparent);}
+.clear-logs-dialog .clear-logs-dialog__check {display:none;}
+.clear-logs-dialog .clear-logs-dialog__body {padding:0 28px 26px;}
+.clear-logs-dialog .clear-logs-dialog__eyebrow {margin:0 0 8px;color:var(--clear-success);font-size:11px;font-weight:750;letter-spacing:.09em;text-transform:uppercase;}
+.clear-logs-dialog #clearLogsTitle {margin:0 0 12px;color:var(--clear-fg);font-size:25px;font-weight:750;line-height:1.2;letter-spacing:-.035em;}
+.clear-logs-dialog #clearLogsDescription {margin:0;color:var(--clear-muted);font-size:14px;line-height:1.65;max-width:42ch;}
+.clear-logs-dialog .clear-logs-dialog__warning {display:flex;gap:12px;align-items:flex-start;margin-top:22px;padding:15px 16px;border:1px solid color-mix(in srgb,var(--clear-danger) 18%,transparent);border-radius:12px;background:var(--clear-soft);color:var(--clear-warning);}
+.clear-logs-dialog .clear-logs-dialog__warning svg {flex-shrink:0;margin-top:1px;}
+.clear-logs-dialog .clear-logs-dialog__warning strong {display:block;font-size:13px;font-weight:700;line-height:1.4;}
+.clear-logs-dialog #clearLogsScope {margin:5px 0 0;color:var(--clear-warning);font-size:12px;line-height:1.5;}
+.clear-logs-dialog .clear-logs-dialog__footer {display:flex;justify-content:flex-end;gap:10px;padding:18px 28px;border-top:1px solid var(--clear-border);background:var(--clear-cancel);}
+.clear-logs-dialog button {font:inherit;cursor:pointer;transition:background-color .15s,border-color .15s;box-shadow:none;}
+.clear-logs-dialog .clear-logs-dialog__close {display:grid;place-items:center;flex-shrink:0;width:34px;height:34px;border:0;border-radius:10px;background:transparent;color:var(--clear-muted);}
+.clear-logs-dialog .clear-logs-dialog__close:hover {background:var(--clear-cancel-hover);color:var(--clear-fg);}
+.clear-logs-dialog .clear-logs-dialog__cancel {min-height:43px;padding:10px 20px;border-radius:10px;border:1px solid var(--clear-border);background:var(--clear-bg);color:var(--clear-fg);font-size:13px;font-weight:650;}
+.clear-logs-dialog .clear-logs-dialog__cancel:hover {background:var(--clear-cancel-hover);}
+.clear-logs-dialog .clear-logs-dialog__confirm {display:flex;align-items:center;justify-content:center;gap:8px;min-height:43px;padding:10px 20px;border:1px solid #e11d48;border-radius:10px;background:#e11d48;color:#fff!important;font-size:13px;font-weight:700;box-shadow:0 3px 7px rgba(225,29,72,.13);}
+.clear-logs-dialog .clear-logs-dialog__confirm:hover {background:#be123c;border-color:#be123c;}
+.clear-logs-dialog button:disabled {opacity:.6;cursor:wait;}
+.clear-logs-dialog button:focus-visible {outline:3px solid #10b981;outline-offset:3px;}
+.clear-logs-dialog svg {color:inherit;stroke:currentColor;}
+.clear-logs-dialog .clear-logs-dialog__spinner {display:none;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:clear-logs-spin .8s linear infinite;}
+.clear-logs-dialog[data-phase="busy"] .clear-logs-dialog__spinner {display:block;}
+.clear-logs-dialog .clear-logs-dialog__feedback {margin:16px 0 0;font-size:13px;line-height:1.6;color:var(--clear-muted);overflow-wrap:anywhere;}
+.clear-logs-dialog[data-phase="error"] .clear-logs-dialog__feedback {padding:12px 14px;border:1px solid color-mix(in srgb,var(--clear-danger) 25%,transparent);border-radius:10px;background:var(--clear-soft);color:var(--clear-warning);}
+.clear-logs-dialog[data-phase="success"] .clear-logs-dialog__icon {color:var(--clear-success);background:color-mix(in srgb,var(--clear-success) 10%,var(--clear-bg));border-color:color-mix(in srgb,var(--clear-success) 20%,transparent);}
+.clear-logs-dialog[data-phase="success"] .clear-logs-dialog__trash {display:none;}
+.clear-logs-dialog[data-phase="success"] .clear-logs-dialog__check {display:block;}
+.clear-logs-dialog[data-phase="success"] .clear-logs-dialog__confirm {background:#047857;border-color:#047857;box-shadow:none;}
+.clear-logs-dialog[data-phase="success"] .clear-logs-dialog__confirm:hover {background:#065f46;}
+@keyframes clear-logs-spin {to{transform:rotate(360deg);}}
+@media(max-width:480px) {
+  .clear-logs-dialog .clear-logs-dialog__header {padding:23px 22px 17px;}
+  .clear-logs-dialog .clear-logs-dialog__body {padding:0 22px 22px;}
+  .clear-logs-dialog .clear-logs-dialog__footer {padding:16px 22px;flex-direction:column-reverse;}
+  .clear-logs-dialog .clear-logs-dialog__footer button {width:100%;min-height:45px;}
+  .clear-logs-dialog #clearLogsTitle {font-size:23px;}
+}
+@media(prefers-reduced-motion:reduce) {
+  .clear-logs-dialog button {transition:none;}
+  .clear-logs-dialog .clear-logs-dialog__spinner {animation:none;}
+}

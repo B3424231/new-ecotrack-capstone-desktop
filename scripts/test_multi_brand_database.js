@@ -1,0 +1,97 @@
+const fs=require('node:fs'),assert=require('node:assert/strict'),vm=require('node:vm');
+const {PGlite}=require('../scratch/cloud-db-test-runtime/node_modules/@electric-sql/pglite');
+async function main(){
+ const db=new PGlite(),checks=[],previous=fs.readFileSync('scripts/test_cloud_hardware_database.js','utf8');
+ await db.exec(previous.slice(previous.indexOf(' await db.exec(`')+16,previous.indexOf('`);')));
+ await db.exec(`ALTER TABLE nodes ADD COLUMN protocol_name text;
+ ALTER TABLE aircons ALTER COLUMN id SET DEFAULT ('ac_'||gen_random_uuid());
+ ALTER TABLE aircons ADD COLUMN asset_tag text UNIQUE,ADD COLUMN brand text NOT NULL DEFAULT 'Unspecified',ADD COLUMN model text,
+ ADD COLUMN aircon_type text,ADD COLUMN room_id text REFERENCES rooms(id),ADD COLUMN protocol text,ADD COLUMN protocol_name text,ADD COLUMN status text,ADD COLUMN updated_at timestamptz DEFAULT now();`);
+ await db.exec(fs.readFileSync('supabase_cloud_hardware_migration.sql','utf8'));
+ const delivery=fs.readFileSync('reports/multi-brand-capabilities/APPLY_SUPABASE.sql','utf8');
+ await db.exec(delivery);await db.exec(delivery);
+ checks.push('The complete five-section delivery executes twice on PostgreSQL without resetting records or relationships.');
+ const call=async(name,args)=>(await db.query('SELECT public.'+name+'('+args.map((_,i)=>'$'+(i+1)).join(',')+') AS value',args)).rows[0].value;
+ const id='esp32s3-001122334455',setup={controller_name:'Matrix room controller',assignment_mode:'new',asset_tag:'Matrix AC',brand:'Matrix',aircon_type:'Custom unit',protocol_name:'TCL112AC',room_id:null};
+ const registered=await call('ecotrack_prepare_controller_registration',[id]),nid=registered.node.id;
+ await assert.rejects(()=>call('ecotrack_finish_controller_registration',[nid,id,setup]),/Verification pending/);
+ assert.equal((await db.query('SELECT admin_verified_at FROM nodes WHERE id=$1',[nid])).rows[0].admin_verified_at,null);
+ await call('ecotrack_device_exchange',[id,registered.device_token,{capabilities:{ir_receiver:true,ir_transmitter:true}},null]);
+ const saved=await call('ecotrack_finish_controller_registration',[nid,id,setup]),aid=saved.aircon.id;
+ assert(saved.node.admin_verified_at&&saved.node.deployment_saved_at);assert.equal(saved.aircon.brand,'Matrix');assert.equal(saved.aircon.name,'Matrix AC');
+ const before=saved.node.admin_verified_at;
+ await call('ecotrack_device_exchange',[id,registered.device_token,{capabilities:{ir_receiver:true,ir_transmitter:true}},null]);
+ assert.equal((await db.query('SELECT admin_verified_at FROM nodes WHERE id=$1',[nid])).rows[0].admin_verified_at.toISOString(),new Date(before).toISOString());
+ await assert.rejects(()=>db.query('UPDATE nodes SET admin_verified_at=now() WHERE id=$1',[nid]),/Save & Verify/);
+ checks.push('Only fresh successful admin verification records the timestamp; failed registration and heartbeats do not invent or change it.');
+ const renamed=await call('ecotrack_finish_controller_registration',[nid,id,{...setup,assignment_mode:'existing',aircon_id:aid,controller_name:'Renamed controller',aircon_name:'Matrix'}]);
+ assert.equal(renamed.aircon.id,aid);assert.equal(renamed.aircon.asset_tag,'Matrix AC');assert.equal(renamed.aircon.name,'Matrix');assert.equal(renamed.node.name,'Renamed controller');
+ await db.query('UPDATE nodes SET name=$1 WHERE id=$2',['Edited display name',nid]);
+ assert.equal((await db.query('SELECT name FROM aircons WHERE id=$1',[aid])).rows[0].name,'Matrix');
+ assert.equal((await db.query('SELECT count(*) n FROM aircons')).rows[0].n,1);
+ const edited=await call('ecotrack_admin_edit_controller',[nid,{name:'Final controller name',aircon_name:'Matrix Office',brand:'Matrix',aircon_type:'Split Type (Inverter)',room_id:null,protocol_name:'TCL112AC'}]);
+ assert.equal(edited.node.name,'Final controller name');assert.equal(edited.aircons[0].name,'Matrix Office');assert.equal(edited.aircons[0].id,aid);
+ await assert.rejects(()=>call('ecotrack_admin_edit_controller',[nid,{name:'Should roll back',aircon_name:'<invalid>',brand:'Matrix',aircon_type:'Split',room_id:null,protocol_name:'TCL112AC'}]),/air conditioner name/);
+ assert.equal((await db.query('SELECT name FROM nodes WHERE id=$1',[nid])).rows[0].name,'Final controller name');
+ checks.push('Custom AC name is saved on the existing profile; controller display-name edits preserve it and do not duplicate records.');
+ let sequence=1;
+ const observed=(state,extra={})=>({protocol:'TCL112AC',frame_kind:'full_state',raw_count:227,sequence:sequence++,boot_count:1,state:{source:'ir_receiver',...state},...extra});
+ const on=observed({power:true,temp:24,mode:'cool',fan:'high',turbo:true});
+ await call('ecotrack_device_observe',[id,registered.device_token,on]);
+ const partial=observed({quiet:true},{frame_kind:'partial_state'});
+ await call('ecotrack_device_observe',[id,registered.device_token,partial]);
+ let live=(await db.query('SELECT latest_ir FROM ecotrack_device_state WHERE node_id=$1',[nid])).rows[0].latest_ir;
+ assert.equal(live.state.power,true);assert(live.field_at.power&&live.field_at.quiet);assert.equal(live.state.quiet,true);
+ await call('ecotrack_device_observe',[id,registered.device_token,observed({power:false,temp:24,mode:'cool',fan:'high',turbo:false})]);
+ await call('ecotrack_device_observe',[id,registered.device_token,on]);live=(await db.query('SELECT latest_ir FROM ecotrack_device_state WHERE node_id=$1',[nid])).rows[0].latest_ir;assert.equal(live.state.power,false);
+ checks.push('OFF, Turbo, partial-field retention and duplicate/out-of-order protection use the real observation RPC.');
+ const document={protocol:'TCL112AC',remote_model:null,model_verified:false,ac_model:'Physical Matrix label',features:{turbo:{status:'verified_unsupported'}},options:{fan:{quiet:{status:'verified_unsupported'}}},temperature:{status:'verified_supported',min:18,max:30,step:1}};
+ const verified=await call('ecotrack_verify_ac_capabilities',[aid,0,document]);assert.equal(verified.aircon.capability_profile.revision,1);assert.equal(verified.aircon.brand,'Matrix');
+ assert.equal(verified.aircon.capability_profile.features.turbo.confidence,'user_confirmed');
+ await assert.rejects(()=>call('ecotrack_verify_ac_capabilities',[aid,0,document]),/changed/);
+ await assert.rejects(()=>call('ecotrack_verify_ac_capabilities',[aid,1,{...document,wifi_password:'not-permitted'}]),/document/);
+ await assert.rejects(()=>call('ecotrack_verify_ac_capabilities',[aid,1,{...document,temperature:{...document.temperature,max:32}}]),/encoder/);
+ checks.push('Admin physical results persist on the same AC, retain manufacturer, reject stale edits, credentials and invalid temperature overrides.');
+ const queue=async(state,extra={})=>call('ecotrack_cloud_request',[nid,'ac_intent',{aircon_id:aid,protocol:'TCL112AC',model:null,capability_revision:1,registry_version:'irremote-2.9.0-1',state,...extra},require('node:crypto').randomUUID()]);
+ await assert.rejects(()=>queue({power:'on',mode:'cool',temp:24.5,fan:'high'}),/steps/);
+ await assert.rejects(()=>queue({power:'on',mode:'cool',temp:24,fan:'high',turbo:'on'}),/Unsupported/);
+ await assert.rejects(()=>queue({power:'on',mode:'cool',temp:24,fan:'quiet'}),/unsupported/);
+ await assert.rejects(()=>queue({power:'on',mode:'cool',temp:24,fan:'high'},{capability_revision:0}),/changed/);
+ const command=await queue({power:'off',mode:'cool',temp:24,fan:'high',turbo:'off'});assert.equal(command.status,'queued');assert.equal(command.payload.capability_constraints.min,18);
+ checks.push('Actual command RPC uses protocol/model/physical constraints, rejects stale profiles and preserves honest queued delivery.');
+ const registry=JSON.parse(fs.readFileSync('config/ac-capabilities.json','utf8'));
+ const context={};vm.runInNewContext(fs.readFileSync('public/js/ac-capability-registry.source.js','utf8').replace('/* AC_CAPABILITY_DATA */ {}',JSON.stringify(registry))+';globalThis.registry=AcCapabilityRegistry;',context);
+ for(const [name,p] of Object.entries(registry.protocols)){
+  const variants=[null,...Object.keys(p.models||{}).map(Number)];
+  for(const model of variants){
+   const actual=await call('ecotrack_resolve_ac_capabilities',[name,model,{}]);
+   const expected=JSON.parse(JSON.stringify(context.registry.resolve({protocol_name:name,remote_model:model})));
+   assert.equal(actual.can_transmit,expected.can_transmit,name);
+   assert.deepEqual(actual.temperature,expected.temperature,name+' temp');
+   assert.deepEqual(actual.fan_map,expected.fan_map,name+' fan');
+   assert.deepEqual(actual.features,expected.features,name+' features');
+  }
+ }
+ checks.push('Frontend and PostgreSQL resolve identical temperature, fan, feature and model constraints for every audited profile/model.');
+ // Exercise the actual user-requested Matrix data correction without hardcoded UI defaults.
+ const targetId='esp32s3-9cd20604a7ac',target=await call('ecotrack_prepare_controller_registration',[targetId]);
+ await call('ecotrack_device_exchange',[targetId,target.device_token,{capabilities:{ir_receiver:true,ir_transmitter:true}},null]);
+ const targetAc=await call('ecotrack_finish_controller_registration',[target.node.id,targetId,{...setup,controller_name:targetId,asset_tag:'AC-'+targetId,brand:'TCL'}]);
+ await db.exec(delivery);
+ let corrected=(await db.query('SELECT id,name,brand,asset_tag,controller_node_id,protocol_name FROM aircons WHERE id=$1',[targetAc.aircon.id])).rows[0];
+ assert.equal(corrected.name,'Matrix');assert.equal(corrected.brand,'Matrix');assert.equal(corrected.protocol_name,'TCL112AC');
+ assert.equal(corrected.asset_tag,'AC-'+targetId);assert.equal(corrected.controller_node_id,target.node.id);
+ await db.query('UPDATE aircons SET name=$1,brand=$2 WHERE id=$3',['Admin chosen name','Custom physical maker',corrected.id]);
+ await db.exec(delivery);
+ corrected=(await db.query('SELECT name,brand FROM aircons WHERE id=$1',[corrected.id])).rows[0];
+ assert.equal(corrected.name,'Admin chosen name');assert.equal(corrected.brand,'Custom physical maker');
+ checks.push('Matrix is a narrowly scoped database correction; IDs, asset tags and protocol remain stable, and another admin custom name/manufacturer is preserved.');
+ await db.exec("SELECT set_config('test.admin','false',false)");
+ await assert.rejects(()=>call('ecotrack_verify_ac_capabilities',[aid,1,document]),/Administrator/);
+ await assert.rejects(()=>call('ecotrack_admin_edit_controller',[nid,{name:'Denied'}]),/Administrator/);
+ await db.exec('SET ROLE anon');await assert.rejects(()=>call('ecotrack_verify_ac_capabilities',[aid,1,document]),/permission denied/);await db.exec('RESET ROLE');
+ checks.push('Non-admin and anonymous callers cannot save verification results.');
+ await db.close();fs.mkdirSync('reports/multi-brand-capabilities',{recursive:true});fs.writeFileSync('reports/multi-brand-capabilities/database-results.json',JSON.stringify({checks,passed:checks.length,live_database_modified:false},null,2));
+ console.log('Multi-brand database: '+checks.length+' PostgreSQL checks passed.');
+}
+main().catch(e=>{console.error(e);process.exit(1);});

@@ -1,0 +1,229 @@
+{
+  "id": "nrel_benefit_temperature_power_v1",
+  "model": "xgboost",
+  "artifact": "xgboost.joblib",
+  "sha256": "728c19aca018ad61158c7eb7fb99aa68b2d1bda34a8441b35b903a026ea5a96c",
+  "features": [
+    "outlet_temperature_lag_0_c",
+    "outlet_temperature_lag_60_c",
+    "outlet_temperature_lag_120_c",
+    "outlet_temperature_lag_180_c",
+    "outlet_temperature_lag_240_c",
+    "outlet_temperature_lag_300_c"
+  ],
+  "output_unit": "W",
+  "horizon_seconds": 0,
+  "target": "Outdoor Unit Power (W) + Indoor Unit Power (W), same source timestamp",
+  "task": "contemporaneous_power_estimation",
+  "history_seconds": 300,
+  "history_lags_seconds": [
+    0,
+    60,
+    120,
+    180,
+    240,
+    300
+  ],
+  "max_recorded_cadence_seconds": 60,
+  "domain": {
+    "outlet_temperature_lag_0_c": {
+      "min": 8.50944,
+      "max": 27.2632
+    },
+    "outlet_temperature_lag_60_c": {
+      "min": 8.50944,
+      "max": 27.4445
+    },
+    "outlet_temperature_lag_120_c": {
+      "min": 8.50944,
+      "max": 27.6595
+    },
+    "outlet_temperature_lag_180_c": {
+      "min": 8.50944,
+      "max": 27.9148
+    },
+    "outlet_temperature_lag_240_c": {
+      "min": 8.50944,
+      "max": 28.4072
+    },
+    "outlet_temperature_lag_300_c": {
+      "min": 8.50944,
+      "max": 28.4072
+    }
+  },
+  "physical_accuracy_validated": false,
+  "experimental": true,
+  "selection_rule": "Lowest macro MAE across four leave-experiment-out validation folds; RMSE tie-break",
+  "selected_before_untouched_test_evaluation": true,
+  "training_rows": 3100,
+  "training_seed": 20261020,
+  "dataset_doi": "10.7799/2440214",
+  "dataset_source": "https://data.nlr.gov/submissions/246",
+  "source_equipment": "two-stage, SEER 21, 2-ton central air conditioner; cooling experiments only",
+  "source_files": [
+    {
+      "file": "raw/AC_OAT75F_SP72F68F.csv",
+      "raw_rows": 79201,
+      "feature_rows_at_one_minute_stride": 1316,
+      "invalid_power_targets_removed": 4,
+      "retained_rows": 1312,
+      "source_sha256": "2ec0a06d55a7f5c6fccc7fc869498bda565e68f1f8cbc1f4175c1fdf84c43775",
+      "source_timezone": "unspecified; no timezone features used"
+    },
+    {
+      "file": "raw/AC_OAT85F_SP76F72F68F.csv",
+      "raw_rows": 86249,
+      "feature_rows_at_one_minute_stride": 1433,
+      "invalid_power_targets_removed": 4,
+      "retained_rows": 1429,
+      "source_sha256": "ad6c4439beef79c56e25734d064cc7f0b4fad86af640fbba4919a749ee8a8d91",
+      "source_timezone": "unspecified; no timezone features used"
+    },
+    {
+      "file": "raw/AC_OAT95F_SP76F72F68F.csv",
+      "raw_rows": 60601,
+      "feature_rows_at_one_minute_stride": 1006,
+      "invalid_power_targets_removed": 6,
+      "retained_rows": 1000,
+      "source_sha256": "31bae379f0fd647c98305f84fedd3e6aa25af94a9b5674e75852b7ce1d14466d",
+      "source_timezone": "unspecified; no timezone features used"
+    },
+    {
+      "file": "raw/AC_OAT105F_SP76F72F68F.csv",
+      "raw_rows": 44007,
+      "feature_rows_at_one_minute_stride": 729,
+      "invalid_power_targets_removed": 1,
+      "retained_rows": 728,
+      "source_sha256": "2448820579cba7ef7522a3331e6faefa37c105c581a68ca5e2585e05a5f66f0e",
+      "source_timezone": "unspecified; no timezone features used"
+    },
+    {
+      "file": "raw/AC_OAT115F_SP76F72F68F.csv",
+      "raw_rows": 71581,
+      "feature_rows_at_one_minute_stride": 1189,
+      "invalid_power_targets_removed": 1,
+      "retained_rows": 1188,
+      "source_sha256": "31a523fe9a06a4f3fa0db0a659f9e5b52267939dde6ff10fa767d9bea5cdbd5d",
+      "source_timezone": "unspecified; no timezone features used"
+    }
+  ],
+  "citation": "Ramaraj, Sugirdhalakshmi, and Bethany Sparn. 2024. BENEFIT with Northeastern University: HVAC Hardware-in-the-Loop Experimental Testing of Heat Pump and Air Conditioner. DOI: 10.7799/2440214.",
+  "trained_utc": "2026-10-19T16:36:30.042284+00:00",
+  "runtime_versions": {
+    "scikit-learn": "1.9.0",
+    "xgboost": "3.4.1",
+    "numpy": "2.5.2",
+    "pandas": "3.0.5",
+    "joblib": "1.5.3"
+  },
+  "candidates": [
+    {
+      "model": "xgboost",
+      "validation_macro_mae_w": 103.62343131257848,
+      "validation_macro_rmse_w": 203.28442504081448,
+      "validation_macro_r2": 0.9501251478896583,
+      "baseline_macro_mae_w": 954.805760248485,
+      "artifact": "xgboost.joblib",
+      "sha256": "728c19aca018ad61158c7eb7fb99aa68b2d1bda34a8441b35b903a026ea5a96c"
+    },
+    {
+      "model": "hist_gradient_boosting",
+      "validation_macro_mae_w": 117.32228350278777,
+      "validation_macro_rmse_w": 206.3474655801307,
+      "validation_macro_r2": 0.9489508096534396,
+      "baseline_macro_mae_w": 954.805760248485,
+      "artifact": "hist_gradient_boosting.joblib",
+      "sha256": "293b8b78a9252f2f5df7c48d124a31cd8af2ab7f5ac5f1badc4a5a10c971ede2"
+    },
+    {
+      "model": "random_forest",
+      "validation_macro_mae_w": 125.00216884596531,
+      "validation_macro_rmse_w": 239.09872729601352,
+      "validation_macro_r2": 0.9313359734968695,
+      "baseline_macro_mae_w": 954.805760248485,
+      "artifact": "random_forest.joblib",
+      "sha256": "1a7d675001b0cfca3e381dbc5b94e9c42e0faebea1483255f39ffffd98299e0a"
+    }
+  ],
+  "untouched_tests": [
+    {
+      "model": "xgboost",
+      "test": "chronological",
+      "rows": 1331,
+      "mae_w": 81.39113283613723,
+      "rmse_w": 185.84077864836513,
+      "r2": 0.9616443476138297,
+      "bias_w": -22.538759410201166,
+      "load_change_rows": 55,
+      "load_change_mae_w": 515.9744102541698
+    },
+    {
+      "model": "xgboost",
+      "test": "unseen_115F_experiment",
+      "rows": 1188,
+      "mae_w": 278.7394736373283,
+      "rmse_w": 396.9212194329703,
+      "r2": 0.8782486786122738,
+      "bias_w": -255.11191973670955,
+      "load_change_rows": 32,
+      "load_change_mae_w": 674.9352570843887
+    },
+    {
+      "model": "hist_gradient_boosting",
+      "test": "chronological",
+      "rows": 1331,
+      "mae_w": 88.9214265694876,
+      "rmse_w": 191.99566636695107,
+      "r2": 0.9590616633155787,
+      "bias_w": -19.015770439393066,
+      "load_change_rows": 55,
+      "load_change_mae_w": 574.7289346706766
+    },
+    {
+      "model": "hist_gradient_boosting",
+      "test": "unseen_115F_experiment",
+      "rows": 1188,
+      "mae_w": 283.82421841047903,
+      "rmse_w": 407.68707883426816,
+      "r2": 0.8715544851302681,
+      "bias_w": -262.0717346410915,
+      "load_change_rows": 32,
+      "load_change_mae_w": 605.4304225597105
+    },
+    {
+      "model": "random_forest",
+      "test": "chronological",
+      "rows": 1331,
+      "mae_w": 78.19933218322701,
+      "rmse_w": 192.0837296330052,
+      "r2": 0.9590241000674132,
+      "bias_w": -9.79245448512325,
+      "load_change_rows": 55,
+      "load_change_mae_w": 609.7703703548227
+    },
+    {
+      "model": "random_forest",
+      "test": "unseen_115F_experiment",
+      "rows": 1188,
+      "mae_w": 291.0529724060661,
+      "rmse_w": 415.10558316669153,
+      "r2": 0.8668374206382832,
+      "bias_w": -266.4505211623033,
+      "load_change_rows": 32,
+      "load_change_mae_w": 745.9933818628972
+    }
+  ],
+  "unsupported_inputs": [
+    "differential_pressure_pa",
+    "ac_on",
+    "commands",
+    "outdoor_temperature",
+    "equipment_capacity"
+  ],
+  "limitations": [
+    "One laboratory central AC; no installation validation or capacity scaling.",
+    "Pressure and independent AC-state training fields are absent.",
+    "Not a future forecast or a revenue-grade electricity measurement.",
+    "Use measured temperature history only; no interpolation or missing-input defaults."
+  ]
+}

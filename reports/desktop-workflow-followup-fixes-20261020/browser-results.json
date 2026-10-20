@@ -1,0 +1,23 @@
+[
+  {
+    "name": "test_future_cost_interactions.js",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 8.1
+  },
+  {
+    "name": "test_sensor_report_format.js",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 9.9
+  },
+  {
+    "name": "test_logs_offline_browser.js",
+    "status": "PASS",
+    "code": 0,
+    "signal": null,
+    "seconds": 21
+  }
+]

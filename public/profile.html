@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <script src="./js/app-mode.js?v=6"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Profile - EcoTrack</title>
+  <script src="./vendor/tailwindcss.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
+  <link rel="stylesheet" href="./styles.css?v=62">
+  <link rel="stylesheet" href="./css/profile-tabs.css?v=1">
+  <script src="./js/sidebar.js"></script>
+  <script src="./js/sidebar-loader.js?v=25"></script>
+
+  <!-- Cloud Database Engine (Supabase) -->
+  <script src="./js/supabase.umd.js"></script>
+  <script>
+    if (!window.supabase) {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"><\/script>');
+    }
+  </script>
+  <script src="./js/supabase-client.js"></script>
+  <script src="./js/shared.js"></script>
+  <script src="./js/eco-network.js"></script>
+  <script src="./js/eco-data-bus.js"></script>
+  <script src="./js/skeletons.js"></script>
+  <script src="./js/maintenance-modal.js?v=72"></script>
+</head>
+
+<body data-device-mode-profile class="app-shell bg-gray-50 dark:bg-[#0a0f1d] transition-colors duration-200">
+  <div class="flex h-screen">
+    <!-- Sidebar injected here -->
+    <main class="flex-1 flex flex-col overflow-hidden" style="min-width:0">
+      <header
+        class="bg-white dark:bg-[#0c1328] border-b border-gray-200 dark:border-white/5 px-6 py-3.5 flex justify-between items-center z-10 shadow-sm relative">
+        <h2 class="eco-primary-text text-2xl font-bold text-[#18392B] dark:text-cyan-400 flex items-center gap-2">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5"
+            class="text-[#10b981]">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+          Admin Profile
+        </h2>
+        <button type="button" id="profileModeMenu" class="workspace-button workspace-menu" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false">Menu</button>
+
+        <!-- Header Actions: Notification & Theme Toggle -->
+        <div class="flex items-center gap-3.5">
+          <!-- Notification ON/OFF Control -->
+          <div class="flex items-center gap-2">
+            <button type="button" id="headerNotificationToggleBtn" class="relative w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-cyan-400 hover:text-slate-900 dark:hover:text-white transition-all flex items-center justify-center cursor-pointer shadow-xs focus:outline-none" title="Notifications: ON (Click to Mute)" aria-label="Toggle Notifications ON / OFF">
+              <svg id="headerNotifBellIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" class="text-emerald-500 dark:text-emerald-400 transition-transform">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              <svg id="headerNotifMutedIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" class="hidden text-slate-400 dark:text-slate-400 transition-transform">
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                <path d="M18.63 13A17.89 17.89 0 0 1 18 8"/>
+                <path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/>
+                <path d="M18 8a6 6 0 0 0-9.33-5"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+              <span id="headerNotificationBadge" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-[#0c1328] shadow-sm">0</span>
+            </button>
+            <button type="button" id="headerNotifStatusText" class="theme-pill-badge notif-on text-xs font-bold px-2.5 py-1 rounded-full border transition-all select-none cursor-pointer shadow-xs focus:outline-none" title="Click to Toggle Notifications ON / OFF">
+              Alerts ON
+            </button>
+          </div>
+
+          <!-- Subtle Divider -->
+          <div class="h-6 w-px bg-slate-200 dark:bg-white/10"></div>
+
+          <!-- Theme Toggle Component matching user reference image -->
+          <div class="flex items-center gap-2.5">
+            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 select-none">Theme</span>
+            
+            <button type="button" id="dark-mode-status-text" class="theme-pill-badge theme-dark text-xs font-bold px-3 py-1 rounded-full border transition-all select-none cursor-pointer shadow-xs focus:outline-none" title="Toggle Dark / Light Mode">
+              Dark Mode
+            </button>
+
+            <label for="dark-mode-toggle-ui" class="admin-theme-switch" title="Toggle Dark / Light Mode">
+              <input type="checkbox" id="dark-mode-toggle-ui">
+              <span class="admin-theme-slider"></span>
+            </label>
+          </div>
+        </div>
+      </header>
+
+      <div class="flex-1 overflow-auto eco-slim-scrollbar p-6 bg-gray-50 dark:bg-[#0a0f1d]">
+        <div class="max-w-[1200px] mx-auto space-y-6">
+
+          <!-- Banner Card -->
+          <div
+            class="bg-white dark:bg-[#0c1328]/70 dark:backdrop-blur-md rounded-2xl shadow-sm border-2 border-emerald-200 dark:border-emerald-950/60 overflow-hidden relative flex flex-col md:flex-row p-8 items-start gap-8">
+            <!-- Top decorative curve -->
+            <div
+              class="absolute top-0 left-0 right-0 h-32 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 dark:from-emerald-950/25 dark:to-teal-950/25 opacity-60">
+            </div>
+
+            <!-- Subtle leaf patterns via SVG -->
+            <svg
+              class="absolute right-0 top-0 text-emerald-100/50 dark:text-[#10b981]/5 w-64 h-64 -translate-y-10 translate-x-10 pointer-events-none"
+              viewBox="0 0 200 200" fill="currentColor">
+              <path d="M20,100 Q60,20 180,10 Q140,90 100,160 Q60,230 20,100 Z" />
+              <path d="M60,130 Q100,60 190,50 Q160,120 120,180 Q80,240 60,130 Z" opacity="0.6" />
+            </svg>
+
+            <div class="relative flex items-center gap-6 w-full md:w-auto md:flex-1">
+              <div class="relative group cursor-pointer" id="avatarContainer" title="Click to upload profile photo">
+                <div
+                  class="w-32 h-32 rounded-full bg-emerald-100/50 dark:bg-emerald-950/20 border-4 border-white dark:border-[#0c1328] flex items-center justify-center text-[#10b981] shadow-sm overflow-hidden relative">
+                  <svg id="profileAvatarSvg" viewBox="0 0 24 24" width="48" height="48" fill="none"
+                    stroke="currentColor" stroke-width="1.5" class="transition-transform duration-300">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                  <img id="profileAvatarImg" class="w-full h-full object-cover hidden" alt="Avatar">
+                  <div
+                    class="absolute inset-0 bg-black/45 rounded-full flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                      class="mb-1">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z">
+                      </path>
+                      <circle cx="12" cy="13" r="4"></circle>
+                    </svg>
+                    <span class="text-[10px] font-bold tracking-wider uppercase">Upload</span>
+                  </div>
+                </div>
+                <input type="file" id="avatarFileInput" accept="image/*" class="hidden">
+              </div>
+              <div>
+                <h2 id="profile-name" class="eco-primary-text text-2xl font-bold text-[#18392B] dark:text-[#a7f3d0]">Administrator</h2>
+                <span id="profile-role-badge"
+                  class="inline-block mt-1 px-3 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-[#10b981] text-xs font-semibold rounded-full mb-4">System
+                  Administrator</span>
+
+                <div class="space-y-2 text-sm text-gray-500 dark:text-gray-400 font-medium">
+                  <div class="flex items-center gap-2"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                      stroke="#10b981" stroke-width="2">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                      <polyline points="22,6 12,13 2,6" />
+                    </svg> <span id="profile-email">admin@ecotrack.com</span></div>
+                  <div class="flex items-center gap-2"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                      stroke="#10b981" stroke-width="2">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg> Joined on <span id="profile-joined">May 15, 2024</span></div>
+                  <div class="flex items-center gap-2"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                      stroke="#10b981" stroke-width="2">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      <circle cx="12" cy="10" r="3" />
+                    </svg> <span id="profile-location">Philippines</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="relative w-full md:w-1/3 flex flex-col space-y-6 md:pl-10 md:border-l border-gray-100 dark:border-white/5">
+              <div class="flex items-start gap-4">
+                <div
+                  class="mt-1 w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center text-[#10b981] shrink-0">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
+                </div>
+                <div>
+                  <p class="text-xs font-bold text-gray-800 dark:text-gray-200">Role</p>
+                  <p id="profile-role-text" class="text-sm font-medium text-gray-500 dark:text-gray-400">Administrator
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-4">
+                <div
+                  class="mt-1 w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center text-[#10b981] shrink-0">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                </div>
+                <div>
+                  <p class="text-xs font-bold text-gray-800 dark:text-gray-200">Permissions</p>
+                  <p id="profile-permissions" class="text-sm font-medium text-gray-500 dark:text-gray-400" role="status" aria-live="polite">Checking access...
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-4">
+                <div
+                  class="mt-1 w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center text-[#10b981] shrink-0">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                </div>
+                <div>
+                  <p class="text-xs font-bold text-gray-800 dark:text-gray-200">Last Login</p>
+                  <p id="profile-last-login" class="text-sm font-medium text-gray-500 dark:text-gray-400">May 19, 2024
+                    &bull; 09:42 AM</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3 Cards Grid -->
+          <!-- Profile Management Tabs -->
+          <div
+            class="bg-white dark:bg-[#0c1328]/70 dark:backdrop-blur-md rounded-2xl shadow-sm border-2 border-emerald-200 dark:border-emerald-950/60 overflow-hidden">
+            <!-- Tab Navigation Header -->
+            <div
+              class="profile-tabs" role="tablist" aria-label="Admin profile">
+              <button type="button" id="tabBtnProfile"
+                class="profile-nav-tab" aria-selected="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                Account Profile
+              </button>
+              <button type="button" id="tabBtnSecurity"
+                class="profile-nav-tab">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                Security & Password
+              </button>
+              <button type="button" id="tabBtnHistory"
+                class="profile-nav-tab">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                Login Activity
+              </button>
+              <button type="button" id="tabBtnDeviceMode" class="profile-nav-tab">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="18" rx="2"/><rect x="14" y="3" width="7" height="18" rx="2"/></svg>Device Mode
+              </button>
+            </div>
+
+            <div id="panelDeviceMode" class="profile-tab-panel p-6 sm:p-8 hidden">
+              <div class="flex items-center justify-between gap-3 flex-wrap"><h3 class="eco-primary-text text-lg font-bold text-[#18392B] dark:text-cyan-400">Device Mode</h3><span class="workspace-current" data-workspace-label>Both modes</span></div>
+              <div class="workspace-options" role="group" aria-label="Device mode">
+                <button type="button" class="workspace-option" data-select-mode="controller" aria-pressed="false"><span class="workspace-icon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 3v18M12 3v18M19 3v18M2 8h6m1 8h6m1-10h6"/></svg></span><strong>Controller</strong><p>IR control and schedules.</p><span data-mode-state>Select mode</span></button>
+                <button type="button" class="workspace-option" data-select-mode="monitoring" aria-pressed="false"><span class="workspace-icon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M6 11h3l2-4 3 7 2-3h2M8 22h8m-4-4v4"/></svg></span><strong>Monitoring</strong><p>Temperature, pressure and AC state.</p><span data-mode-state>Select mode</span></button>
+                <button type="button" class="workspace-option" data-select-mode="both" aria-pressed="true"><span class="workspace-icon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="18" rx="2"/><rect x="14" y="3" width="7" height="18" rx="2"/></svg></span><strong>Both</strong><p>Control and monitoring together.</p><span data-mode-state>Active</span></button>
+              </div>
+              <p class="workspace-status" id="workspaceStatus" role="status" aria-live="polite">Saved on this device.</p>
+            </div>
+
+            <!-- TAB 1: Account Profile Form -->
+            <div id="panelProfile" class="profile-tab-panel p-6 sm:p-8 space-y-6">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="eco-primary-text text-lg font-bold text-[#18392B] dark:text-cyan-400">Account Details</h3>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">Manage your administrative name, email address,
+                    and localization</p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Full Name</label>
+                  <input type="text" id="edit-name"
+                    class="w-full border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-950/40 text-gray-800 dark:text-gray-100 focus:outline-none focus:border-emerald-500 transition-colors shadow-sm"
+                    value="Administrator">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">System Role</label>
+                  <input type="text" id="edit-role"
+                    class="w-full border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm bg-gray-50 dark:bg-slate-900/50 text-gray-500 dark:text-gray-400 cursor-not-allowed shadow-sm"
+                    value="System Administrator" disabled>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Email Address</label>
+                  <input type="email" id="edit-email"
+                    class="w-full border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-950/40 text-gray-800 dark:text-gray-100 focus:outline-none focus:border-emerald-500 transition-colors shadow-sm"
+                    value="admin@ecotrack.com">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Location</label>
+                  <input type="text" id="edit-location"
+                    class="w-full border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-950/40 text-gray-800 dark:text-gray-100 focus:outline-none focus:border-emerald-500 transition-colors shadow-sm"
+                    value="Philippines">
+                </div>
+              </div>
+
+              <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-white/5">
+                <button id="save-profile-btn"
+                  class="px-6 py-2.5 bg-[#10b981] hover:bg-emerald-600 text-white font-bold text-sm rounded-xl transition-all shadow-md hover:shadow-lg border-0 cursor-pointer flex items-center gap-2">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Save Profile Changes
+                </button>
+              </div>
+            </div>
+
+            <!-- TAB 2: Security & Password -->
+            <div id="panelSecurity" class="profile-tab-panel p-6 sm:p-8 space-y-6 hidden">
+              <div>
+                <h3 class="eco-primary-text text-lg font-bold text-[#18392B] dark:text-cyan-400">Security & Credentials</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Update account password and configure session
+                  inactivity timeout</p>
+              </div>
+
+              <div class="max-w-xl space-y-4 pt-2">
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Inactivity Session
+                    Timeout</label>
+                  <select id="session-timeout-select"
+                    class="w-full bg-white dark:bg-slate-950/40 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-800 dark:text-gray-200 outline-none focus:border-emerald-500 cursor-pointer shadow-sm">
+                    <option value="15 minutes">15 minutes</option>
+                    <option value="30 minutes" selected>30 minutes</option>
+                    <option value="60 minutes">60 minutes</option>
+                    <option value="Never">Never</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Current
+                    Password</label>
+                  <div class="relative flex items-center">
+                    <input type="password" id="current-password"
+                      class="w-full border border-gray-200 dark:border-white/10 rounded-xl px-4 pr-11 py-2.5 text-sm bg-white dark:bg-slate-950/40 text-gray-800 dark:text-gray-100 focus:outline-none focus:border-emerald-500 shadow-sm"
+                      placeholder="••••••••">
+                    <button type="button"
+                      class="password-toggle-btn absolute right-3 p-1 text-gray-400 hover:text-emerald-500 transition-colors border-0 bg-transparent cursor-pointer flex items-center justify-center"
+                      aria-label="Toggle password visibility">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">New Password</label>
+                    <div class="relative flex items-center">
+                      <input type="password" id="new-password"
+                        class="w-full border border-gray-200 dark:border-white/10 rounded-xl px-4 pr-11 py-2.5 text-sm bg-white dark:bg-slate-950/40 text-gray-800 dark:text-gray-100 focus:outline-none focus:border-emerald-500 shadow-sm"
+                        placeholder="••••••••">
+                      <button type="button"
+                        class="password-toggle-btn absolute right-3 p-1 text-gray-400 hover:text-emerald-500 transition-colors border-0 bg-transparent cursor-pointer flex items-center justify-center"
+                        aria-label="Toggle password visibility">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                          <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Confirm New
+                      Password</label>
+                    <div class="relative flex items-center">
+                      <input type="password" id="confirm-password"
+                        class="w-full border border-gray-200 dark:border-white/10 rounded-xl px-4 pr-11 py-2.5 text-sm bg-white dark:bg-slate-950/40 text-gray-800 dark:text-gray-100 focus:outline-none focus:border-emerald-500 shadow-sm"
+                        placeholder="••••••••">
+                      <button type="button"
+                        class="password-toggle-btn absolute right-3 p-1 text-gray-400 hover:text-emerald-500 transition-colors border-0 bg-transparent cursor-pointer flex items-center justify-center"
+                        aria-label="Toggle password visibility">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                          <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="pt-3">
+                  <button id="update-password-btn"
+                    class="px-6 py-2.5 bg-[#10b981] hover:bg-emerald-600 text-white font-bold text-sm rounded-xl transition-all shadow-md hover:shadow-lg border-0 cursor-pointer flex items-center gap-2">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                      stroke-width="2.5">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                    Update Password
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 3: Login Audit History -->
+            <div id="panelHistory" class="profile-tab-panel p-6 sm:p-8 space-y-6 hidden">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="eco-primary-text text-lg font-bold text-[#18392B] dark:text-cyan-400">Login Activity Audit</h3>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">Review recent sign-ins and session timestamps</p>
+                </div>
+                <button id="clear-history-btn"
+                  class="px-4 py-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 font-bold text-xs rounded-xl border border-red-200 dark:border-red-900/30 transition-colors cursor-pointer flex items-center gap-1.5">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                  Clear History
+                </button>
+              </div>
+
+              <div
+                class="max-h-[360px] overflow-auto eco-slim-scrollbar border border-gray-100 dark:border-white/5 rounded-2xl p-4 bg-gray-50/50 dark:bg-slate-950/20">
+                <ul id="login-history-list" class="space-y-2.5">
+                  <!-- Populated via JS -->
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Legacy modal container wrappers kept hidden for safe backwards compatibility -->
+          <div id="editProfileModal" class="hidden"></div>
+          <div id="changePasswordModal" class="hidden"></div>
+          <div id="viewHistoryModal" class="hidden"></div>
+
+          <!-- GLOBAL NOTIFICATION POPUP -->
+          <div id="globalNotificationDialog"
+            style="display: none; position: fixed; top: 1.25rem; left: 1.25rem; background: transparent !important; background-color: transparent !important; z-index: 99999; pointer-events: none; max-width: 28rem; width: calc(100% - 2.5rem);"
+            class="flex flex-col">
+            <div
+              class="bg-white dark:bg-[#0c1328] border-2 border-[#10b981] dark:border-[#10b981]/50 rounded-2xl p-5 shadow-2xl backdrop-blur-md pointer-events-auto">
+              <div class="flex items-center gap-3 mb-3">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"
+                  class="text-rose-500">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                <h3 class="eco-primary-text text-xl font-bold text-[#18392B] dark:text-cyan-400">New Notification!</h3>
+              </div>
+              <p id="globalNotificationMessage"
+                class="text-gray-700 dark:text-gray-200 text-sm font-medium mb-5 leading-relaxed">A scheduled message
+                has been triggered.</p>
+              <div class="flex gap-3">
+                <a href="Notification.html"
+                  class="flex-1 px-4 py-2 bg-[#10b981] hover:bg-emerald-400 text-white font-bold rounded-xl text-sm transition-colors text-center shadow-md border-0 cursor-pointer">
+                  View Notifications
+                </a>
+                <button id="dismissNotificationBtn"
+                  class="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 font-bold rounded-xl text-sm transition-colors border-0 cursor-pointer">
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <script src="./js/global-notifications.js"></script>
+          <script src="./js/profile.js?v=71"></script>
+          <script defer src="./js/profile-device-mode.js?v=1"></script>
+          <button type="button" class="workspace-backdrop" id="profileModeBackdrop" aria-label="Close navigation"></button>
+</body>
+
+</html>

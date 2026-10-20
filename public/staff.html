@@ -1,0 +1,2606 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <script src="./js/app-mode.js?v=6"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maintenance Management - EcoTrack</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
+  <link rel="stylesheet" href="./styles.css?v=62">
+  <script src="./js/sidebar.js"></script>
+  <script src="./js/sidebar-loader.js?v=25"></script>
+  <script src="./js/skeletons.js?v=1"></script>
+  <script src="./js/supabase.umd.js"></script>
+  <script src="./js/supabase-client.js"></script>
+  <script src="./js/provisioning-errors.js?v=2"></script>
+  <script src="./js/hardware-cloud.js?v=11"></script>
+  <script src="./js/aircon-system.js?v=23"></script>
+  <script src="./js/maintenance-modal.js?v=72"></script>
+  <style>
+    .no-scrollbar::-webkit-scrollbar {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none !important;
+      scrollbar-width: none !important;
+    }
+    @keyframes modalPop {
+      0% {
+        transform: scale(0.92);
+        opacity: 0;
+      }
+
+      70% {
+        transform: scale(1.02);
+        opacity: 1;
+      }
+
+      100% {
+        transform: scale(1.0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes bounceShort {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-4px);
+      }
+    }
+
+    @keyframes inputShake {
+
+      0%,
+      100% {
+        transform: translateX(0);
+      }
+
+      20%,
+      60% {
+        transform: translateX(-6px);
+      }
+
+      40%,
+      80% {
+        transform: translateX(6px);
+      }
+    }
+
+    @keyframes toastIn {
+      0% {
+        transform: translateX(110%);
+        opacity: 0;
+      }
+
+      100% {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes toastOut {
+      0% {
+        transform: translateX(0);
+        opacity: 1;
+      }
+
+      100% {
+        transform: translateX(110%);
+        opacity: 0;
+      }
+    }
+
+    .animate-modal-pop {
+      animation: modalPop 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .animate-bounce-short {
+      animation: bounceShort 1.5s ease-in-out infinite;
+    }
+
+    .animate-shake {
+      animation: inputShake 0.4s ease-in-out;
+    }
+
+    .toast-slide-in {
+      animation: toastIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .toast-slide-out {
+      animation: toastOut 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+
+<body class="app-shell bg-gray-50 dark:bg-[#0a0f1d] transition-colors duration-200">
+  <div class="flex h-screen">
+    <!-- Sidebar will be injected here by sidebar-loader.js -->
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+      <!-- HEADER -->
+      <header
+        class="bg-white dark:bg-[#0c1328] border-b border-gray-200 dark:border-white/5 px-6 py-4 flex justify-between items-center z-10 shadow-sm relative">
+        <h2 class="eco-primary-text text-2xl font-bold text-[#18392B] dark:text-cyan-400 flex items-center gap-2">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8"
+            class="text-[#10b981]">
+            <path
+              d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+          </svg>Maintenance Management
+        </h2>
+        <div class="flex items-center gap-3">
+          <!-- Staff quick stats (visible when staff tab is active) -->
+          <div id="staffHeaderStats" class="flex items-center gap-2.5">
+            <div
+              class="h-8 bg-white dark:bg-slate-900 border-[2px] border-[#10b981] dark:border-[#10b981]/40 rounded-full px-3.5 flex items-center justify-center shadow-sm">
+              <span id="pageReportCountBadge" class="text-xs font-bold text-[#10b981] tracking-wide whitespace-nowrap">0
+                records</span>
+            </div>
+            <div
+              class="h-8 bg-white dark:bg-slate-900 border-[2px] border-[#10b981] dark:border-[#10b981]/40 rounded-full px-3.5 flex items-center justify-center gap-1.5 shadow-sm">
+              <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Online</span>
+              <span id="activeCount" class="text-xs font-black text-[#10b981]">0</span>
+            </div>
+            <div
+              class="h-8 bg-white dark:bg-slate-900 border-[2px] border-gray-300 dark:border-slate-700 rounded-full px-3.5 flex items-center justify-center gap-1.5 shadow-sm">
+              <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Offline</span>
+              <span id="inactiveCount" class="text-xs font-black text-gray-400 dark:text-gray-400">0</span>
+            </div>
+            <div
+              class="h-8 bg-white dark:bg-slate-900 border-[2px] border-amber-500/40 rounded-full px-3.5 flex items-center justify-center gap-1.5 cursor-pointer hover:border-amber-500 transition-colors shadow-sm"
+              onclick="document.getElementById('tabArchivedBtn')?.click()" title="View Soft-Deleted Accounts">
+              <span class="text-xs font-bold text-amber-500 uppercase tracking-wider">Archived</span>
+              <span id="archivedHeaderCount" class="text-xs font-black text-amber-500">0</span>
+            </div>
+
+          </div>
+          <!-- Create Report Header Button -->
+          <button id="btnHeaderMaintenance" onclick="window.EcoTrackMaintenance?.openCreateModal()"
+            class="px-4 py-2 bg-white dark:bg-slate-900 border-[2px] border-[#10b981] dark:border-[#10b981]/50 text-[#18392B] dark:text-[#64f0b6] hover:bg-[#10b981] hover:text-white dark:hover:bg-[#10b981] dark:hover:text-slate-950 font-extrabold text-xs sm:text-sm rounded-xl shadow-md shadow-emerald-500/10 hover:shadow-emerald-500/30 hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-1.5 cursor-pointer">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5"
+              class="shrink-0 text-[#10b981]">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>Create Report</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- TAB NAVIGATION -->
+      <div class="bg-transparent px-6 pt-4 pb-2 flex flex-wrap gap-3 items-center shrink-0">
+        <button id="tabReportsBtn"
+          class="active-tab px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 bg-[#10b981] hover:bg-emerald-600 text-white border-[2px] border-[#10b981] flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-500/25"
+          style="color: var(--eco-accent) !important; background-color: var(--eco-selected) !important;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+          <span class="tab-btn-text" style="color: var(--eco-accent) !important;">Maintenance Reports & Activities</span>
+        </button>
+        <button id="tabStaffBtn"
+          class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 bg-white dark:bg-slate-900 text-gray-700 dark:text-gray-300 border-[2px] border-gray-200 dark:border-white/10 hover:border-[#10b981] hover:text-[#10b981] dark:hover:text-[#64f0b6] flex items-center gap-2 cursor-pointer shadow-xs">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          <span class="tab-btn-text">Maintenance Personnel Directory</span>
+        </button>
+        <button id="tabArchivedBtn"
+          class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 bg-white dark:bg-slate-900 text-gray-700 dark:text-gray-300 border-[2px] border-gray-200 dark:border-white/10 hover:border-amber-500 hover:text-amber-600 flex items-center gap-2 cursor-pointer shadow-xs">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="21 8 21 21 3 21 3 8"></polyline>
+            <rect x="1" y="3" width="22" height="5"></rect>
+            <line x1="10" y1="12" x2="14" y2="12"></line>
+          </svg>
+          <span class="tab-btn-text">Archived Accounts</span>
+          <span id="archivedBadgeCount"
+            class="ml-1 px-2.5 py-0.5 text-xs font-black rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-600/50 shadow-xs transition-colors">0</span>
+        </button>
+      </div>
+
+      <!-- CONTENT AREA -->
+      <div class="flex-1 overflow-hidden flex flex-col p-4 pt-2">
+
+        <!-- ============================================== -->
+        <!-- TAB 1: MAINTENANCE REPORTS & ACTIVITIES -->
+        <!-- ============================================== -->
+        <div id="tabReportsContent" class="flex-1 overflow-hidden flex flex-col">
+          <!-- TOP STATS CARDS -->
+          <div id="pageMaintStats" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-3 mx-2 shrink-0">
+            <!-- Dynamically populated by JS -->
+          </div>
+
+          <!-- FULL WIDTH Reports Container Card -->
+          <div
+            class="eco-report-panel flex-1 bg-white dark:bg-[#0c1328]/70 dark:backdrop-blur-md border-[2px] border-[#10b981] dark:border-[#10b981]/25 rounded-2xl overflow-hidden flex flex-col mx-2 shadow-sm">
+            <!-- Reports Header & Controls -->
+            <div
+              class="border-b-[2px] border-[#10b981] dark:border-[#10b981]/30 bg-white dark:bg-[#0c1328] flex flex-col">
+              <!-- Tier 1: Title and Search/Filters Controls -->
+              <div
+                class="py-2.5 px-3 sm:px-4 lg:px-5 flex flex-wrap xl:flex-nowrap items-center justify-between gap-2.5 bg-white dark:bg-[#0c1328] no-scrollbar overflow-x-auto">
+                <div class="flex items-center gap-2.5 sm:gap-3 shrink-0">
+                  <div
+                    class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-[#10b981] dark:text-[#64f0b6] shadow-xs shrink-0">
+                    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor"
+                      stroke-width="2.2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                      <line x1="16" y1="13" x2="8" y2="13"></line>
+                      <line x1="16" y1="17" x2="8" y2="17"></line>
+                      <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                  </div>
+                  <h3 id="maintenanceReportsHeading"
+                    class="eco-primary-text text-sm sm:text-base lg:text-lg font-extrabold text-[#18392B] dark:text-cyan-400 tracking-tight whitespace-nowrap">
+                    AC Controller Maintenance Reports
+                  </h3>
+                </div>
+
+                <!-- Search and Interactive Filters Toolbar on Same Row -->
+                <div class="eco-report-filters flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap">
+                  <!-- Search Bar -->
+                  <div class="relative w-32 sm:w-36 lg:w-44 shrink-0">
+                    <input type="text" id="pageReportSearch" placeholder="Search reports..."
+                      class="w-full bg-white dark:bg-[#0c1328] border-[1.5px] border-gray-200 dark:border-[#10b981]/50 focus:border-[#10b981] dark:focus:border-[#10b981] rounded-xl px-2.5 py-1.5 text-xs text-gray-800 dark:text-gray-100 font-medium focus:outline-none focus:ring-1 focus:ring-[#10b981]/40 pl-7 pr-6 transition-all placeholder-gray-400 shadow-xs">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"
+                      class="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-[#10b981]/70 pointer-events-none">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <button id="btnPageReportClearSearch" type="button"
+                      class="hidden absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xs font-bold cursor-pointer transition-colors"
+                      title="Clear search">✕</button>
+                  </div>
+
+                  <!-- Status Filter Dropdown -->
+                  <select id="pageReportStatusFilter"
+                    class="w-auto min-w-[114px] sm:min-w-[126px] max-w-[145px] shrink-0 bg-white dark:bg-[#0c1328] border-[1.5px] border-gray-200 dark:border-[#10b981]/50 hover:border-[#10b981] dark:hover:border-[#10b981] focus:border-[#10b981] dark:focus:border-[#10b981] rounded-xl pl-2.5 pr-6 py-1.5 text-xs font-bold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-[#10b981]/40 cursor-pointer transition-all shadow-xs">
+                    <option value="all">All Status</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Assigned">Assigned</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="For Verification">For Verification</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Needs Repair">Needs Repair</option>
+                    <option value="Under Repair">Under Repair</option>
+                    <option value="Closed">Closed</option>
+                  </select>
+
+                  <!-- Priority Filter Dropdown -->
+                  <select id="pageReportPriorityFilter"
+                    class="w-auto min-w-[110px] sm:min-w-[118px] shrink-0 bg-white dark:bg-[#0c1328] border-[1.5px] border-gray-200 dark:border-[#10b981]/50 hover:border-[#10b981] dark:hover:border-[#10b981] focus:border-[#10b981] dark:focus:border-[#10b981] rounded-xl pl-2.5 pr-6 py-1.5 text-xs font-bold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-[#10b981]/40 cursor-pointer transition-all shadow-xs">
+                    <option value="all">All Priority</option>
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+                  </select>
+
+                  <!-- Aircon Filter Dropdown -->
+                  <select id="pageReportAirconFilter"
+                    class="w-auto min-w-[118px] max-w-[165px] sm:max-w-[185px] truncate shrink-0 bg-white dark:bg-[#0c1328] border-[1.5px] border-gray-200 dark:border-[#10b981]/50 hover:border-[#10b981] dark:hover:border-[#10b981] focus:border-[#10b981] dark:focus:border-[#10b981] rounded-xl pl-2.5 pr-6 py-1.5 text-xs font-bold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-[#10b981]/40 cursor-pointer transition-all shadow-xs">
+                    <option value="all">All AC Controllers</option>
+                  </select>
+
+                  <!-- Staff Filter Dropdown -->
+                  <select id="pageReportStaffFilter"
+                    class="w-auto min-w-[96px] max-w-[140px] sm:max-w-[160px] truncate shrink-0 bg-white dark:bg-[#0c1328] border-[1.5px] border-gray-200 dark:border-[#10b981]/50 hover:border-[#10b981] dark:hover:border-[#10b981] focus:border-[#10b981] dark:focus:border-[#10b981] rounded-xl pl-2.5 pr-6 py-1.5 text-xs font-bold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-[#10b981]/40 cursor-pointer transition-all shadow-xs">
+                    <option value="all">All Staff</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Tier 2: Batch Selection Controls Toolbar (Aligned to Right Side) -->
+              <div
+                class="px-4 py-2 sm:px-5 bg-gray-50/70 dark:bg-[#081220]/70 border-t border-gray-100 dark:border-white/5 flex items-center justify-end gap-2.5">
+                <div class="flex items-center gap-2 ml-auto">
+                  <button id="btnSelectAllReports" type="button"
+                    class="px-3.5 py-1.5 bg-white dark:bg-[#0c1328] hover:bg-emerald-500/10 dark:hover:bg-emerald-500/15 border-[1.5px] border-gray-200 dark:border-[#10b981]/40 hover:border-[#10b981] dark:hover:border-[#10b981] rounded-xl text-xs font-bold text-gray-700 dark:text-gray-200 hover:text-[#10b981] dark:hover:text-[#64f0b6] transition-all cursor-pointer shadow-xs flex items-center gap-1.5"
+                    title="Select All Reports to Delete">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"
+                      class="shrink-0 text-[#10b981]">
+                      <polyline points="9 11 12 14 22 4"></polyline>
+                      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                    </svg>
+                    <span id="btnSelectAllReportsText">Select All</span>
+                  </button>
+
+                  <button id="btnDeleteSelectedReports" type="button" style="display: none;"
+                    class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-rose-500/25 hover:shadow-rose-500/40 border border-rose-400/80 items-center gap-1.5 cursor-pointer"
+                    title="Delete Selected Maintenance Reports">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.3"
+                      stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      <line x1="10" y1="11" x2="10" y2="17"></line>
+                      <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                    <span>Delete (<span id="selectedReportCount">0</span>)</span>
+                  </button>
+
+                  <button id="btnCancelSelectReports" type="button" style="display: none;"
+                    class="px-2.5 py-1.5 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 border border-gray-300 dark:border-white/10 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 transition-all cursor-pointer shadow-xs items-center gap-1"
+                    title="Cancel Selection Mode">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor"
+                      stroke-width="2.5">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    <span>Cancel</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- REPORTS TABLE -->
+            <div class="eco-table-frame overflow-x-auto overflow-y-auto flex-1">
+              <table class="eco-data-table w-full">
+                <thead class="sticky top-0 bg-[#0b291d] dark:bg-[#081a14] text-white dark:text-[#a7f3d0]">
+                  <tr class="text-left text-xs font-bold uppercase tracking-wider">
+                    <th scope="col" id="pageReportHeaderSelectTh" class="px-4 py-3.5 w-10 text-center" style="display: none;">
+                      <input type="checkbox" id="pageReportHeaderSelectAll"
+                        class="w-4 h-4 rounded-full border-2 border-emerald-400 dark:border-emerald-500 text-[#10b981] accent-[#10b981] focus:ring-0 cursor-pointer"
+                        title="Select or deselect all visible reports">
+                    </th>
+                    <th scope="col" class="px-5 py-3.5">REPORT ID</th>
+                    <th scope="col" id="maintenanceDeviceColumn" class="px-5 py-3.5">AC CONTROLLER</th>
+                    <th scope="col" class="px-5 py-3.5">TYPE OF AIRCON</th>
+                    <th scope="col" class="px-5 py-3.5">LOCATION</th>
+                    <th scope="col" class="px-5 py-3.5">TYPE</th>
+                    <th scope="col" class="px-5 py-3.5">PRIORITY</th>
+                    <th scope="col" class="px-5 py-3.5">ASSIGNED STAFF</th>
+                    <th scope="col" class="px-5 py-3.5">PROGRESS</th>
+                    <th scope="col" class="px-5 py-3.5">STATUS</th>
+                    <th scope="col" class="px-5 py-3.5">LAST UPDATED</th>
+                    <th scope="col" class="px-5 py-3.5 text-center">ACTION</th>
+                  </tr>
+                </thead>
+                <tbody id="pageReportTableBody"
+                  class="divide-y-[2px] divide-[#10b981] dark:divide-white/5 text-gray-800 dark:text-gray-200 bg-transparent text-xs font-medium">
+                  <!-- Injected by JS -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- FOOTER & PAGINATION (20 PER PAGE) -->
+            <div
+              class="p-3.5 border-t-[2px] border-[#10b981] dark:border-white/5 flex flex-col sm:flex-row justify-between items-center gap-3 bg-white dark:bg-[#0c1328]">
+              <div class="flex items-center gap-2">
+                <span id="pageReportCountInfo" class="text-xs font-bold text-gray-600 dark:text-gray-300">Showing 0 of 0
+                  reports</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button id="pageReportPrevBtn" disabled
+                  class="px-3.5 py-1.5 bg-white dark:bg-slate-900 border-2 border-[#10b981] dark:border-[#10b981]/40 rounded-xl text-xs font-bold text-[#18392B] dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-sm flex items-center gap-1.5">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                  </svg>
+                  <span>Previous</span>
+                </button>
+                <span id="pageReportPaginationPages" class="text-xs font-bold px-2 text-gray-700 dark:text-gray-300">
+                  Page 1 of 1
+                </span>
+                <button id="pageReportNextBtn" disabled
+                  class="px-3.5 py-1.5 bg-[#0b291d] dark:bg-[#10b981] border-2 border-[#10b981] dark:border-[#10b981]/40 rounded-xl text-xs font-bold text-white hover:bg-[#18392B] dark:hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-sm flex items-center gap-1.5">
+                  <span>Next</span>
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- TAB 2: REGISTERED MAINTENANCE STAFF (ORIGINAL) -->
+        <!-- ============================================== -->
+        <div id="tabStaffContent" class="hidden flex-1 overflow-hidden flex flex-col">
+          <!-- FULL WIDTH Staff Table -->
+          <div
+            class="flex-1 bg-white dark:bg-[#0c1328]/70 dark:backdrop-blur-md border-[2px] border-[#10b981] dark:border-[#10b981]/25 rounded-2xl overflow-hidden flex flex-col mx-2">
+            <div
+              class="p-4 border-b-[2px] border-[#10b981] dark:border-white/5 flex justify-between items-center bg-white dark:bg-[#0c1328]">
+              <h3 class="eco-primary-text text-lg font-bold text-[#18392B] dark:text-cyan-400">Registered Maintenance Staff</h3>
+              <div class="flex items-center gap-2">
+                <div class="relative">
+                  <input type="text" id="staffSearch" placeholder="Search staff..."
+                    class="bg-gray-50 dark:bg-slate-950/40 border-[2px] border-gray-200 dark:border-white/10 rounded-lg px-3.5 py-2 text-sm text-gray-800 dark:text-gray-100 font-medium focus:outline-none focus:border-[#10b981] w-52 pl-9 pr-7 transition-colors placeholder-gray-400">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"
+                    class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <button id="btnStaffClearSearch" type="button"
+                    class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xs font-bold cursor-pointer transition-colors"
+                    title="Clear search">✕</button>
+                </div>
+                <select id="staffStatusFilter"
+                  class="bg-gray-50 dark:bg-slate-950/40 border-[2px] border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm font-bold text-gray-700 dark:text-gray-200 focus:outline-none focus:border-[#10b981] cursor-pointer transition-colors">
+                  <option value="all">All Status</option>
+                  <option value="Online">Online</option>
+                  <option value="Offline">Offline</option>
+                </select>
+                <button id="openRegisterModalBtn"
+                  class="px-4 py-2 bg-[#10b981] hover:bg-emerald-400 text-white font-bold text-sm rounded-lg shadow-md shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2 border-0 cursor-pointer">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                  Register Staff
+                </button>
+              </div>
+            </div>
+
+            <!-- TABLE -->
+            <div class="eco-table-frame overflow-y-auto flex-1">
+              <table class="eco-data-table w-full">
+                <thead class="sticky top-0 bg-[#0b291d] dark:bg-[#081a14] text-white dark:text-[#a7f3d0]">
+                  <tr class="text-left text-xs font-bold text-white uppercase tracking-wider">
+                    <th scope="col" class="px-5 py-4">Technician Name</th>
+                    <th scope="col" class="px-5 py-4">Role / Specialization</th>
+                    <th scope="col" class="px-5 py-4">Assigned Location</th>
+                    <th scope="col" class="px-5 py-4">Contact Info</th>
+                    <th scope="col" class="px-5 py-4">Status</th>
+                    <th scope="col" class="px-5 py-4">Registered</th>
+                    <th scope="col" class="px-5 py-4 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="staffTableBody"
+                  class="divide-y-[2px] divide-[#10b981] dark:divide-white/5 text-gray-800 dark:text-gray-200 bg-transparent">
+                  <!-- Staff rows will be injected here -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- PAGINATION -->
+            <div
+              class="p-4 border-t-[2px] border-[#10b981] dark:border-white/5 flex justify-between items-center bg-white dark:bg-[#0c1328]">
+              <span id="staffPageInfo" class="text-sm font-bold text-gray-600 dark:text-gray-400">Showing 0 of 0</span>
+              <div class="flex items-center gap-2">
+                <button id="staffPrevBtn" disabled
+                  class="px-4 py-2 bg-white dark:bg-slate-900 border-[2px] border-[#10b981] dark:border-[#10b981]/40 rounded-lg text-sm font-bold text-[#18392B] dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer">Previous</button>
+                <span id="staffPaginationPages" class="text-xs font-bold px-2 text-gray-700 dark:text-gray-300">Page 1 of 1</span>
+                <button id="staffNextBtn" disabled
+                  class="px-4 py-2 bg-[#0b291d] dark:bg-[#10b981] border-[2px] border-[#10b981] dark:border-[#10b981]/40 rounded-lg text-sm font-bold text-white hover:bg-[#18392B] dark:hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer">Next</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- TAB 3: ARCHIVED PERSONNEL (SOFT DELETED) -->
+        <!-- ============================================== -->
+        <div id="tabArchivedContent" class="hidden flex-1 min-h-0 overflow-auto flex flex-col">
+          <!-- FULL WIDTH Archived Table -->
+          <div id="archivedStaffCard"
+            class="min-h-0 flex-1 bg-white dark:bg-[#0c1328]/70 dark:backdrop-blur-md border-[2px] border-amber-500/40 dark:border-amber-500/30 rounded-2xl overflow-hidden flex flex-col mx-2">
+            <div
+              class="p-4 border-b-[2px] border-amber-500/30 dark:border-white/5 flex flex-wrap gap-3 justify-between items-center bg-white dark:bg-[#0c1328]">
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="21 8 21 21 3 21 3 8"></polyline>
+                    <rect x="1" y="3" width="22" height="5"></rect>
+                    <line x1="10" y1="12" x2="14" y2="12"></line>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="eco-primary-text text-lg font-bold text-gray-800 dark:text-white">Archived Maintenance Personnel</h3>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">Soft-deleted technician records with deletion
+                    reason & restore capability</p>
+                </div>
+              </div>
+
+              <!-- Search Archived -->
+              <div class="flex items-center gap-2">
+                <div class="relative">
+                  <input type="text" id="archivedSearch" aria-label="Search archived staff" placeholder="Search archived staff..."
+                    class="bg-gray-50 dark:bg-slate-950/40 border-[2px] border-gray-200 dark:border-white/10 rounded-lg px-3.5 py-2 text-sm text-gray-800 dark:text-gray-100 font-medium focus:outline-none focus:border-amber-500 w-56 pl-9 pr-7 transition-colors placeholder-gray-400">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"
+                    class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <button id="btnArchivedClearSearch" type="button"
+                    class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xs font-bold cursor-pointer transition-colors"
+                    title="Clear search">✕</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- TABLE -->
+            <div id="archivedStaffScroll" class="eco-table-frame overflow-auto min-h-0 flex-1">
+              <table class="eco-data-table w-full min-w-[760px]">
+                <thead class="sticky top-0 bg-[#1c180e] dark:bg-[#1a1408] text-amber-300 border-b border-amber-500/20">
+                  <tr class="text-left text-xs font-bold uppercase tracking-wider">
+                    <th scope="col" class="px-5 py-4">Technician Name</th>
+                    <th scope="col" class="px-5 py-4">Role / Specialization</th>
+                    <th scope="col" class="px-5 py-4">Assigned Location</th>
+                    <th scope="col" class="px-5 py-4">Reason for Deletion</th>
+                    <th scope="col" class="px-5 py-4">Archived Date</th>
+                    <th scope="col" class="px-5 py-4 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="archivedStaffTableBody"
+                  class="divide-y-[2px] divide-amber-500/20 dark:divide-white/5 text-gray-800 dark:text-gray-200 bg-transparent text-xs font-medium">
+                  <!-- Injected by JS -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- FOOTER & PAGINATION (20 PER PAGE) -->
+            <div
+              class="p-3 border-t-[2px] border-amber-500/20 dark:border-white/5 flex flex-col sm:flex-row justify-between items-center gap-2 bg-white dark:bg-[#0c1328]">
+              <span id="archivedPageInfo" class="text-xs font-bold text-gray-500">Showing 0 of 0 archived accounts</span>
+              <div class="flex items-center gap-2">
+                <button id="archivedPrevBtn" disabled
+                  class="px-3 py-1 bg-white dark:bg-slate-900 border border-amber-500/30 rounded-lg text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer">Previous</button>
+                <span id="archivedPaginationPages" class="text-xs font-bold px-1 text-gray-700 dark:text-gray-300">Page 1 of 1</span>
+                <button id="archivedNextBtn" disabled
+                  class="px-3 py-1 bg-amber-500/20 border border-amber-500/40 rounded-lg text-xs font-bold text-amber-700 dark:text-amber-300 hover:bg-amber-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer">Next</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- REGISTER STAFF MODAL -->
+  <div id="registerStaffModal"
+    class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[9999] p-4 sm:p-6 transition-all duration-300">
+    <div
+      class="bg-white dark:bg-[#0c1328] rounded-3xl w-full max-w-lg max-h-[92vh] shadow-2xl border-2 border-emerald-500/40 dark:border-emerald-500/50 overflow-hidden flex flex-col animate-modal-pop">
+      <div
+        class="relative bg-gradient-to-br from-[#064e3b] via-[#0b291d] to-[#041d14] px-6 py-4 flex items-center justify-between border-b border-emerald-500/20 overflow-hidden shrink-0">
+        <div class="absolute -top-8 -left-8 w-24 h-24 bg-emerald-500/20 rounded-full blur-xl pointer-events-none"></div>
+        <div class="relative flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-md">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="8.5" cy="7" r="4" />
+              <line x1="20" y1="8" x2="20" y2="14" />
+              <line x1="23" y1="11" x2="17" y2="11" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="eco-primary-text text-base font-extrabold text-white uppercase tracking-wider" style="color: var(--eco-text) !important;">
+              Register Staff</h3>
+            <p class="text-xs text-emerald-100/70">Create maintenance technician profile & assignment</p>
+          </div>
+        </div>
+        <button id="closeRegisterModalBtn"
+          class="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-all border-0 cursor-pointer">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-3.5 overflow-y-auto flex-1 text-gray-800 dark:text-gray-100">
+        <!-- 0. PROFILE PHOTO UPLOAD HOLDER -->
+        <div
+          class="flex items-center gap-4 p-3 bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-500/30 rounded-2xl">
+          <div class="relative group cursor-pointer shrink-0" id="registerAvatarContainer"
+            title="Click to upload profile photo">
+            <div
+              class="w-14 h-14 rounded-2xl border-2 border-dashed border-[#10b981] flex items-center justify-center bg-white dark:bg-slate-900 overflow-hidden relative shadow-sm">
+              <svg id="registerAvatarPlaceholder" viewBox="0 0 24 24" width="24" height="24" fill="none"
+                stroke="#10b981" stroke-width="1.5">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <img id="registerAvatarImg" class="w-full h-full object-cover hidden" alt="Staff Photo Preview">
+              <div
+                class="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                  <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+              </div>
+            </div>
+            <input type="file" id="registerAvatarFileInput" accept="image/*" class="hidden">
+          </div>
+          <div class="flex-1 min-w-0">
+            <label class="block text-xs font-bold text-gray-800 dark:text-white">Profile Photo <span
+                class="text-gray-400 font-normal text-[11px]">(Optional)</span></label>
+            <p class="text-[11px] text-gray-500 dark:text-gray-400">Click avatar box to upload headshot</p>
+          </div>
+        </div>
+
+        <!-- 1. FULL NAME & ROLE -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 uppercase tracking-wide">Full
+              Name</label>
+            <input type="text" id="staffName" placeholder="e.g. Rey O. Solamillo"
+              class="w-full bg-gray-50 dark:bg-slate-950/50 border-2 border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-100 rounded-xl px-3.5 py-2 text-sm font-medium focus:outline-none focus:border-[#10b981] focus:ring-2 focus:ring-emerald-500/20 transition-all placeholder-gray-400">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 uppercase tracking-wide">Worker
+              Role / Type</label>
+            <div class="relative" id="staffRoleDropdownContainer">
+              <button type="button" id="staffRoleDropdownTrigger"
+                class="w-full bg-white dark:bg-[#0c1328] border-2 border-gray-200 dark:border-white/10 text-gray-800 dark:text-white rounded-xl px-3.5 py-2 text-xs font-bold focus:outline-none focus:border-[#10b981] dark:focus:border-cyan-400 cursor-pointer shadow-sm flex items-center justify-between hover:border-[#10b981] transition-all"
+                aria-haspopup="listbox" aria-expanded="false">
+                <div class="flex items-center gap-2 truncate">
+                  <span id="staffRoleSelectedIcon" class="text-xs shrink-0">🔧</span>
+                  <span id="staffRoleSelectedText" class="truncate font-semibold">HVAC / Aircon Technician</span>
+                </div>
+                <svg class="w-4 h-4 text-gray-400 dark:text-[#10b981] transition-transform duration-200 shrink-0 ml-1.5"
+                  id="staffRoleDropdownArrow" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd"
+                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                    clip-rule="evenodd" />
+                </svg>
+              </button>
+              <select id="staffRole" class="sr-only hidden" tabindex="-1" aria-hidden="true"></select>
+              <div id="staffRoleDropdownMenu"
+                class="hidden absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-[#0c1328] border-2 border-gray-200 dark:border-[#10b981]/60 rounded-xl shadow-2xl dark:shadow-[0_12px_32px_rgba(0,0,0,0.85)] max-h-60 overflow-y-auto p-1.5 space-y-1 custom-dropdown-menu">
+                <!-- Dynamically rendered roles with delete buttons -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. CONTACT INFO -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 uppercase tracking-wide">Email
+              Address</label>
+            <input type="email" id="staffEmail" placeholder="e.g. rey@ecotrack.local"
+              class="w-full bg-gray-50 dark:bg-slate-950/50 border-2 border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-100 rounded-xl px-3.5 py-2 text-sm font-medium focus:outline-none focus:border-[#10b981] focus:ring-2 focus:ring-emerald-500/20 transition-all placeholder-gray-400">
+          </div>
+          <div>
+            <label
+              class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 uppercase tracking-wide flex items-center justify-between">
+              <span>Phone Number</span>
+              <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 normal-case tracking-normal">11
+                digits</span>
+            </label>
+            <input type="tel" id="staffPhone" placeholder="e.g. 09171234567" maxlength="11" inputmode="numeric"
+              pattern="[0-9]{11}" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)"
+              class="w-full bg-gray-50 dark:bg-slate-950/50 border-2 border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-100 rounded-xl px-3.5 py-2 text-sm font-medium focus:outline-none focus:border-[#10b981] focus:ring-2 focus:ring-emerald-500/20 transition-all placeholder-gray-400">
+          </div>
+        </div>
+
+        <!-- 3. ASSIGNED LOCATION (BUILDING, FLOOR, ROOM) -->
+        <div class="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-500/30 rounded-2xl p-3.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <label
+              class="text-xs font-extrabold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"
+                class="text-emerald-500">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              <span>Assigned Deployment Area</span>
+            </label>
+            <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Building • Floor • Room</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div>
+              <span
+                class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Building</span>
+              <select id="staffBuilding"
+                class="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-100 rounded-xl px-2.5 py-2 text-xs font-semibold focus:outline-none focus:border-[#10b981] transition-all cursor-pointer">
+                <option value="all_buildings">All Buildings</option>
+              </select>
+            </div>
+            <div>
+              <span
+                class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Floor</span>
+              <select id="staffFloor"
+                class="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-100 rounded-xl px-2.5 py-2 text-xs font-semibold focus:outline-none focus:border-[#10b981] transition-all cursor-pointer">
+                <option value="all_floors">All Floors</option>
+              </select>
+            </div>
+            <div>
+              <span
+                class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Room</span>
+              <select id="staffRoom"
+                class="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-100 rounded-xl px-2.5 py-2 text-xs font-semibold focus:outline-none focus:border-[#10b981] transition-all cursor-pointer">
+                <option value="all_rooms">All Rooms</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. PASSWORDS -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label
+              class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 uppercase tracking-wide">Password</label>
+            <div class="relative flex items-center">
+              <input type="password" id="staffPassword" placeholder="••••••••"
+                class="w-full bg-gray-50 dark:bg-slate-950/50 border-2 border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-100 rounded-xl pl-3.5 pr-10 py-2 text-sm font-medium focus:outline-none focus:border-[#10b981] focus:ring-2 focus:ring-emerald-500/20 transition-all placeholder-gray-400">
+              <button type="button"
+                class="password-toggle-btn absolute right-2.5 p-1 text-gray-400 hover:text-[#10b981] dark:hover:text-[#64f0b6] transition-colors border-0 bg-transparent cursor-pointer flex items-center justify-center"
+                aria-label="Toggle password visibility" title="Show/Hide Password">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 uppercase tracking-wide">Confirm
+              Password</label>
+            <div class="relative flex items-center">
+              <input type="password" id="staffPasswordConfirm" placeholder="••••••••"
+                class="w-full bg-gray-50 dark:bg-slate-950/50 border-2 border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-100 rounded-xl pl-3.5 pr-10 py-2 text-sm font-medium focus:outline-none focus:border-[#10b981] focus:ring-2 focus:ring-emerald-500/20 transition-all placeholder-gray-400">
+              <button type="button"
+                class="password-toggle-btn absolute right-2.5 p-1 text-gray-400 hover:text-[#10b981] dark:hover:text-[#64f0b6] transition-colors border-0 bg-transparent cursor-pointer flex items-center justify-center"
+                aria-label="Toggle password visibility" title="Show/Hide Password">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button id="cancelRegisterBtn"
+            class="flex-1 bg-white dark:bg-slate-900 border-2 border-gray-300 dark:border-white/10 text-gray-700 dark:text-gray-200 font-bold text-xs rounded-xl py-3 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer">Cancel</button>
+          <button id="addStaffBtn"
+            class="eco-primary-action flex-1 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl py-3 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:-translate-y-0.5 transition-all border-0 cursor-pointer flex items-center justify-center gap-2">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Register Staff
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: EDIT STAFF -->
+  <div id="editStaffModal"
+    class="hidden fixed inset-0 bg-slate-950/70 flex items-center justify-center z-[9999] p-4 sm:p-6 backdrop-blur-sm">
+    <div
+      class="bg-white dark:bg-[#0c1328] rounded-3xl w-full max-w-lg shadow-2xl border-2 border-gray-200 dark:border-[#10b981]/40 overflow-hidden flex flex-col animate-modal-pop">
+      <!-- Modal Header -->
+      <div
+        class="bg-gradient-to-r from-emerald-600 to-teal-700 dark:from-[#0b291d] dark:to-[#081a14] px-6 py-4 flex items-center justify-between border-b border-gray-200 dark:border-[#10b981]/30">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-2xl bg-white/20 dark:bg-emerald-500/20 border border-white/30 dark:border-emerald-500/40 flex items-center justify-center text-white dark:text-emerald-400 shadow-md">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="eco-primary-text text-base font-extrabold text-white uppercase tracking-wider">Edit Staff Member</h3>
+            <p class="text-xs text-emerald-100 dark:text-emerald-400/90">Update technician profile, specialization, and
+              area</p>
+          </div>
+        </div>
+        <button id="closeEditStaffModalBtn"
+          class="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-all border-0 cursor-pointer">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Body Form -->
+      <div class="p-6 space-y-4 overflow-y-auto max-h-[75vh]">
+        <input type="hidden" id="editStaffId">
+        <div id="editStaffLoadState" class="hidden flex items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 py-2">
+          <span id="editStaffLoadStatus" role="status" aria-live="polite" class="text-sm text-slate-700 dark:text-slate-200"></span>
+          <button type="button" id="editStaffRetryBtn" class="hidden shrink-0 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1.5 text-sm font-semibold text-slate-800 dark:text-slate-100">Retry</button>
+        </div>
+
+        <!-- AVATAR UPLOADER -->
+        <div
+          class="flex items-center gap-4 bg-gray-50 dark:bg-slate-950/40 p-3 rounded-2xl border border-gray-200 dark:border-white/10">
+          <div id="editAvatarContainer"
+            class="relative w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border-2 border-dashed border-emerald-500/50 flex items-center justify-center cursor-pointer hover:border-emerald-500 transition-all overflow-hidden group shadow-sm">
+            <img id="editAvatarImg" class="w-full h-full object-cover hidden" alt="Edit Avatar">
+            <span id="editAvatarPlaceholder"
+              class="text-xs font-bold text-[#10b981] group-hover:scale-110 transition-transform">Photo</span>
+            <div
+              class="absolute inset-0 bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+              </svg>
+            </div>
+            <input type="file" id="editAvatarFileInput" accept="image/*" class="hidden">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-800 dark:text-white">Profile Photo</label>
+            <p class="text-[11px] text-gray-500 dark:text-gray-400">Click avatar box to change profile photo</p>
+          </div>
+        </div>
+
+        <!-- 1. FULL NAME & ROLE -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 uppercase tracking-wide">Full
+              Name</label>
+            <input type="text" id="editStaffName" placeholder="e.g. Rey O. Solamillo"
+              class="w-full bg-gray-50 dark:bg-slate-950/50 border-2 border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-100 rounded-xl px-3.5 py-2 text-sm font-medium focus:outline-none focus:border-[#10b981] focus:ring-2 focus:ring-emerald-500/20 transition-all">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 uppercase tracking-wide">Worker
+              Role / Type</label>
+            <div class="relative" id="editStaffRoleDropdownContainer">
+              <button type="button" id="editStaffRoleDropdownTrigger"
+                class="w-full bg-white dark:bg-[#0c1328] border-2 border-gray-200 dark:border-white/10 text-gray-800 dark:text-white rounded-xl px-3.5 py-2 text-xs font-bold focus:outline-none focus:border-[#10b981] dark:focus:border-cyan-400 cursor-pointer shadow-sm flex items-center justify-between hover:border-[#10b981] transition-all"
+                aria-haspopup="listbox" aria-expanded="false">
+                <div class="flex items-center gap-2 truncate">
+                  <span id="editStaffRoleSelectedIcon" class="text-xs shrink-0">🔧</span>
+                  <span id="editStaffRoleSelectedText" class="truncate font-semibold">HVAC / Aircon Technician</span>
+                </div>
+                <svg class="w-4 h-4 text-gray-400 dark:text-[#10b981] transition-transform duration-200 shrink-0 ml-1.5"
+                  id="editStaffRoleDropdownArrow" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd"
+                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                    clip-rule="evenodd" />
+                </svg>
+              </button>
+              <select id="editStaffRole" class="sr-only hidden" tabindex="-1" aria-hidden="true"></select>
+              <div id="editStaffRoleDropdownMenu"
+                class="hidden absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-[#0c1328] border-2 border-gray-200 dark:border-[#10b981]/60 rounded-xl shadow-2xl dark:shadow-[0_12px_32px_rgba(0,0,0,0.85)] max-h-60 overflow-y-auto p-1.5 space-y-1 custom-dropdown-menu">
+                <!-- Dynamically rendered roles with delete buttons -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. CONTACT INFO -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 uppercase tracking-wide">Email
+              Address</label>
+            <input type="email" id="editStaffEmail" placeholder="e.g. rey@ecotrack.local"
+              class="w-full bg-gray-50 dark:bg-slate-950/50 border-2 border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-100 rounded-xl px-3.5 py-2 text-sm font-medium focus:outline-none focus:border-[#10b981] focus:ring-2 focus:ring-emerald-500/20 transition-all">
+          </div>
+          <div>
+            <label
+              class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 uppercase tracking-wide flex items-center justify-between">
+              <span>Phone Number</span>
+              <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 normal-case tracking-normal">11
+                digits</span>
+            </label>
+            <input type="tel" id="editStaffPhone" placeholder="e.g. 09853308630" maxlength="11" inputmode="numeric"
+              pattern="[0-9]{11}" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)"
+              class="w-full bg-gray-50 dark:bg-slate-950/50 border-2 border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-100 rounded-xl px-3.5 py-2 text-sm font-medium focus:outline-none focus:border-[#10b981] focus:ring-2 focus:ring-emerald-500/20 transition-all">
+          </div>
+        </div>
+
+        <!-- 3. ASSIGNED LOCATION (BUILDING, FLOOR, ROOM) -->
+        <div class="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-500/30 rounded-2xl p-3.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <label
+              class="text-xs font-extrabold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"
+                class="text-emerald-500">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              <span>Assigned Deployment Area</span>
+            </label>
+            <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Building • Floor • Room</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div>
+              <span
+                class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Building</span>
+              <select id="editStaffBuilding"
+                class="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-100 rounded-xl px-2.5 py-2 text-xs font-semibold focus:outline-none focus:border-[#10b981] transition-all cursor-pointer">
+                <option value="all_buildings">All Buildings</option>
+              </select>
+            </div>
+            <div>
+              <span
+                class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Floor</span>
+              <select id="editStaffFloor"
+                class="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-100 rounded-xl px-2.5 py-2 text-xs font-semibold focus:outline-none focus:border-[#10b981] transition-all cursor-pointer">
+                <option value="all_floors">All Floors</option>
+              </select>
+            </div>
+            <div>
+              <span
+                class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Room</span>
+              <select id="editStaffRoom"
+                class="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-100 rounded-xl px-2.5 py-2 text-xs font-semibold focus:outline-none focus:border-[#10b981] transition-all cursor-pointer">
+                <option value="all_rooms">All Rooms</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. OPTIONAL PASSWORD -->
+        <div id="editStaffPasswords" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="editStaffPassword" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 uppercase tracking-wide">New Password</label>
+            <div class="relative">
+              <input type="password" id="editStaffPassword" autocomplete="new-password" placeholder="At least 8 characters" minlength="8"
+                class="w-full h-11 bg-gray-50 dark:bg-slate-950/50 border-2 border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-100 rounded-xl pl-3.5 pr-12 text-xs font-medium focus:outline-none focus:border-[#10b981] focus:ring-2 focus:ring-emerald-500/20 transition-all">
+              <button type="button" id="editStaffPasswordToggle" class="password-toggle-btn absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg text-slate-500 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-500 transition-colors border-0 bg-transparent cursor-pointer flex items-center justify-center" aria-label="Show new password" aria-controls="editStaffPassword" aria-pressed="false" title="Show Password">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+          </div>
+          <div>
+            <label for="editStaffPasswordConfirm" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 uppercase tracking-wide">Confirm Password</label>
+            <div class="relative">
+              <input type="password" id="editStaffPasswordConfirm" autocomplete="new-password" placeholder="Repeat new password" 
+                class="w-full h-11 bg-gray-50 dark:bg-slate-950/50 border-2 border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-100 rounded-xl pl-3.5 pr-12 text-xs font-medium focus:outline-none focus:border-[#10b981] focus:ring-2 focus:ring-emerald-500/20 transition-all">
+              <button type="button" id="editStaffPasswordConfirmToggle" class="password-toggle-btn absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg text-slate-500 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-500 transition-colors border-0 bg-transparent cursor-pointer flex items-center justify-center" aria-label="Show confirmation password" aria-controls="editStaffPasswordConfirm" aria-pressed="false" title="Show Password">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <p class="text-xs text-slate-600 dark:text-slate-400">Leave both blank to keep the current password.</p>
+        <p id="editStaffNotice" role="alert" aria-live="polite" class="hidden text-sm text-rose-700 dark:text-rose-300"></p>
+        <div class="flex gap-3 pt-2">
+          <button id="cancelEditStaffBtn"
+            class="flex-1 bg-white dark:bg-slate-900 border-2 border-gray-300 dark:border-white/10 text-gray-700 dark:text-gray-200 font-bold text-xs rounded-xl py-3 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer">Cancel</button>
+          <button id="saveEditStaffBtn"
+            class="eco-primary-action flex-1 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl py-3 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:-translate-y-0.5 transition-all border-0 cursor-pointer flex items-center justify-center gap-2">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: Registration Success Modal -->
+  <div id="staffSuccessModal"
+    class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[10000] p-4 sm:p-6 transition-all duration-300">
+    <div
+      class="relative bg-white dark:bg-[#0c1328] rounded-3xl w-full max-w-md shadow-2xl border-2 border-emerald-500/40 dark:border-emerald-500/50 overflow-hidden flex flex-col transform transition-all duration-300 animate-modal-pop">
+
+      <!-- Top Decorative Glow Banner (Vibrant Emerald in Light, Deep Forest in Dark) -->
+      <div
+        class="relative bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700 dark:from-[#064e3b] dark:via-[#0b291d] dark:to-[#041d14] px-6 pt-8 pb-6 flex flex-col items-center text-center overflow-hidden border-b border-emerald-500/20 shadow-md">
+        <!-- Radial ambient glow background -->
+        <div class="absolute -top-12 inset-x-0 h-32 bg-white/10 dark:bg-emerald-500/20 blur-2xl pointer-events-none">
+        </div>
+
+        <!-- Animated Checkmark Badge -->
+        <div class="relative mb-4 flex items-center justify-center">
+          <!-- Pulsing ambient rings -->
+          <div class="absolute w-20 h-20 rounded-full bg-white/20 dark:bg-emerald-500/20 animate-ping"></div>
+          <div class="absolute w-16 h-16 rounded-full bg-white/25 dark:bg-emerald-500/30 animate-pulse"></div>
+          <!-- Solid Emerald Icon Circle -->
+          <div
+            class="relative w-16 h-16 rounded-full bg-white/30 dark:bg-gradient-to-tr dark:from-emerald-500 dark:to-teal-400 p-0.5 shadow-lg shadow-emerald-950/20 flex items-center justify-center border-2 border-white/40 dark:border-transparent">
+            <div
+              class="w-full h-full rounded-full bg-white dark:bg-[#081a14] flex items-center justify-center shadow-inner">
+              <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#059669" stroke-width="3.5"
+                stroke-linecap="round" stroke-linejoin="round" class="animate-bounce-short dark:stroke-[#10b981]">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <span
+          class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-white/20 dark:bg-emerald-500/15 border border-white/30 dark:border-emerald-500/30 mb-2 shadow-sm"
+          style="color: var(--eco-accent) !important;">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-200 dark:bg-emerald-400 animate-pulse"></span> Registration
+          Successful
+        </span>
+        <h3 class="eco-primary-text text-xl font-extrabold tracking-tight" style="color: var(--eco-text) !important;">Staff Member Added</h3>
+        <p class="text-xs max-w-xs mt-1" style="color: var(--eco-secondary) !important;">New technician credentials
+          have been created and synced with the cloud database.</p>
+      </div>
+
+      <!-- Staff Preview Profile Card -->
+      <div class="p-6 space-y-4 bg-white dark:bg-[#0c1328]">
+        <div
+          class="bg-gray-50 dark:bg-slate-900/80 border border-gray-200 dark:border-emerald-500/20 rounded-2xl p-4 flex items-center gap-4 shadow-sm">
+          <!-- Avatar Initial Circle / Image -->
+          <div class="relative shrink-0">
+            <div
+              class="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-gradient-to-br dark:from-emerald-500/20 dark:to-teal-500/20 border-2 border-emerald-500/50 flex items-center justify-center shadow-md overflow-hidden">
+              <span id="successStaffAvatar" class="text-lg font-black text-emerald-700 dark:text-emerald-400">RS</span>
+              <img id="successStaffAvatarImg" class="w-full h-full object-cover hidden" alt="Staff Avatar">
+            </div>
+            <span
+              class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white dark:border-[#0c1328]"></span>
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-1">
+              <h4 id="successStaffName" class="eco-primary-text text-base font-black text-gray-900 dark:text-white truncate">Rey O.
+                Solamillo</h4>
+              <span
+                class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border border-emerald-500/30">Active</span>
+            </div>
+            <p id="successStaffEmail" class="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+              juan@ecotrack.local</p>
+            <div class="flex flex-wrap items-center gap-2 mt-2 text-[11px] text-gray-500 dark:text-gray-400">
+              <span id="successStaffPhone" class="flex items-center gap-1">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                  <path
+                    d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+                  </path>
+                </svg>
+                <span>09171234567</span>
+              </span>
+              <span>•</span>
+              <span id="successStaffRole" class="text-emerald-700 dark:text-emerald-400 font-bold"
+                style="color: var(--eco-accent) !important;">HVAC / Aircon Technician</span>
+            </div>
+            <!-- Assigned Location Chip in Success Modal -->
+            <div
+              class="mt-2 flex items-center gap-1.5 text-[11px] text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-950/60 py-1 px-2.5 rounded-lg border border-gray-200 dark:border-white/10 shadow-xs">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"
+                class="text-emerald-600 dark:text-emerald-500 shrink-0">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              <span id="successStaffLocation" class="truncate font-semibold text-gray-800 dark:text-gray-200">Server
+                Room A • 2nd Floor, Main Campus</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Details Strip: Generated ID & Timestamp -->
+        <div class="grid grid-cols-2 gap-3 text-xs">
+          <div class="bg-gray-50 dark:bg-slate-950/40 p-3 rounded-xl border border-gray-200 dark:border-white/5">
+            <span class="block text-[10px] uppercase tracking-wider font-bold text-gray-500 dark:text-gray-500">Staff
+              ID</span>
+            <span id="successStaffId"
+              class="font-mono font-bold text-gray-800 dark:text-cyan-400 text-[11px] truncate block mt-0.5">stf_...</span>
+          </div>
+          <div class="bg-gray-50 dark:bg-slate-950/40 p-3 rounded-xl border border-gray-200 dark:border-white/5">
+            <span
+              class="block text-[10px] uppercase tracking-wider font-bold text-gray-500 dark:text-gray-500">Registered</span>
+            <span id="successStaffTime"
+              class="font-bold text-gray-800 dark:text-gray-300 text-[11px] truncate block mt-0.5">Just now</span>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-2.5 pt-2">
+          <button id="successRegisterAnotherBtn"
+            class="sm:w-1/2 py-2.5 px-4 bg-white dark:bg-slate-900 border border-gray-300 dark:border-white/10 hover:border-emerald-500/40 text-gray-700 dark:text-gray-200 font-bold text-xs rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>Register Another</span>
+          </button>
+          <button id="successCloseBtn"
+            class="eco-primary-action sm:w-1/2 py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-1.5 border-0 cursor-pointer"
+            style="color: var(--eco-on-action) !important;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span style="color: var(--eco-on-action) !important;">Done</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOATING TOAST NOTIFICATION CONTAINER -->
+  <div id="ecoTrackToastContainer" class="fixed top-5 right-5 z-[11000] flex flex-col gap-2.5 pointer-events-none">
+  </div>
+
+  <!-- MODAL: Staff Detail View -->
+  <div id="staffDetailModal"
+    class="hidden fixed inset-0 bg-slate-950/70 flex items-center justify-center z-[9999] p-4 sm:p-6">
+    <div
+      class="bg-white dark:bg-[#0c1328] rounded-3xl w-full max-w-[420px] max-h-[90vh] shadow-2xl border-2 border-gray-200 dark:border-[#10b981]/40 overflow-hidden flex flex-col animate-modal-pop">
+      <!-- Top Section: Avatar + Name + Role -->
+      <div class="pt-6 pb-4 px-6 flex flex-col items-center">
+        <!-- Avatar with green ring & output image holder -->
+        <div class="relative mb-3" id="detailAvatarContainer">
+          <div
+            class="w-20 h-20 rounded-full border-[3px] border-[#10b981] flex items-center justify-center bg-emerald-50 dark:bg-emerald-950/40 overflow-hidden shadow-md relative">
+            <span id="detailAvatar" class="text-2xl font-bold text-[#10b981]">--</span>
+            <img id="detailAvatarImg" class="w-full h-full object-cover hidden" alt="Staff Avatar">
+          </div>
+          <!-- Online indicator dot -->
+          <div id="detailOnlineDot"
+            class="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-[#10b981] border-2 border-white dark:border-[#0c1328] z-10 shadow-sm">
+          </div>
+        </div>
+        <h4 id="detailName" class="eco-primary-text text-lg font-extrabold text-gray-800 dark:text-white text-center">-</h4>
+        <span id="detailRole"
+          class="mt-1 px-3 py-1 text-xs font-bold rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 text-center">Maintenance
+          Technician</span>
+      </div>
+
+      <!-- Green Divider -->
+      <div class="mx-6 h-[2px] bg-gradient-to-r from-transparent via-[#10b981]/60 to-transparent"></div>
+
+      <!-- Info Grid -->
+      <div class="px-6 pt-4 pb-4 space-y-3.5 overflow-y-auto flex-1 text-gray-800 dark:text-gray-100">
+        <!-- Row 1: Email & Phone -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-gray-50 dark:bg-slate-900/60 p-3 rounded-xl border border-gray-200 dark:border-white/5">
+            <span
+              class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Email
+              Address</span>
+            <span id="detailEmail"
+              class="block text-xs font-semibold text-gray-700 dark:text-gray-200 truncate">-</span>
+          </div>
+          <div class="bg-gray-50 dark:bg-slate-900/60 p-3 rounded-xl border border-gray-200 dark:border-white/5">
+            <span
+              class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Phone
+              Number</span>
+            <span id="detailPhone"
+              class="block text-xs font-semibold text-gray-700 dark:text-gray-200 truncate">-</span>
+          </div>
+        </div>
+
+        <!-- Row 2: Assigned Deployment Location (Building, Floor, Room) -->
+        <div class="bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-500/30 rounded-2xl p-3.5 space-y-2">
+          <div
+            class="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"
+              class="text-emerald-500 shrink-0">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            <span>Assigned Area</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div class="bg-white dark:bg-slate-900/80 p-2 rounded-xl border border-gray-200 dark:border-white/5">
+              <span class="block text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase">Building</span>
+              <span id="detailBuilding"
+                class="block text-[11px] font-bold text-gray-800 dark:text-gray-200 truncate mt-0.5">Main Campus</span>
+            </div>
+            <div class="bg-white dark:bg-slate-900/80 p-2 rounded-xl border border-gray-200 dark:border-white/5">
+              <span class="block text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase">Floor</span>
+              <span id="detailFloor"
+                class="block text-[11px] font-bold text-gray-800 dark:text-gray-200 truncate mt-0.5">2nd Floor</span>
+            </div>
+            <div class="bg-white dark:bg-slate-900/80 p-2 rounded-xl border border-gray-200 dark:border-white/5">
+              <span class="block text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase">Room</span>
+              <span id="detailRoom"
+                class="block text-[11px] font-bold text-emerald-600 dark:text-emerald-400 truncate mt-0.5">Server Room
+                A</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 3: Status & Registered -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-gray-50 dark:bg-slate-900/60 p-3 rounded-xl border border-gray-200 dark:border-white/5">
+            <span
+              class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Account
+              Status</span>
+            <span id="detailStatus" class="block text-xs font-bold text-[#10b981]">-</span>
+          </div>
+          <div class="bg-gray-50 dark:bg-slate-900/60 p-3 rounded-xl border border-gray-200 dark:border-white/5">
+            <span
+              class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Registered
+              At</span>
+            <span id="detailCreated" class="block text-xs font-semibold text-gray-700 dark:text-gray-200">-</span>
+          </div>
+        </div>
+
+        <!-- Row 4: Last Active -->
+        <div class="bg-gray-50 dark:bg-slate-900/60 p-3 rounded-xl border border-gray-200 dark:border-white/5">
+          <span
+            class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Last
+            Active</span>
+          <span id="detailLastActive" class="block text-xs font-semibold text-gray-700 dark:text-gray-200">-</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="px-6 pb-5 pt-1 flex gap-2.5">
+        <button id="closeDetailModalBtn2"
+          class="flex-1 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-extrabold text-xs uppercase tracking-wider rounded-xl py-3 transition-all border border-gray-300 dark:border-white/10 cursor-pointer">Close</button>
+        <button id="detailEditStaffBtn"
+          class="flex-1 bg-[#10b981] hover:bg-[#059669] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl py-3 shadow-lg shadow-emerald-500/20 transition-all duration-200 hover:scale-[1.01] active:scale-95 border-0 cursor-pointer flex items-center justify-center gap-1.5">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          <span>Edit Staff</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ARCHIVE STAFF (SOFT DELETE) -->
+  <div id="archiveStaffModal"
+    class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[9999] p-4 sm:p-6 transition-all duration-300">
+    <div
+      class="bg-white dark:bg-[#0c1328] rounded-3xl w-full max-w-md shadow-2xl border-2 border-amber-500/50 overflow-hidden flex flex-col animate-modal-pop">
+      <!-- Modal Header -->
+      <div
+        class="relative bg-gradient-to-br from-[#78350f] via-[#451a03] to-[#1c0f06] px-6 py-4 flex items-center justify-between border-b border-amber-500/30 overflow-hidden shrink-0">
+        <div class="absolute -top-8 -left-8 w-24 h-24 bg-amber-500/20 rounded-full blur-xl pointer-events-none"></div>
+        <div class="relative flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-md">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="21 8 21 21 3 21 3 8"></polyline>
+              <rect x="1" y="3" width="22" height="5"></rect>
+              <line x1="10" y1="12" x2="14" y2="12"></line>
+            </svg>
+          </div>
+          <div>
+            <h3 class="eco-primary-text text-base font-extrabold text-white uppercase tracking-wider" style="color: var(--eco-text) !important;">
+              Archive Staff Account</h3>
+            <p class="text-xs text-amber-200/90" style="color: var(--eco-secondary) !important;">Soft delete with
+              reason & historical preservation</p>
+          </div>
+        </div>
+        <button id="closeArchiveModalBtn" onclick="closeArchiveModal()"
+          class="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-all border-0 cursor-pointer">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 space-y-4 text-gray-800 dark:text-gray-100">
+        <!-- Target Profile Summary Box -->
+        <div
+          class="bg-amber-50/50 dark:bg-slate-900/80 border border-amber-500/30 rounded-2xl p-3.5 flex items-center gap-3.5">
+          <div
+            class="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 flex items-center justify-center font-black text-sm shrink-0 overflow-hidden relative shadow-sm">
+            <span id="archiveTargetAvatar">--</span>
+            <img id="archiveTargetAvatarImg" class="w-full h-full object-cover hidden" alt="Target Staff Photo">
+          </div>
+          <div class="min-w-0 flex-1">
+            <h4 id="archiveTargetName" class="eco-primary-text font-extrabold text-sm text-gray-900 dark:text-white truncate">-</h4>
+            <p id="archiveTargetRole" class="text-xs text-amber-600 dark:text-amber-400 font-semibold truncate">-</p>
+            <p id="archiveTargetLocation" class="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5">-</p>
+          </div>
+        </div>
+
+        <!-- Reason Selection -->
+        <div>
+          <label
+            class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide flex items-center justify-between">
+            <span>Reason for Archival / Deletion</span>
+            <span class="text-[10px] text-amber-500 font-bold lowercase">required</span>
+          </label>
+          <select id="archiveStaffReason"
+            class="w-full bg-gray-50 dark:bg-slate-950/50 border-2 border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-100 rounded-xl px-3.5 py-2.5 text-xs font-semibold focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all cursor-pointer">
+            <option value="Contract Ended / Resignation">Contract Ended / Resignation</option>
+            <option value="Transferred to Another Department / Branch">Transferred to Another Department / Branch
+            </option>
+            <option value="Administrative / Compliance Deactivation">Administrative / Compliance Deactivation</option>
+            <option value="Extended Leave of Absence">Extended Leave of Absence</option>
+            <option value="Duplicate or Erroneous Entry">Duplicate or Erroneous Entry</option>
+            <option value="Other / Special Reason">Other / Special Reason (Specify below)</option>
+          </select>
+        </div>
+
+        <!-- Detailed Notes / Remarks -->
+        <div>
+          <label
+            class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">Archival
+            Remarks & Notes</label>
+          <textarea id="archiveStaffNotes" rows="3"
+            placeholder="Provide additional details or documentation about this archival..."
+            class="w-full bg-gray-50 dark:bg-slate-950/50 border-2 border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-100 rounded-xl p-3 text-xs font-medium focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all resize-none placeholder-gray-400"></textarea>
+        </div>
+
+        <div
+          class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-[11px] text-amber-700 dark:text-amber-300 flex items-start gap-2">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+            class="shrink-0 mt-0.5 text-amber-500">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>This account will be preserved in the <strong>Archived Accounts</strong> tab. All historical activity is
+            retained and can be restored at any time.</span>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex gap-3 pt-1">
+          <button id="cancelArchiveBtn" onclick="closeArchiveModal()"
+            class="flex-1 bg-white dark:bg-slate-900 border-2 border-gray-300 dark:border-white/10 text-gray-700 dark:text-gray-200 font-bold text-xs rounded-xl py-2.5 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer">Cancel</button>
+          <button id="confirmArchiveBtn" onclick="confirmArchiveStaff()"
+            class="flex-1 bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-500 hover:to-rose-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl py-2.5 shadow-lg shadow-amber-500/25 transition-all border-0 cursor-pointer flex items-center justify-center gap-2">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="21 8 21 21 3 21 3 8"></polyline>
+              <rect x="1" y="3" width="22" height="5"></rect>
+              <line x1="10" y1="12" x2="14" y2="12"></line>
+            </svg>
+            Confirm Archive
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ARCHIVED RECORD DETAILS (VIEW ALL DETAILS + REASON) -->
+  <div id="archivedRecordDetailModal"
+    class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[9999] p-4 sm:p-6 transition-all duration-300">
+    <div
+      class="bg-white dark:bg-[#0c1328] rounded-3xl w-full max-w-[460px] max-h-[90vh] shadow-2xl border-2 border-amber-500/40 overflow-hidden flex flex-col animate-modal-pop">
+      <!-- Top Section -->
+      <div
+        class="relative bg-gradient-to-br from-[#78350f] via-[#451a03] to-[#1c0f06] p-6 flex flex-col items-center text-center border-b border-amber-500/30 shrink-0">
+        <button id="closeArchivedDetailBtn" onclick="closeArchivedDetailModal()"
+          class="absolute top-4 right-4 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-all border-0 cursor-pointer">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+
+        <div
+          class="w-16 h-16 rounded-2xl border-[3px] border-amber-500 flex items-center justify-center bg-amber-950/40 mb-2.5 shadow-lg overflow-hidden">
+          <span id="archivedDetailAvatar" class="text-2xl font-black text-amber-400">--</span>
+          <img id="archivedDetailAvatarImg" class="w-full h-full object-cover hidden" alt="Archived Staff Avatar">
+        </div>
+        <h4 id="archivedDetailName" class="eco-primary-text text-lg font-black text-white" style="color: var(--eco-text) !important;">-</h4>
+        <span id="archivedDetailRole"
+          class="mt-1 px-3 py-0.5 text-xs font-bold rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">-</span>
+        <span
+          class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40">
+          <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> Archived / Soft-Deleted
+        </span>
+      </div>
+
+      <!-- Info Body -->
+      <div class="p-6 space-y-3.5 overflow-y-auto flex-1 text-gray-800 dark:text-gray-100">
+        <!-- ARCHIVAL DOSSIER BOX -->
+        <div class="bg-amber-50/70 dark:bg-amber-950/30 border-2 border-amber-500/40 rounded-2xl p-3.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 dark:text-amber-400">Reason
+              for Archival</span>
+            <span id="archivedDetailDate" class="text-[10px] font-bold text-gray-500 dark:text-gray-400">-</span>
+          </div>
+          <p id="archivedDetailReason" class="text-xs font-black text-amber-900 dark:text-amber-200">-</p>
+          <div class="pt-1">
+            <span
+              class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Archival
+              Notes / Remarks</span>
+            <p id="archivedDetailNotes"
+              class="text-xs text-gray-700 dark:text-gray-300 italic bg-white dark:bg-slate-950/60 p-2.5 rounded-xl border border-amber-500/20">
+              No remarks provided.</p>
+          </div>
+        </div>
+
+        <!-- Contact & ID -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-gray-50 dark:bg-slate-900/60 p-3 rounded-xl border border-gray-200 dark:border-white/5">
+            <span
+              class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Email</span>
+            <span id="archivedDetailEmail"
+              class="block text-xs font-semibold text-gray-700 dark:text-gray-200 truncate">-</span>
+          </div>
+          <div class="bg-gray-50 dark:bg-slate-900/60 p-3 rounded-xl border border-gray-200 dark:border-white/5">
+            <span
+              class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Phone</span>
+            <span id="archivedDetailPhone"
+              class="block text-xs font-semibold text-gray-700 dark:text-gray-200 truncate">-</span>
+          </div>
+        </div>
+
+        <!-- Assigned Location -->
+        <div
+          class="bg-gray-50 dark:bg-slate-900/60 p-3 rounded-xl border border-gray-200 dark:border-white/5 flex items-center justify-between">
+          <div>
+            <span
+              class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Previous
+              Assignment</span>
+            <span id="archivedDetailLocation" class="block text-xs font-bold text-gray-800 dark:text-gray-200">-</span>
+          </div>
+          <div class="text-right">
+            <span
+              class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Staff
+              ID</span>
+            <span id="archivedDetailId"
+              class="block text-xs font-mono font-bold text-amber-600 dark:text-amber-400">-</span>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-3 pt-2">
+          <button id="archivedDetailCloseBtn" onclick="closeArchivedDetailModal()"
+            class="flex-1 bg-white dark:bg-slate-900 border-2 border-gray-300 dark:border-white/10 text-gray-700 dark:text-gray-200 font-bold text-xs rounded-xl py-2.5 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer">Close</button>
+          <button id="archivedDetailRestoreBtn" onclick="restoreStaff(_currentDetailStaffId)"
+            class="eco-primary-action flex-1 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl py-2.5 shadow-lg shadow-emerald-500/25 transition-all border-0 cursor-pointer flex items-center justify-center gap-1.5">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              <path d="M3 3v5h5"></path>
+            </svg>
+            Restore Account
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Shared & Staff Scripts -->
+  <script src="./js/shared.js"></script>
+  <script src="./js/global-notifications.js"></script>
+  <script src="./js/staff.js?v=5"></script>
+
+  <!-- UNIFIED MAINTENANCE MANAGEMENT CONTROLLER -->
+  <script>
+    function initUnifiedMaintenanceController() {
+      const tabReportsBtn = document.getElementById('tabReportsBtn');
+      const tabStaffBtn = document.getElementById('tabStaffBtn');
+      const tabArchivedBtn = document.getElementById('tabArchivedBtn');
+      const tabReportsContent = document.getElementById('tabReportsContent');
+      const tabStaffContent = document.getElementById('tabStaffContent');
+      const tabArchivedContent = document.getElementById('tabArchivedContent');
+      const staffHeaderStats = document.getElementById('staffHeaderStats');
+
+      const INACTIVE_BTN_CLASS = 'px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 bg-white dark:bg-slate-900 text-gray-700 dark:text-gray-300 border-[2px] border-gray-200 dark:border-white/10 hover:border-[#10b981] hover:text-[#10b981] dark:hover:text-[#64f0b6] flex items-center gap-2 cursor-pointer shadow-xs';
+      const ACTIVE_EMERALD_CLASS = 'active-tab px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 bg-[#10b981] hover:bg-emerald-600 text-white border-[2px] border-[#10b981] flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-500/25';
+      const ACTIVE_AMBER_CLASS = 'active-tab px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 bg-amber-500 hover:bg-amber-600 text-white border-[2px] border-amber-500 flex items-center gap-2 cursor-pointer shadow-md shadow-amber-500/25';
+
+      const ARCHIVED_BADGE_INACTIVE_CLASS = 'ml-1 px-2.5 py-0.5 text-xs font-black rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-600/50 shadow-xs transition-colors';
+      const ARCHIVED_BADGE_ACTIVE_CLASS = 'ml-1 px-2.5 py-0.5 text-xs font-black rounded-full bg-white dark:bg-slate-950 text-amber-900 dark:text-amber-300 border border-white/40 dark:border-amber-400/40 shadow-sm transition-colors';
+
+      // Tab switcher
+      function switchTab(activeTab) {
+        // Reset all buttons
+        [tabReportsBtn, tabStaffBtn, tabArchivedBtn].forEach(btn => {
+          if (!btn) return;
+          btn.className = INACTIVE_BTN_CLASS;
+          btn.style.color = '';
+          btn.style.backgroundColor = '';
+          const svg = btn.querySelector('svg');
+          if (svg) svg.style.stroke = '';
+          const textSpan = btn.querySelector('.tab-btn-text');
+          if (textSpan) textSpan.style.color = '';
+        });
+
+        const badgeEl = document.getElementById('archivedBadgeCount');
+        if (badgeEl) badgeEl.className = ARCHIVED_BADGE_INACTIVE_CLASS;
+
+        // Hide all contents
+        if (tabReportsContent) tabReportsContent.classList.add('hidden');
+        if (tabStaffContent) tabStaffContent.classList.add('hidden');
+        if (tabArchivedContent) tabArchivedContent.classList.add('hidden');
+
+        const headerMaintBtn = document.getElementById('btnHeaderMaintenance');
+        const headerMaintBtnText = headerMaintBtn?.querySelector('span');
+
+        if (activeTab === 'reports') {
+          if (tabReportsBtn) {
+            tabReportsBtn.className = ACTIVE_EMERALD_CLASS;
+            tabReportsBtn.style.color = 'var(--eco-accent)';
+            tabReportsBtn.style.backgroundColor = 'var(--eco-selected)';
+            const svg = tabReportsBtn.querySelector('svg');
+            if (svg) { svg.style.setProperty('stroke', 'var(--eco-accent)', 'important'); svg.style.color = 'var(--eco-accent)'; }
+            const textSpan = tabReportsBtn.querySelector('.tab-btn-text');
+            if (textSpan) textSpan.style.color = 'var(--eco-accent)';
+          }
+          if (headerMaintBtn) {
+            headerMaintBtn.onclick = () => window.EcoTrackMaintenance?.openCreateModal?.();
+            headerMaintBtn.setAttribute('title', 'Create Maintenance Report');
+          }
+          if (headerMaintBtnText) headerMaintBtnText.textContent = 'Create Report';
+          if (tabReportsContent) tabReportsContent.classList.remove('hidden');
+          renderPageReports();
+        } else if (activeTab === 'staff') {
+          if (tabStaffBtn) {
+            tabStaffBtn.className = ACTIVE_EMERALD_CLASS;
+            tabStaffBtn.style.color = 'var(--eco-accent)';
+            tabStaffBtn.style.backgroundColor = 'var(--eco-selected)';
+            const svg = tabStaffBtn.querySelector('svg');
+            if (svg) { svg.style.setProperty('stroke', 'var(--eco-accent)', 'important'); svg.style.color = 'var(--eco-accent)'; }
+            const textSpan = tabStaffBtn.querySelector('.tab-btn-text');
+            if (textSpan) textSpan.style.color = 'var(--eco-accent)';
+          }
+          if (headerMaintBtn) {
+            headerMaintBtn.onclick = () => typeof openRegisterModal === 'function' ? openRegisterModal() : document.getElementById('openRegisterModalBtn')?.click();
+            headerMaintBtn.setAttribute('title', 'Register New Maintenance Staff');
+          }
+          if (headerMaintBtnText) headerMaintBtnText.textContent = 'Register Staff';
+          if (tabStaffContent) tabStaffContent.classList.remove('hidden');
+          if (typeof renderTable === 'function') renderTable();
+        } else if (activeTab === 'archived') {
+          if (tabArchivedBtn) {
+            tabArchivedBtn.className = ACTIVE_AMBER_CLASS;
+            tabArchivedBtn.style.color = 'var(--eco-accent)';
+            tabArchivedBtn.style.backgroundColor = 'var(--eco-selected)';
+            const svg = tabArchivedBtn.querySelector('svg');
+            if (svg) { svg.style.setProperty('stroke', 'var(--eco-accent)', 'important'); svg.style.color = 'var(--eco-accent)'; }
+            const textSpan = tabArchivedBtn.querySelector('.tab-btn-text');
+            if (textSpan) textSpan.style.color = 'var(--eco-accent)';
+          }
+          if (headerMaintBtn) {
+            headerMaintBtn.onclick = () => typeof openRegisterModal === 'function' ? openRegisterModal() : document.getElementById('openRegisterModalBtn')?.click();
+            headerMaintBtn.setAttribute('title', 'Register New Maintenance Staff');
+          }
+          if (headerMaintBtnText) headerMaintBtnText.textContent = 'Register Staff';
+          if (badgeEl) badgeEl.className = ARCHIVED_BADGE_ACTIVE_CLASS;
+          if (tabArchivedContent) tabArchivedContent.classList.remove('hidden');
+          if (typeof renderArchivedTable === 'function') renderArchivedTable();
+        }
+
+        if (typeof updateStats === 'function') updateStats();
+      }
+
+      tabReportsBtn?.addEventListener('click', () => switchTab('reports'));
+      tabStaffBtn?.addEventListener('click', () => switchTab('staff'));
+      tabArchivedBtn?.addEventListener('click', () => switchTab('archived'));
+
+      window.switchMaintenanceTab = switchTab;
+
+      // Page Report State
+      let pageSearch = '';
+      let pageStatus = 'all';
+      let pagePriority = 'all';
+      let pageAircon = 'all';
+      let pageStaff = 'all';
+      let pageReportCurrentPage = 1;
+      const PAGE_REPORT_PER_PAGE = 20;
+
+      // Set of selected report IDs for batch actions & Selection Mode flag
+      let isReportSelectMode = false;
+      const selectedReportIds = new Set();
+      let pendingDeleteReportIds = [];
+
+      // Dynamic Report Filter Population & Controls
+      const airconFilter = document.getElementById('pageReportAirconFilter');
+      const staffFilter = document.getElementById('pageReportStaffFilter');
+      const searchInput = document.getElementById('pageReportSearch');
+      const statusSelect = document.getElementById('pageReportStatusFilter');
+      const prioritySelect = document.getElementById('pageReportPriorityFilter');
+
+      // Interactive Clickable Status Filter Helper
+      function setPageStatusFilter(status) {
+        if (pageStatus === status) {
+          pageStatus = 'all';
+        } else {
+          pageStatus = status;
+        }
+        if (statusSelect) statusSelect.value = pageStatus;
+        pageReportCurrentPage = 1;
+        renderPageReports();
+      }
+      window.setPageStatusFilter = setPageStatusFilter;
+
+      function reportEquipmentDisplay(report) {
+        return window.EcoTrackMaintenance?.resolveReportEquipment?.(report) || {
+          controllerName:'Controller unavailable',airconName:'Aircon name unavailable',airconType:'Type unavailable',
+          location:report.room_name || report.room || 'Location unavailable'
+        };
+      }
+
+      function reportDisplayText(value) {
+        return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+      }
+
+      function updateReportFilters() {
+        const deviceLabel=window.EcoTrackMaintenance?.deviceLabel?.() || 'AC Controller';
+        if(document.getElementById('maintenanceReportsHeading'))document.getElementById('maintenanceReportsHeading').textContent=deviceLabel+' Maintenance Reports';
+        if(document.getElementById('maintenanceDeviceColumn'))document.getElementById('maintenanceDeviceColumn').textContent=deviceLabel.toUpperCase();
+        const reports = window.EcoTrackMaintenance?.getReports() || [];
+        const aircons = window.EcoTrackMaintenance?.getAircons() || [];
+        const staffList = JSON.parse(localStorage.getItem('ecoTrack_staff') || '[]');
+
+        // Keep report identifiers as filter values; show controller names without room suffixes.
+        const acMap = new Map();
+        if (Array.isArray(aircons)) {
+          aircons.forEach(a => {
+            if (a && (a.id || a.model)) {
+              const id = String(a.id || a.model).trim();
+              const equipment=reportEquipmentDisplay({aircon_id:a.airconId || a.nodeId || a.id,airconId:a.id});
+              acMap.set(id.toLowerCase(), { id: id, label: equipment.controllerName });
+            }
+          });
+        }
+        reports.forEach(r => {
+          const id = String(r.airconId || r.aircon_name || '').trim();
+          if (id && !acMap.has(id.toLowerCase())) {
+            acMap.set(id.toLowerCase(), { id: id, label: reportEquipmentDisplay(r).controllerName });
+          }
+        });
+
+        if (airconFilter) {
+          const currentVal = airconFilter.value;
+          const sortedAircons = Array.from(acMap.values()).sort((a, b) =>
+            a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: 'base' })
+          );
+          airconFilter.replaceChildren(new Option('All '+deviceLabel+'s', 'all'),
+            ...sortedAircons.map(a => new Option(a.label || a.id, a.id)));
+          if (currentVal && Array.from(acMap.values()).some(a => a.id.toLowerCase() === currentVal.toLowerCase())) {
+            airconFilter.value = currentVal;
+          } else {
+            airconFilter.value = 'all';
+            pageAircon = 'all';
+          }
+        }
+
+        // 2. Gather all unique staff from both staff list AND reports
+        const staffMap = new Map();
+        if (Array.isArray(staffList)) {
+          staffList.forEach(s => {
+            if (s && s.name && !s.isArchived && s.status !== 'Archived' && !s.is_archived) {
+              const name = String(s.name).trim();
+              staffMap.set(name.toLowerCase(), name);
+            }
+          });
+        }
+        reports.forEach(r => {
+          const name = String(r.staffName || r.staff_name || '').trim();
+          if (name && name !== 'Unassigned' && !staffMap.has(name.toLowerCase())) {
+            staffMap.set(name.toLowerCase(), name);
+          }
+        });
+
+        if (staffFilter) {
+          const currentVal = staffFilter.value;
+          const sortedStaff = Array.from(staffMap.values()).sort((a, b) =>
+            a.localeCompare(b, undefined, { sensitivity: 'base' })
+          );
+          staffFilter.replaceChildren(new Option('All Staff', 'all'),
+            ...sortedStaff.map(name => new Option(name, name)));
+          if (currentVal && Array.from(staffMap.values()).some(s => s.toLowerCase() === currentVal.toLowerCase())) {
+            staffFilter.value = currentVal;
+          } else {
+            staffFilter.value = 'all';
+            pageStaff = 'all';
+          }
+        }
+      }
+      window.updateReportFilters = updateReportFilters;
+
+      // Event listeners for external and background data synchronization
+      window.addEventListener('ecotrack:aircons-updated', () => { updateReportFilters(); renderPageReports(); });
+      window.addEventListener('ecotrack:staff-updated', () => { updateReportFilters(); renderPageReports(); });
+      window.addEventListener('ecotrack:reports-updated', () => { updateReportFilters(); renderPageReports(); });
+
+      updateReportFilters();
+
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          pageSearch = e.target.value;
+          pageReportCurrentPage = 1;
+          const clearBtn = document.getElementById('btnPageReportClearSearch');
+          if (clearBtn) clearBtn.classList.toggle('hidden', !pageSearch.trim());
+          renderPageReports();
+        });
+      }
+      if (statusSelect) statusSelect.addEventListener('change', (e) => { pageStatus = e.target.value; pageReportCurrentPage = 1; renderPageReports(); });
+      if (prioritySelect) prioritySelect.addEventListener('change', (e) => { pagePriority = e.target.value; pageReportCurrentPage = 1; renderPageReports(); });
+      if (airconFilter) airconFilter.addEventListener('change', (e) => { pageAircon = e.target.value; pageReportCurrentPage = 1; renderPageReports(); });
+      if (staffFilter) staffFilter.addEventListener('change', (e) => { pageStaff = e.target.value; pageReportCurrentPage = 1; renderPageReports(); });
+
+      document.getElementById('btnPageReportClearSearch')?.addEventListener('click', () => {
+        if (searchInput) searchInput.value = '';
+        pageSearch = '';
+        pageReportCurrentPage = 1;
+        document.getElementById('btnPageReportClearSearch')?.classList.add('hidden');
+        renderPageReports();
+      });
+
+      // Filter Reset Helper: Expose to window so newly added tasks / reports instantly surface on row 1
+      function resetPageReportFilters(clearAll = false) {
+        pageReportCurrentPage = 1;
+        if (clearAll) {
+          pageStatus = 'all';
+          pagePriority = 'all';
+          pageAircon = 'all';
+          pageStaff = 'all';
+          pageSearch = '';
+          if (statusSelect) statusSelect.value = 'all';
+          if (prioritySelect) prioritySelect.value = 'all';
+          if (airconFilter) airconFilter.value = 'all';
+          if (staffFilter) staffFilter.value = 'all';
+          if (searchInput) searchInput.value = '';
+          const clearBtn = document.getElementById('btnPageReportClearSearch');
+          if (clearBtn) clearBtn.classList.add('hidden');
+        }
+        renderPageReports();
+      }
+      window.resetPageReportFilters = resetPageReportFilters;
+
+      document.getElementById('pageReportPrevBtn')?.addEventListener('click', () => {
+        if (pageReportCurrentPage > 1) {
+          pageReportCurrentPage--;
+          renderPageReports();
+        }
+      });
+
+      document.getElementById('pageReportNextBtn')?.addEventListener('click', () => {
+        pageReportCurrentPage++;
+        renderPageReports();
+      });
+
+      // Get canonical effective status for reports, ensuring 100% complete tasks transition to For Verification
+      function getEffectiveReportStatus(r) {
+        if (!r) return 'Pending';
+        const isRepTask = (String(r.id || '').trim().toUpperCase().startsWith('REP') || r.type === 'Corrective Repair' || r.type === 'Repair Task' || String(r.type || '').trim().toLowerCase().includes('corrective') || String(r.type || '').trim().toLowerCase().includes('repair'));
+
+        const allReports = window.EcoTrackMaintenance?.getReports() || [];
+
+        // Check if there are active child repairs still in progress for this report
+        const hasUnfinishedRepair = !isRepTask && Array.isArray(r.tasks) && r.tasks.some(t => {
+          if (t.status === 'Needs Repair' && !t.repaired) return true;
+          if (t.status === 'Under Repair' && !t.repaired) return true;
+          if (t.linkedRepairId) {
+            const childRep = allReports.find(cr => String(cr.id || '').toLowerCase() === String(t.linkedRepairId).toLowerCase());
+            if (childRep && !['completed', 'verified'].includes(String(childRep.status || '').toLowerCase())) return true;
+          }
+          return false;
+        });
+
+        if (hasUnfinishedRepair) {
+          const hasActiveRepair = r.tasks.some(t => {
+            if (t.status === 'Under Repair' && !t.repaired) return true;
+            if (t.linkedRepairId) {
+              const childRep = allReports.find(cr => String(cr.id || '').toLowerCase() === String(t.linkedRepairId).toLowerCase());
+              if (childRep && !['completed', 'verified'].includes(String(childRep.status || '').toLowerCase())) return true;
+            }
+            return false;
+          });
+          return hasActiveRepair ? 'Under Repair' : 'Needs Repair';
+        }
+
+        const totalTasks = Array.isArray(r.tasks) ? r.tasks.length : 0;
+        const completedTasks = totalTasks > 0 ? r.tasks.filter(t => {
+          if (!t) return false;
+          if (t.status === 'Completed' || t.repaired) {
+            if (t.linkedRepairId) {
+              const childRep = allReports.find(cr => String(cr.id || '').toLowerCase() === String(t.linkedRepairId).toLowerCase());
+              if (childRep && !['completed', 'verified'].includes(String(childRep.status || '').toLowerCase())) return false;
+            }
+            return true;
+          }
+          return false;
+        }).length : 0;
+        const is100PercentDone = totalTasks > 0 && completedTasks === totalTasks;
+        const isCompletedOrVerified = r.status === 'Verified' || r.status === 'Closed' || r.status === 'Completed' || (is100PercentDone && (r.verified || r.status === 'Completed'));
+        const isNeedsAdminVerification = !isCompletedOrVerified && (r.status === 'For Verification' || r.status === 'Awaiting Admin Verification' || is100PercentDone);
+
+        if (isRepTask && (r.status === 'Needs Repair' || r.status === 'Under Repair' || r.status === 'Pending' || r.status === 'Assigned')) {
+          return 'In Progress';
+        }
+        if (isCompletedOrVerified) return (r.status === 'Closed') ? 'Closed' : 'Completed';
+        if (isNeedsAdminVerification) return 'For Verification';
+        if (r.status === 'Needs Repair') return isRepTask ? 'In Progress' : 'Needs Repair';
+        if (r.status === 'Under Repair' || (r.status && r.status.toLowerCase() === 'under repair')) return isRepTask ? 'In Progress' : 'Under Repair';
+        if (r.status === 'Completed' && !is100PercentDone) {
+          const hasRepair = r.tasks && r.tasks.some(t => t.status === 'Needs Repair' && !t.repaired);
+          const hasUnderRepair = r.tasks && r.tasks.some(t => t.status === 'Under Repair' && !t.repaired);
+          return isRepTask ? 'In Progress' : (hasRepair ? 'Needs Repair' : (hasUnderRepair ? 'Under Repair' : 'In Progress'));
+        }
+        if (r.status === 'In Progress') return 'In Progress';
+        return r.status || 'Pending';
+      }
+
+      // Filter reports helper
+      function getFilteredReports() {
+        const reports = window.EcoTrackMaintenance?.getReports() || [];
+        // Deduplicate reports by unique ID to prevent duplicate table rows
+        const uniqueReports = [];
+        const seenIds = new Set();
+        reports.forEach(r => {
+          if (!r) return;
+          const k = String(r.id || (r.airconId ? `${r.airconId}_${r.type || 'maint'}` : '')).toUpperCase().trim();
+          if (k && !seenIds.has(k)) {
+            seenIds.add(k);
+            uniqueReports.push(r);
+          }
+        });
+        let list = [...uniqueReports];
+        // Robust timestamp helper for sorting
+        function getReportTimestamp(r) {
+          if (!r) return 0;
+          if (r.updated && !isNaN(new Date(r.updated).getTime())) return new Date(r.updated).getTime();
+          if (r.updated_at && !isNaN(new Date(r.updated_at).getTime())) return new Date(r.updated_at).getTime();
+          if (r.created && !isNaN(new Date(r.created).getTime())) return new Date(r.created).getTime();
+          if (r.created_at && !isNaN(new Date(r.created_at).getTime())) return new Date(r.created_at).getTime();
+          if (r.createdDate && !isNaN(new Date(r.createdDate).getTime())) return new Date(r.createdDate).getTime();
+          if (r.created_date && !isNaN(new Date(r.created_date).getTime())) return new Date(r.created_date).getTime();
+          return 0;
+        }
+
+        list.sort((a, b) => {
+          const timeA = getReportTimestamp(a);
+          const timeB = getReportTimestamp(b);
+          if (timeA !== timeB) return timeB - timeA;
+          return String(b.id || '').localeCompare(String(a.id || ''), undefined, { numeric: true });
+        });
+        if (pageStatus !== 'all') {
+          const targetStatus = pageStatus.toLowerCase().trim();
+          list = list.filter(r => {
+            const eff = String(getEffectiveReportStatus(r) || '').toLowerCase().trim();
+            const raw = String(r.status || '').toLowerCase().trim();
+            if (targetStatus === 'completed') {
+              return eff === 'completed' || eff === 'verified' || eff === 'closed' || raw === 'completed' || raw === 'verified' || raw === 'closed';
+            } else if (targetStatus === 'for verification') {
+              return eff === 'for verification' || raw === 'for verification' || raw === 'awaiting admin verification';
+            }  else if (targetStatus === 'under repair') {
+              return eff === 'under repair' || raw === 'under repair';
+            } else if (targetStatus === 'needs repair') {
+              return eff === 'needs repair' || raw === 'needs repair';
+            } else if (targetStatus === 'in progress') {
+              return eff === 'in progress' || raw === 'in progress';
+            } else if (targetStatus === 'pending') {
+              return eff === 'pending' || raw === 'pending';
+            } else if (targetStatus === 'assigned') {
+              return eff === 'assigned' || raw === 'assigned';
+            } else {
+              return eff === targetStatus || raw === targetStatus;
+            }
+          });
+        }
+        if (pagePriority !== 'all') {
+          const targetPriority = pagePriority.toLowerCase().trim();
+          list = list.filter(r => String(r.priority || '').toLowerCase().trim() === targetPriority);
+        }
+        if (pageAircon !== 'all') {
+          const targetAc = pageAircon.toLowerCase().trim();
+          list = list.filter(r => {
+            const rAcId = String(r.airconId || '').toLowerCase().trim();
+            const rAcName = String(r.aircon_name || '').toLowerCase().trim();
+            const rDbId = String(r.aircon_id || '').toLowerCase().trim();
+            return rAcId === targetAc || rAcName === targetAc || rDbId === targetAc;
+          });
+        }
+        if (pageStaff !== 'all') {
+          const targetStaff = pageStaff.toLowerCase().trim();
+          list = list.filter(r => {
+            const rStaffName = String(r.staffName || '').toLowerCase().trim();
+            const rStaff_Name = String(r.staff_name || '').toLowerCase().trim();
+            const rStaffId = String(r.staff_id || '').toLowerCase().trim();
+            return rStaffName === targetStaff || rStaff_Name === targetStaff || rStaffId === targetStaff;
+          });
+        }
+        if (pageSearch.trim()) {
+          const q = pageSearch.toLowerCase().trim();
+          list = list.filter(r =>
+            Object.values(reportEquipmentDisplay(r)).some(value => String(value || '').toLowerCase().includes(q)) ||
+            String(r.id || '').toLowerCase().includes(q) ||
+            String(r.airconId || r.aircon_name || '').toLowerCase().includes(q) ||
+            String(r.airconType || r.aircon_type || '').toLowerCase().includes(q) ||
+            String(r.room || r.room_name || '').toLowerCase().includes(q) ||
+            String(r.type || '').toLowerCase().includes(q) ||
+            String(r.staffName || r.staff_name || '').toLowerCase().includes(q) ||
+            String(r.status || '').toLowerCase().includes(q)
+          );
+        }
+        return list;
+      }
+
+      // Update Select All Buttons & Count Indicators
+      function updateBulkSelectControls(filteredList) {
+        const selectAllBtnText = document.getElementById('btnSelectAllReportsText');
+        const headerCheckboxTh = document.getElementById('pageReportHeaderSelectTh');
+        const headerCheckbox = document.getElementById('pageReportHeaderSelectAll');
+        const deleteSelectedBtn = document.getElementById('btnDeleteSelectedReports');
+        const cancelSelectBtn = document.getElementById('btnCancelSelectReports');
+        const countSpan = document.getElementById('selectedReportCount');
+
+        const totalFiltered = filteredList.length;
+        const selectedInFiltered = filteredList.filter(r => selectedReportIds.has(r.id)).length;
+        const totalSelected = selectedReportIds.size;
+
+        if (countSpan) countSpan.textContent = totalSelected;
+
+        if (isReportSelectMode) {
+          if (headerCheckboxTh) headerCheckboxTh.style.display = 'table-cell';
+          if (cancelSelectBtn) cancelSelectBtn.style.display = 'inline-flex';
+          if (deleteSelectedBtn) {
+            deleteSelectedBtn.style.display = totalSelected > 0 ? 'inline-flex' : 'none';
+          }
+
+          const isAllSelected = totalFiltered > 0 && selectedInFiltered === totalFiltered;
+          const isSomeSelected = selectedInFiltered > 0 && !isAllSelected;
+
+          if (headerCheckbox) {
+            headerCheckbox.checked = isAllSelected;
+            headerCheckbox.indeterminate = isSomeSelected;
+          }
+
+          if (selectAllBtnText) {
+            if (isAllSelected) {
+              selectAllBtnText.textContent = 'Deselect All';
+            } else {
+              selectAllBtnText.textContent = totalSelected > 0 ? `Select All (${totalFiltered})` : 'Select All';
+            }
+          }
+        } else {
+          if (headerCheckboxTh) headerCheckboxTh.style.display = 'none';
+          if (cancelSelectBtn) cancelSelectBtn.style.display = 'none';
+          if (deleteSelectedBtn) deleteSelectedBtn.style.display = 'none';
+          if (selectAllBtnText) selectAllBtnText.textContent = 'Select All';
+          if (headerCheckbox) {
+            headerCheckbox.checked = false;
+            headerCheckbox.indeterminate = false;
+          }
+        }
+      }
+
+      // Handler for clicking the main Select All / Select to Delete button
+      function handleSelectAllButtonClick() {
+        const filtered = getFilteredReports();
+        if (!isReportSelectMode) {
+          // Enter selection mode and select all currently filtered items
+          isReportSelectMode = true;
+          selectedReportIds.clear();
+          filtered.forEach(r => selectedReportIds.add(r.id));
+        } else {
+          // Already in selection mode: toggle between selecting all and deselecting all
+          const isAllSelected = filtered.length > 0 && filtered.every(r => selectedReportIds.has(r.id));
+          if (isAllSelected) {
+            filtered.forEach(r => selectedReportIds.delete(r.id));
+          } else {
+            filtered.forEach(r => selectedReportIds.add(r.id));
+          }
+        }
+        renderPageReports();
+      }
+
+      // Handler for canceling / exiting selection mode
+      function handleCancelSelectionMode() {
+        isReportSelectMode = false;
+        selectedReportIds.clear();
+        renderPageReports();
+      }
+
+      // Toggle individual report selection (allow deselecting 1 by 1)
+      function toggleSelectReport(id, isChecked) {
+        if (!id) return;
+        if (isChecked) {
+          selectedReportIds.add(id);
+        } else {
+          selectedReportIds.delete(id);
+        }
+        renderPageReports();
+      }
+
+      // Master header checkbox change handler
+      function handleHeaderSelectAllChange() {
+        const filtered = getFilteredReports();
+        if (filtered.length === 0) return;
+
+        const isAllSelected = filtered.every(r => selectedReportIds.has(r.id));
+        if (isAllSelected) {
+          filtered.forEach(r => selectedReportIds.delete(r.id));
+        } else {
+          filtered.forEach(r => selectedReportIds.add(r.id));
+        }
+        renderPageReports();
+      }
+
+      // Render Page Reports Table & Stats
+      function renderPageReports() {
+        window.renderPageReports = renderPageReports;
+        updateReportFilters();
+        const reports = window.EcoTrackMaintenance?.getReports() || [];
+
+        // Calculate stats
+        const stats = {
+          total: reports.length,
+          pending: 0,
+          inProgress: 0,
+          forVerification: 0,
+          completed: 0,
+          needsRepair: 0,
+          underRepair: 0
+        };
+        reports.forEach(r => {
+          const eff = getEffectiveReportStatus(r);
+          if (eff === 'Completed' || eff === 'Verified' || eff === 'Closed') stats.completed++;
+          else if (eff === 'For Verification') stats.forVerification++;
+          else if (eff === 'Needs Repair') stats.needsRepair++;
+          else if (eff === 'Under Repair') stats.underRepair++;
+          else if (eff === 'In Progress') stats.inProgress++;
+          else stats.pending++;
+        });
+
+        const statsContainer = document.getElementById('pageMaintStats');
+        if (statsContainer) {
+          const isAll = pageStatus === 'all';
+          const isPending = pageStatus.toLowerCase() === 'pending';
+          const isInProgress = pageStatus.toLowerCase() === 'in progress';
+          const isForVerification = pageStatus.toLowerCase() === 'for verification';
+          const isCompleted = pageStatus.toLowerCase() === 'completed';
+          const isNeedsRepair = pageStatus.toLowerCase() === 'needs repair';
+          const isUnderRepair = pageStatus.toLowerCase() === 'under repair';
+
+          statsContainer.innerHTML = `
+            <div data-eco-summary="true" onclick="window.setPageStatusFilter('all')" class="eco-summary-card bg-white dark:bg-[#0c1328] border-2 ${isAll ? 'eco-summary-selected' : ''} rounded-xl p-3 shadow-sm flex flex-col justify-between cursor-pointer hover:border-[#10b981] transition-all" title="Click to show all reports">
+              <span class="eco-summary-label text-[11px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Total</span>
+              <div class="flex items-baseline justify-between mt-1">
+                <span class="eco-stat-value text-2xl font-black text-[#18392B] dark:text-cyan-400">${stats.total}</span>
+                <span class="eco-status-neutral text-[10px] text-emerald-700 dark:text-emerald-400 font-extrabold bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-400/30">All</span>
+              </div>
+            </div>
+            <div data-eco-summary="true" onclick="window.setPageStatusFilter('Pending')" class="eco-summary-card bg-white dark:bg-slate-900 border-2 ${isPending ? 'eco-summary-selected' : ''} rounded-xl p-3 shadow-sm flex flex-col justify-between cursor-pointer hover:border-amber-500 transition-all" title="Click to filter by Pending">
+              <span class="eco-summary-label text-[11px] font-extrabold text-amber-800 dark:text-amber-400 uppercase tracking-wider">Pending</span>
+              <div class="flex items-baseline justify-between mt-1">
+                <span class="eco-stat-value text-2xl font-black text-amber-600 dark:text-amber-400">${stats.pending}</span>
+                <span class="eco-status-neutral text-[10px] text-amber-800 dark:text-amber-300 font-extrabold bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-400/30">Queued</span>
+              </div>
+            </div>
+            <div data-eco-summary="true" onclick="window.setPageStatusFilter('In Progress')" class="eco-summary-card bg-white dark:bg-slate-900 border-2 ${isInProgress ? 'eco-summary-selected' : ''} rounded-xl p-3 shadow-sm flex flex-col justify-between cursor-pointer hover:border-cyan-500 transition-all" title="Click to filter by In Progress">
+              <span class="eco-summary-label text-[11px] font-extrabold text-cyan-800 dark:text-cyan-400 uppercase tracking-wider">In Progress</span>
+              <div class="flex items-baseline justify-between mt-1">
+                <span class="eco-stat-value text-2xl font-black text-cyan-600 dark:text-cyan-400">${stats.inProgress}</span>
+                <span class="eco-status-info text-[10px] text-cyan-800 dark:text-cyan-300 font-extrabold bg-cyan-50 dark:bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-400/30">Active</span>
+              </div>
+            </div>
+            <div data-eco-summary="true" onclick="window.setPageStatusFilter('For Verification')" class="eco-summary-card bg-white dark:bg-slate-900 border-2 ${isForVerification ? 'eco-summary-selected' : ''} rounded-xl p-3 shadow-sm flex flex-col justify-between cursor-pointer hover:border-purple-500 transition-all" title="Click to filter by For Verification">
+              <span class="eco-summary-label text-[11px] font-extrabold text-purple-800 dark:text-purple-400 uppercase tracking-wider">For Verification</span>
+              <div class="flex items-baseline justify-between mt-1">
+                <span class="eco-stat-value text-2xl font-black text-purple-600 dark:text-purple-400">${stats.forVerification}</span>
+                <span class="eco-status-warning text-[10px] text-purple-800 dark:text-purple-300 font-extrabold bg-purple-50 dark:bg-purple-950/60 px-1.5 py-0.5 rounded border border-purple-400/30">Review</span>
+              </div>
+            </div>
+            
+            <div data-eco-summary="true" onclick="window.setPageStatusFilter('Completed')" class="eco-summary-card bg-white dark:bg-slate-900 border-2 ${isCompleted ? 'eco-summary-selected' : ''} rounded-xl p-3 shadow-sm flex flex-col justify-between cursor-pointer hover:border-[#10b981] transition-all" title="Click to filter by Completed">
+              <span class="eco-summary-label text-[11px] font-extrabold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider">Completed</span>
+              <div class="flex items-baseline justify-between mt-1">
+                <span class="eco-stat-value text-2xl font-black text-[#10b981]">${stats.completed}</span>
+                <span class="eco-status-success text-[10px] text-emerald-800 dark:text-emerald-300 font-extrabold bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-400/30">Done</span>
+              </div>
+            </div>
+            <div data-eco-summary="true" onclick="window.setPageStatusFilter('Needs Repair')" class="eco-summary-card bg-white dark:bg-slate-900 border-2 ${isNeedsRepair ? 'eco-summary-selected' : ''} rounded-xl p-3 shadow-sm flex flex-col justify-between cursor-pointer hover:border-rose-500 transition-all" title="Click to filter by Needs Repair">
+              <span class="eco-summary-label text-[11px] font-extrabold text-rose-800 dark:text-rose-400 uppercase tracking-wider">Needs Repair</span>
+              <div class="flex items-baseline justify-between mt-1">
+                <span class="eco-stat-value text-2xl font-black text-rose-600 dark:text-rose-400">${stats.needsRepair}</span>
+                <span class="eco-status-danger text-[10px] text-rose-800 dark:text-rose-300 font-extrabold bg-rose-50 dark:bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-400/30">Alert</span>
+              </div>
+            </div>
+            <div data-eco-summary="true" onclick="window.setPageStatusFilter('Under Repair')" class="eco-summary-card bg-white dark:bg-slate-900 border-2 ${isUnderRepair ? 'eco-summary-selected' : ''} rounded-xl p-3 shadow-sm flex flex-col justify-between cursor-pointer hover:border-cyan-500 transition-all" title="Click to filter by Under Repair">
+              <span class="eco-summary-label text-[11px] font-extrabold text-cyan-800 dark:text-cyan-400 uppercase tracking-wider">Under Repair</span>
+              <div class="flex items-baseline justify-between mt-1">
+                <span class="eco-stat-value text-2xl font-black text-cyan-600 dark:text-cyan-400">${stats.underRepair}</span>
+                <span class="eco-status-info text-[10px] text-cyan-800 dark:text-cyan-300 font-extrabold bg-cyan-50 dark:bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-400/30">Fixing</span>
+              </div>
+            </div>
+          `;
+        }
+
+        // Filter list
+        const list = getFilteredReports();
+        const totalFiltered = list.length;
+        const totalPages = Math.ceil(totalFiltered / PAGE_REPORT_PER_PAGE) || 1;
+        if (pageReportCurrentPage > totalPages) pageReportCurrentPage = totalPages;
+        if (pageReportCurrentPage < 1) pageReportCurrentPage = 1;
+        const startIndex = (pageReportCurrentPage - 1) * PAGE_REPORT_PER_PAGE;
+        const endIndex = Math.min(startIndex + PAGE_REPORT_PER_PAGE, totalFiltered);
+        const paginatedList = list.slice(startIndex, endIndex);
+
+        const tbody = document.getElementById('pageReportTableBody');
+        const badge = document.getElementById('pageReportCountBadge');
+        const info = document.getElementById('pageReportCountInfo');
+        const pagesEl = document.getElementById('pageReportPaginationPages');
+        const prevBtn = document.getElementById('pageReportPrevBtn');
+        const nextBtn = document.getElementById('pageReportNextBtn');
+
+        if (badge) badge.textContent = `${totalFiltered} records`;
+        if (info) {
+          info.textContent = totalFiltered > 0
+            ? `Showing ${startIndex + 1}–${endIndex} of ${totalFiltered} reports`
+            : `Showing 0 of 0 reports`;
+        }
+        if (pagesEl) pagesEl.textContent = `Page ${pageReportCurrentPage} of ${totalPages}`;
+        if (prevBtn) prevBtn.disabled = pageReportCurrentPage <= 1;
+        if (nextBtn) nextBtn.disabled = pageReportCurrentPage >= totalPages;
+
+        updateBulkSelectControls(list);
+
+        if (!tbody) return;
+
+        function formatReportUpdate(r) {
+          const raw = r?.updated || r?.updated_at || r?.updatedAt || r?.created || r?.created_date || r?.createdDate;
+          if (!raw) return 'Not updated yet';
+          const parsed = new Date(raw);
+          if (isNaN(parsed.getTime())) return String(raw);
+          return parsed.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        }
+
+        function getStaffAvatar(name) {
+          if (!name) return '';
+          try {
+            if (typeof staffList !== 'undefined' && Array.isArray(staffList)) {
+              const match = staffList.find(s => s && s.name && s.name.trim().toLowerCase() === name.trim().toLowerCase());
+              if (match) {
+                const av = match.avatar || match.photo_url || match.avatar_url || match.image || match.photo;
+                if (av && av !== 'custom' && av !== 'default') {
+                  if (typeof resolveAvatarUrl === 'function') return resolveAvatarUrl(match);
+                  return av;
+                }
+              }
+            }
+            if (window.EcoTrackMaintenance && typeof window.EcoTrackMaintenance.resolveStaffAvatar === 'function') {
+              const res = window.EcoTrackMaintenance.resolveStaffAvatar(name);
+              if (res) return res;
+            }
+            const stored = localStorage.getItem('ecoTrack_staff');
+            if (stored) {
+              const arr = JSON.parse(stored);
+              if (Array.isArray(arr)) {
+                const match = arr.find(s => s && s.name && s.name.trim().toLowerCase() === name.trim().toLowerCase());
+                if (match) {
+                  const av = match.avatar || match.photo_url || match.avatar_url || match.image || match.photo;
+                  if (av && av !== 'custom' && av !== 'default') {
+                    if (typeof resolveAvatarUrl === 'function') return resolveAvatarUrl(match);
+                    return av;
+                  }
+                }
+              }
+            }
+          } catch (e) { }
+          return '';
+        }
+
+        if (paginatedList.length === 0) {
+          const colSpan = isReportSelectMode ? 12 : 11;
+          const isZeroTotal = !reports || reports.length === 0;
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="${colSpan}" class="px-6 py-16 text-center">
+                <div class="flex flex-col items-center justify-center max-w-sm mx-auto">
+                  <div class="w-16 h-16 rounded-3xl bg-teal-500/10 dark:bg-teal-500/15 text-teal-600 dark:text-teal-400 border border-teal-500/30 flex items-center justify-center mb-4 shadow-lg shadow-teal-500/10">
+                    <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                      <polyline points="14 2 14 8 20 8"/>
+                      <line x1="16" y1="13" x2="8" y2="13"/>
+                      <line x1="16" y1="17" x2="8" y2="17"/>
+                      <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                  </div>
+                  <h4 class="eco-primary-text font-bold text-base text-slate-800 dark:text-white mb-1">
+                    ${isZeroTotal ? 'No Maintenance Reports Filed' : 'No Reports Match Your Filters'}
+                  </h4>
+                  <p class="text-xs text-slate-500 dark:text-gray-400 mb-5 leading-relaxed">
+                    ${isZeroTotal 
+                      ? 'Assign maintenance and repair tasks to technicians.' 
+                      : 'No maintenance records match your search and filters.'}
+                  </p>
+                  <div class="flex items-center gap-2.5">
+                    <button type="button" onclick="window.EcoTrackMaintenance?.openCreateModal?.()" class="eco-primary-action px-5 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/20 inline-flex items-center gap-2 transition-all cursor-pointer">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      Create Report
+                    </button>
+                    ${!isZeroTotal ? `
+                      <button type="button" onclick="window.resetPageReportFilters(true)" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-gray-300 border border-slate-200 dark:border-white/10 text-xs font-bold transition-all cursor-pointer">
+                        Clear Filters
+                      </button>
+                    ` : ''}
+                  </div>
+                </div>
+              </td>
+            </tr>
+          `;
+        } else {
+          tbody.innerHTML = paginatedList.map(r => {
+            const isSelected = selectedReportIds.has(r.id);
+            const totalTasks = r.tasks ? r.tasks.length : 0;
+            const completedTasks = r.tasks ? r.tasks.filter(t => t.status === 'Completed' || t.repaired).length : 0;
+            const pct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+            const effectiveStatus = getEffectiveReportStatus(r);
+
+            let statusBadge = `<span class="eco-status-neutral inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-300 border border-gray-300 dark:border-slate-700 whitespace-nowrap shadow-sm"><span class="w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-400 shrink-0"></span>${effectiveStatus}</span>`;
+
+            if (effectiveStatus === 'In Progress') {
+              statusBadge = `<span class="eco-status-info inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full bg-cyan-100 dark:bg-cyan-950/80 text-cyan-900 dark:text-cyan-300 border border-cyan-400 dark:border-cyan-400/60 whitespace-nowrap shadow-sm"><span class="w-1.5 h-1.5 rounded-full bg-cyan-600 dark:bg-cyan-400 animate-pulse shrink-0"></span>In Progress</span>`;
+            } else if (effectiveStatus === 'Pending') {
+              statusBadge = `<span class="eco-status-neutral inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border border-amber-400 dark:border-amber-400/60 whitespace-nowrap shadow-sm"><span class="w-1.5 h-1.5 rounded-full bg-amber-600 dark:bg-amber-400 shrink-0"></span>Pending</span>`;
+            } else if (effectiveStatus === 'For Verification') {
+              statusBadge = `<span class="eco-status-warning inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full bg-purple-100 dark:bg-purple-950/80 text-purple-900 dark:text-purple-200 border border-purple-400 dark:border-purple-400/60 whitespace-nowrap shadow-sm"><span class="w-1.5 h-1.5 rounded-full bg-purple-600 dark:bg-purple-400 animate-pulse shrink-0"></span>For Verification</span>`;
+            } else if (effectiveStatus === 'Completed' || effectiveStatus === 'Verified') {
+              statusBadge = `<span class="eco-status-success inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-900 dark:text-emerald-300 border border-emerald-400 dark:border-emerald-400/60 whitespace-nowrap shadow-sm"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400 shrink-0"></span>Completed</span>`;
+            } else if (effectiveStatus === 'Needs Repair') {
+              statusBadge = `<span class="eco-status-danger inline-flex items-center gap-1.5 px-3 py-1 text-xs font-extrabold rounded-full bg-rose-100 dark:bg-rose-950/90 text-rose-900 dark:text-rose-300 border border-rose-400 dark:border-rose-500/70 whitespace-nowrap shadow-sm"><span class="w-1.5 h-1.5 rounded-full bg-rose-600 dark:bg-rose-500 shrink-0"></span>Needs Repair</span>`;
+            } else if (effectiveStatus === 'Under Repair') {
+              statusBadge = `<span class="eco-status-info inline-flex items-center gap-1.5 px-3 py-1 text-xs font-extrabold rounded-full bg-cyan-100 dark:bg-cyan-950/90 text-cyan-900 dark:text-cyan-300 border border-cyan-400 dark:border-cyan-400/70 whitespace-nowrap shadow-sm"><span class="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse shrink-0"></span>Under Repair</span>`;
+            } else if (effectiveStatus === 'Assigned') {
+              statusBadge = `<span class="eco-status-info inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full bg-sky-100 dark:bg-sky-950/80 text-sky-900 dark:text-sky-300 border border-sky-400 dark:border-sky-400/60 whitespace-nowrap shadow-sm"><span class="w-1.5 h-1.5 rounded-full bg-sky-600 dark:bg-sky-400 shrink-0"></span>Assigned</span>`;
+            }
+
+            const rawPriority = (r.priority || 'Medium').toString();
+            let pClean = 'Medium';
+            if (/critical/i.test(rawPriority)) pClean = 'Critical';
+            else if (/high/i.test(rawPriority)) pClean = 'High';
+            else if (/low/i.test(rawPriority)) pClean = 'Low';
+            else if (/medium/i.test(rawPriority)) pClean = 'Medium';
+
+            let priorityBadge = '';
+            if (pClean === 'Critical') {
+              priorityBadge = `<span class="eco-status-danger inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border border-rose-400/50 dark:border-rose-500/50 whitespace-nowrap"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.6)] shrink-0"></span>Critical</span>`;
+            } else if (pClean === 'High') {
+              priorityBadge = `<span class="eco-status-danger inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-400/50 dark:border-amber-500/50 whitespace-nowrap"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>High</span>`;
+            } else if (pClean === 'Medium') {
+              priorityBadge = `<span class="eco-status-warning inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-50 dark:bg-sky-950/70 text-sky-800 dark:text-sky-300 border border-sky-400/50 dark:border-sky-500/50 whitespace-nowrap"><span class="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0"></span>Medium</span>`;
+            } else {
+              priorityBadge = `<span class="eco-status-info inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-400/50 dark:border-emerald-500/50 whitespace-nowrap"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>Low</span>`;
+            }
+
+            const staffDisplayName = r.staffName || r.staff_name || 'Unassigned';
+            const avatarUrl = getStaffAvatar(staffDisplayName);
+            const initials = staffDisplayName !== 'Unassigned' ? staffDisplayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'UN';
+            const equipment=reportEquipmentDisplay(r);
+            const airconTypeDisplay = reportDisplayText(equipment.airconType);
+            const lastUpdated = formatReportUpdate(r);
+
+            const checkboxCell = isReportSelectMode ? `
+              <td class="px-4 py-3.5 text-center whitespace-nowrap" onclick="event.stopPropagation()">
+                <input type="checkbox" class="report-row-select-cb w-4 h-4 rounded-full border-2 border-emerald-400 dark:border-emerald-500 text-[#10b981] accent-[#10b981] focus:ring-0 cursor-pointer shadow-sm transition-transform active:scale-90"
+                  data-id="${r.id}" ${isSelected ? 'checked' : ''} onchange="toggleSelectReport('${r.id}', this.checked)">
+              </td>
+            ` : '';
+
+            return `
+              <tr class="hover:bg-gray-50/80 dark:hover:bg-slate-900 transition-colors cursor-pointer ${isSelected && isReportSelectMode ? 'bg-emerald-500/10 dark:bg-emerald-950/40' : ''}"
+                onclick="${isReportSelectMode ? `toggleSelectReport('${r.id}', !${isSelected})` : `window.EcoTrackMaintenance && window.EcoTrackMaintenance.openDetailModal('${r.id}')`}"
+                style="cursor: pointer;">
+                ${checkboxCell}
+                <td class="px-5 py-3.5 font-mono font-bold text-[#18392B] dark:text-cyan-400 whitespace-nowrap">${r.id}</td>
+                <td class="px-5 py-3.5 font-bold text-gray-800 dark:text-white whitespace-nowrap"><span data-report-controller-name class="block">${reportDisplayText(equipment.controllerName)}</span><span data-report-aircon-name class="block mt-1 text-[11px] font-medium text-gray-500 dark:text-gray-400">Aircon: ${reportDisplayText(equipment.airconName)}</span></td>
+                <td class="px-5 py-3.5 text-gray-700 dark:text-gray-200 font-medium whitespace-nowrap">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 dark:bg-slate-800/80 text-gray-700 dark:text-gray-300 text-[11px] font-semibold border border-gray-200 dark:border-white/10">
+                    ${airconTypeDisplay}
+                  </span>
+                </td>
+                <td class="px-5 py-3.5 text-gray-600 dark:text-gray-300 whitespace-nowrap">${reportDisplayText(equipment.location)}</td>
+                <td class="px-5 py-3.5 text-gray-700 dark:text-gray-200 font-medium whitespace-nowrap">${r.type || 'Preventive Maintenance'}</td>
+                <td class="px-5 py-3.5 whitespace-nowrap">${priorityBadge}</td>
+                <td class="px-5 py-3.5 whitespace-nowrap">
+                  <div class="flex items-center gap-2.5">
+                    ${avatarUrl ? `
+                      <div class="w-7 h-7 rounded-full overflow-hidden border border-[#10b981]/50 bg-emerald-100 dark:bg-emerald-950/80 flex items-center justify-center font-bold text-[10px] text-[#10b981] shrink-0 shadow-sm">
+                        <img src="${avatarUrl}" alt="${staffDisplayName}" class="w-full h-full object-cover" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                        <span style="display:none;" class="w-full h-full flex items-center justify-center font-bold text-[10px] text-[#10b981]">${initials}</span>
+                      </div>
+                    ` : `
+                      <div class="w-7 h-7 rounded-full border border-[#10b981]/40 bg-emerald-100 dark:bg-emerald-950/60 text-[#10b981] flex items-center justify-center font-bold text-[10px] shrink-0 shadow-sm">
+                        ${initials}
+                      </div>
+                    `}
+                    <span class="font-medium text-gray-800 dark:text-gray-200">${staffDisplayName}</span>
+                  </div>
+                </td>
+                <td class="px-5 py-3.5 whitespace-nowrap">
+                  <div class="flex items-center gap-2 w-28">
+                    <div class="flex-1 bg-gray-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+                      <div class="h-full bg-gradient-to-r from-[#10b981] to-cyan-400 rounded-full" style="width: ${pct}%"></div>
+                    </div>
+                    <span class="text-[11px] font-mono text-gray-500 shrink-0">${completedTasks}/${totalTasks}</span>
+                  </div>
+                </td>
+                <td class="px-5 py-3.5 whitespace-nowrap">${statusBadge}</td>
+                <td class="px-5 py-3.5 whitespace-nowrap text-[11px] font-mono text-gray-500 dark:text-gray-400">${lastUpdated}</td>
+                <td class="px-5 py-3.5 text-center whitespace-nowrap">
+                  <div class="flex items-center justify-center gap-2" onclick="event.stopPropagation()">
+                    <!-- View Button (Icon Only) -->
+                    <button class="w-8 h-8 rounded-lg bg-cyan-50 dark:bg-cyan-950/80 hover:bg-cyan-500 hover:text-slate-950 dark:hover:bg-cyan-400 dark:hover:text-slate-950 text-cyan-700 dark:text-cyan-300 border border-cyan-400/60 dark:border-cyan-400/80 flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-110 active:scale-95"
+                      title="View Details"
+                      aria-label="View Details"
+                      onclick="window.EcoTrackMaintenance && window.EcoTrackMaintenance.openDetailModal('${r.id}')">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    </button>
+                    <!-- Edit Button (Icon Only) -->
+                    <button class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/80 hover:bg-emerald-500 hover:text-slate-950 dark:hover:bg-[#10b981] dark:hover:text-slate-950 text-emerald-700 dark:text-emerald-300 border border-emerald-400/60 dark:border-emerald-400/80 flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-110 active:scale-95"
+                      title="Edit Report"
+                      aria-label="Edit Report"
+                      onclick="window.EcoTrackMaintenance && window.EcoTrackMaintenance.openEditModal('${r.id}')">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                      </svg>
+                    </button>
+                    <!-- Delete Button (Icon Only - High Visibility) -->
+                    <button class="w-8 h-8 rounded-lg bg-rose-100/80 dark:bg-rose-950 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 dark:hover:text-white text-rose-700 dark:text-rose-300 border-2 border-rose-400 dark:border-rose-500/80 flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-110 active:scale-95"
+                      title="Delete Report"
+                      aria-label="Delete Report"
+                      onclick="deleteReportPrompt('${r.id}')">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+      }
+
+      async function deleteReportPrompt(reportId) {
+        if (!reportId) return;
+        pendingDeleteReportIds = [reportId];
+        const reports = window.EcoTrackMaintenance?.getReports() || [];
+        const r = reports.find(item => item.id === reportId);
+        const equipment=r ? reportEquipmentDisplay(r) : null;
+        const name = r ? `${r.id} (${equipment.controllerName} - ${equipment.location})` : reportId;
+
+        const modal = document.getElementById('deleteReportModal');
+        if (modal) {
+          const titleEl = document.getElementById('deleteReportModalTitle');
+          const subEl = document.getElementById('deleteReportModalSubtitle');
+          const msgEl = document.getElementById('deleteReportModalMessage');
+          const confirmBtn = document.getElementById('confirmDeleteReportBtn');
+
+          if (titleEl) titleEl.textContent = 'Delete Report';
+          if (subEl) subEl.textContent = 'Permanently delete activity';
+          if (msgEl) msgEl.innerHTML = `Are you sure you want to delete maintenance report <span id="deleteReportTargetName" class="text-rose-600 dark:text-rose-400 font-bold">"${reportDisplayText(name)}"</span>? This action cannot be undone.`;
+          if (confirmBtn) confirmBtn.textContent = 'Delete Report';
+
+          modal.classList.remove('hidden');
+          modal.style.display = 'flex';
+          return;
+        }
+
+        if (await window.EcoModal.confirm({ title: 'Delete Report',
+          message: `Are you sure you want to delete maintenance report "${name}"?`,
+          confirmText: 'Delete Report', danger: true })) {
+          confirmDeleteReportAction();
+        }
+      }
+
+      async function deleteSelectedReportsPrompt() {
+        if (selectedReportIds.size === 0) return;
+        pendingDeleteReportIds = Array.from(selectedReportIds);
+        const count = pendingDeleteReportIds.length;
+
+        const modal = document.getElementById('deleteReportModal');
+        if (modal) {
+          const titleEl = document.getElementById('deleteReportModalTitle');
+          const subEl = document.getElementById('deleteReportModalSubtitle');
+          const msgEl = document.getElementById('deleteReportModalMessage');
+          const confirmBtn = document.getElementById('confirmDeleteReportBtn');
+
+          if (titleEl) titleEl.textContent = 'Delete Selected Reports';
+          if (subEl) subEl.textContent = `Permanently delete ${count} maintenance report${count > 1 ? 's' : ''}`;
+          if (msgEl) msgEl.innerHTML = `Are you sure you want to delete <span class="text-rose-600 dark:text-rose-400 font-bold">${count} selected maintenance report${count > 1 ? 's' : ''}</span>? This action cannot be undone.`;
+          if (confirmBtn) confirmBtn.textContent = `Delete (${count}) Reports`;
+
+          modal.classList.remove('hidden');
+          modal.style.display = 'flex';
+          return;
+        }
+
+        if (await window.EcoModal.confirm({ title: 'Delete Selected Reports',
+          message: `Are you sure you want to delete ${count} selected maintenance reports?`,
+          confirmText: `Delete (${count}) Reports`, danger: true })) {
+          confirmDeleteReportAction();
+        }
+      }
+
+      function closeDeleteReportModal() {
+        const modal = document.getElementById('deleteReportModal');
+        if (modal) {
+          modal.classList.add('hidden');
+          modal.style.display = 'none';
+        }
+        pendingDeleteReportIds = [];
+      }
+
+      async function confirmDeleteReportAction() {
+        const idsToDelete = Array.from(pendingDeleteReportIds || [])
+          .filter(id => typeof id === 'string' || (typeof id === 'number' && Number.isFinite(id)))
+          .map(id => String(id).trim()).filter(Boolean);
+        if (idsToDelete.length > 0) {
+          closeDeleteReportModal();
+          let deleted = false;
+          if (window.EcoTrackMaintenance) {
+            if (typeof window.EcoTrackMaintenance.deleteReports === 'function') {
+              deleted = await window.EcoTrackMaintenance.deleteReports(idsToDelete);
+            } else if (typeof window.EcoTrackMaintenance.deleteReport === 'function') {
+              deleted = true;
+              for (const id of idsToDelete) {
+                if (await window.EcoTrackMaintenance.deleteReport(id) === false) {
+                  deleted = false;
+                  break;
+                }
+              }
+            }
+          }
+          if (!deleted) return;
+          idsToDelete.forEach(id => selectedReportIds.delete(id));
+          if (selectedReportIds.size === 0) {
+            isReportSelectMode = false;
+          }
+          renderPageReports();
+        }
+      }
+
+      // Bulk action listeners
+      document.getElementById('btnSelectAllReports')?.addEventListener('click', handleSelectAllButtonClick);
+      document.getElementById('pageReportHeaderSelectAll')?.addEventListener('change', handleHeaderSelectAllChange);
+      document.getElementById('btnDeleteSelectedReports')?.addEventListener('click', deleteSelectedReportsPrompt);
+      document.getElementById('btnCancelSelectReports')?.addEventListener('click', handleCancelSelectionMode);
+
+      window.deleteReportPrompt = deleteReportPrompt;
+      window.deleteSelectedReportsPrompt = deleteSelectedReportsPrompt;
+      window.toggleSelectReport = toggleSelectReport;
+      window.handleSelectAllButtonClick = handleSelectAllButtonClick;
+      window.handleCancelSelectionMode = handleCancelSelectionMode;
+      window.closeDeleteReportModal = closeDeleteReportModal;
+      window.confirmDeleteReportAction = confirmDeleteReportAction;
+
+      // Show initial skeleton loaders only if truly ZERO local cached reports exist
+      const existingReports = window.EcoTrackMaintenance?.getReports() || [];
+      if (window.EcoTrackSkeletons && existingReports.length === 0) {
+        window.EcoTrackSkeletons.renderTableSkeleton('pageReportTableBody', {
+          rows: 6,
+          cols: 11,
+          colWidths: ['w-24', 'w-28', 'w-28', 'w-24', 'w-20', 'w-32', 'w-24', 'w-20', 'w-24', 'w-28', 'w-20']
+        });
+        window.EcoTrackSkeletons.renderStatsSkeleton('pageMaintStats', { count: 7 });
+      }
+
+      // Initial render & global export
+      window.renderPageReports = renderPageReports;
+      renderPageReports();
+
+      // Listen for updates from modal actions & multi-tab storage
+      window.addEventListener('storage', (e) => {
+        if (!e.key || e.key === 'ecoTrack_maintenance_reports') {
+          if (window.EcoTrackMaintenance && typeof window.EcoTrackMaintenance.invalidateCache === 'function') {
+            window.EcoTrackMaintenance.invalidateCache();
+          }
+          renderPageReports();
+        }
+      });
+
+      // Listen for real-time and Supabase background sync events
+      window.addEventListener('ecotrack:reports-updated', () => {
+        if (window.EcoTrackMaintenance && typeof window.EcoTrackMaintenance.invalidateCache === 'function') {
+          window.EcoTrackMaintenance.invalidateCache();
+        }
+        pageReportCurrentPage = 1;
+        renderPageReports();
+      });
+
+      // Window focus and visibility listeners for instant UI synchronization
+      window.addEventListener('focus', () => {
+        if (window.EcoTrackMaintenance && typeof window.EcoTrackMaintenance.invalidateCache === 'function') {
+          window.EcoTrackMaintenance.invalidateCache();
+        }
+        renderPageReports();
+      });
+
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+          if (window.EcoTrackMaintenance && typeof window.EcoTrackMaintenance.invalidateCache === 'function') {
+            window.EcoTrackMaintenance.invalidateCache();
+          }
+          renderPageReports();
+        }
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initUnifiedMaintenanceController);
+    } else {
+      initUnifiedMaintenanceController();
+    }
+  </script>
+
+  <!-- MODAL: Delete Maintenance Report Confirmation -->
+  <div id="deleteReportModal"
+    class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[99999] items-center justify-center p-4 transition-all duration-200"
+    onclick="if(event.target.id==='deleteReportModal') closeDeleteReportModal();">
+    <div
+      class="bg-white dark:bg-[#0c1328] border-2 border-rose-500/50 rounded-2xl p-6 w-full max-w-sm shadow-2xl transform transition-all duration-200 scale-100"
+      onclick="event.stopPropagation();">
+      <div class="flex items-center gap-3 mb-4">
+        <div
+          class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-500 flex items-center justify-center shrink-0 border border-rose-500/30">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            <line x1="10" y1="11" x2="10" y2="17"></line>
+            <line x1="14" y1="11" x2="14" y2="17"></line>
+          </svg>
+        </div>
+        <div>
+          <h3 id="deleteReportModalTitle"
+            class="eco-primary-text text-base font-extrabold text-gray-900 dark:text-white uppercase tracking-wider">Delete Report</h3>
+          <p id="deleteReportModalSubtitle" class="text-xs text-rose-500 font-semibold">Permanently delete activity</p>
+        </div>
+      </div>
+      <p id="deleteReportModalMessage"
+        class="text-gray-600 dark:text-gray-300 text-xs font-medium mb-6 leading-relaxed">
+        Are you sure you want to delete maintenance report <span id="deleteReportTargetName"
+          class="text-rose-600 dark:text-rose-400 font-bold"></span>? This action cannot be undone.
+      </p>
+      <div class="flex gap-3">
+        <button id="cancelDeleteReportBtn" onclick="closeDeleteReportModal()"
+          class="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-white/10 font-bold text-xs rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">
+          Cancel
+        </button>
+        <button id="confirmDeleteReportBtn" onclick="confirmDeleteReportAction()"
+          class="flex-1 px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl transition-all shadow-lg shadow-rose-500/25 border-0 cursor-pointer">
+          Delete Report
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GLOBAL NOTIFICATION POPUP -->
+  <div id="globalNotificationDialog"
+    style="display: none; position: fixed; top: 1.25rem; left: 1.25rem; background: transparent !important; background-color: transparent !important; z-index: 99999; pointer-events: none; max-width: 28rem; width: calc(100% - 2.5rem);"
+    class="flex flex-col">
+    <div
+      class="bg-white dark:bg-[#0c1328] border-2 border-[#10b981] dark:border-[#10b981]/50 rounded-2xl p-5 shadow-2xl backdrop-blur-md pointer-events-auto">
+      <div class="flex items-center gap-3 mb-3">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"
+          class="text-rose-500">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+        <h3 class="eco-primary-text text-xl font-bold text-[#18392B] dark:text-cyan-400">New Notification!</h3>
+      </div>
+      <p id="globalNotificationMessage"
+        class="text-gray-700 dark:text-gray-200 text-sm font-medium mb-5 leading-relaxed">A scheduled message has been
+        triggered.</p>
+      <div class="flex gap-3">
+        <a href="Notification.html"
+          class="flex-1 px-4 py-2 bg-[#10b981] hover:bg-emerald-400 text-white font-bold rounded-xl text-sm transition-colors text-center shadow-md border-0 cursor-pointer">
+          View Notifications
+        </a>
+        <button id="dismissNotificationBtn"
+          class="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 font-bold rounded-xl text-sm transition-colors border-0 cursor-pointer">
+          Dismiss
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

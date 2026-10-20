@@ -1,0 +1,427 @@
+
+    /* Compact forecast header shares the controller's period, filter and export styles. */
+    .sensor-reference-dialog { width:min(512px,calc(100vw - 24px)); margin:auto; padding:0; border:0; background:transparent; color:var(--eco-text); max-height:92dvh; overflow:auto; border-radius:16px; }
+    .sensor-reference-dialog::backdrop { background:#020617cc; backdrop-filter:blur(8px); }
+    .sensor-reference-dialog.sensor-reference-consumers { width:min(896px,calc(100vw - 24px)); }
+    html body.app-shell .sensor-reference-modal { background:transparent!important; }
+    .sensor-reference-modal>div { width:100%; max-width:none; }
+    .sensor-reference-modal [data-close-reference]:focus-visible { outline:2px solid var(--eco-accent); outline-offset:2px; }
+    .sensor-reference-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 20px; gap:8px; min-height:160px; text-align:center; color:var(--eco-muted); white-space:normal; }
+    .sensor-reference-empty strong { color:var(--eco-text); }
+    #sensorDialog #consumersTabContainer { flex-wrap:wrap; }
+    #sensorDialog .consumer-tab-btn { border:1px solid transparent; }
+    html body.app-shell #sensorDialog .consumer-tab-btn.active { color:var(--eco-on-action)!important; background:var(--eco-action)!important; }
+    #sensorDialog .eco-table-frame { overflow:auto; max-width:100%; }
+    #sensorDialog .eco-data-table { min-width:620px; }
+    @media(max-width:760px) { #sensorDialog #tariffConfigForm>div:last-child { flex-wrap:wrap; } #sensorDialog #tariffConfigForm>div:last-child>div { flex-wrap:wrap; } }
+    .sensor-forecast-header { flex-direction:column; align-items:stretch; gap:12px; padding:14px 24px; container-type:inline-size; }
+    .sensor-forecast-header-top { display:flex; align-items:center; justify-content:flex-start; flex-wrap:wrap; gap:12px; min-width:0; }
+    .sensor-forecast-title { display:flex; align-items:center; gap:10px; min-height:38px; }
+    .sensor-forecast-title h1 { margin:0; font-size:18px; line-height:1.2; font-weight:900; letter-spacing:-.025em; color:var(--eco-text); }
+    .sensor-forecast-dot { width:10px; height:10px; flex-shrink:0; border-radius:50%; background:var(--eco-accent); box-shadow:0 0 10px #10b98160; }
+    .sensor-forecast-title .sensor-badge { color:var(--eco-accent); border-color:var(--eco-border); background:var(--eco-selected); letter-spacing:.05em; }
+    .sensor-forecast-periods { display:inline-flex; align-items:center; gap:4px; height:38px; padding:3px; flex-shrink:0; border:1px solid var(--eco-border); border-radius:12px; background:var(--eco-raised); box-shadow:inset 0 1px 2px #0001; }
+    .sensor-forecast-periods .header-period-btn { display:flex; align-items:center; gap:6px; height:30px; padding:0 14px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; }
+    .sensor-forecast-actions { margin-left:auto; gap:8px; }
+    .sensor-forecast-header .sensor-button.primary { background:var(--eco-action)!important; color:var(--eco-on-action,#fff)!important; border:1px solid var(--eco-action); opacity:1; }
+    .sensor-forecast-header .sensor-button.primary svg,.sensor-forecast-header .sensor-button.primary span { color:inherit!important; stroke:currentColor; }
+    .sensor-forecast-header .sensor-button.primary:hover { filter:brightness(1.12); }
+    .sensor-forecast-header .sensor-button.primary:active { transform:scale(.98); }
+    .sensor-forecast-header .sensor-button.primary:disabled { opacity:.65; cursor:wait; filter:none; }
+    .sensor-consumer-info { padding:3px 6px; border-radius:6px; background:#0c2741; color:#bae6fd!important; font-size:9px; font-weight:900; }
+    .sensor-forecast-header .sensor-button { height:38px; min-height:38px; border-radius:12px; padding:0 14px; white-space:nowrap; }
+    .sensor-forecast-header .sensor-forecast-refresh { width:38px; padding:0; }
+    .sensor-forecast-header .sensor-forecast-tariff { background:#f59e0b1a; border-color:#f59e0b4d; color:#a16207; }
+    .dark .sensor-forecast-header .sensor-forecast-tariff { color:#fcd34d; }
+    .sensor-forecast-tariff strong { font-family:ui-monospace,monospace; font-weight:900; }
+    .sensor-forecast-filters { display:flex; align-items:center; flex-wrap:wrap; gap:16px 24px; padding-top:12px; border-top:1px solid var(--eco-border); min-width:0; }
+    .sensor-forecast-field { display:flex; align-items:center; gap:8px; min-width:0; position:relative; }
+    .sensor-forecast-field label { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:var(--eco-secondary); white-space:nowrap; }
+    .sensor-forecast-field label svg { color:var(--eco-accent); flex-shrink:0; }
+    .sensor-forecast-header #sensorSelect { width:200px; max-width:100%; text-overflow:ellipsis; }
+    .sensor-forecast-header [data-select-id="sensorSelect"] { width:200px; min-width:0; text-overflow:ellipsis; }
+    .sensor-forecast-header [data-select-id="sensorDateSelect"] { width:168px; min-width:0; }
+    .sensor-forecast-header select.eco-native-select { position:absolute!important; left:0!important; top:0!important; width:1px!important; height:1px!important; min-width:0!important; padding:0!important; margin:0!important; border:0!important; opacity:0!important; clip-path:inset(50%)!important; pointer-events:none!important; transition:none!important; }
+    .sensor-forecast-header #sensorFrom { width:174px; background-image:none!important; padding-right:12px!important; font-family:inherit; }
+    .sensor-forecast-header #sensorThrough { width:174px; background-image:none!important; padding-right:12px!important; font-family:inherit; }
+    .sensor-analytics-actions { margin-left:auto; }
+    .sensor-date-controls { display:flex; align-items:center; flex-wrap:wrap; gap:8px; min-width:0; position:relative; }
+    .sensor-forecast-header #sensorDateSelect { width:168px; }
+    .sensor-time-controls { display:flex; align-items:center; gap:6px; min-width:0; }
+    .sensor-time-controls input { width:85px; min-width:0; background:transparent!important; border:0!important; border-radius:0!important; box-shadow:none!important; padding:0!important; height:auto!important; font:inherit; font-size:12px; font-weight:700; color:var(--eco-text); }
+    .sensor-time-controls>span { font-size:11px; color:var(--eco-muted); }
+    .sensor-time-controls button { display:grid; place-items:center; border:0; background:transparent; color:var(--eco-muted); padding:4px; cursor:pointer; border-radius:4px; }
+    .sensor-time-controls button:focus-visible { outline:2px solid var(--eco-accent); outline-offset:2px; }
+    .sensor-forecast-meta { display:flex; flex-direction:column; align-items:flex-end; gap:3px; margin-left:auto; }
+    .sensor-forecast-periods button:focus-visible { outline:2px solid var(--eco-accent); outline-offset:3px; }
+    .sensor-log-panel { display:flex; flex-direction:column; overflow:hidden; }
+    .sensor-log-panel h2 { margin:0; color:var(--eco-text); font-size:18px; font-weight:800; }
+    .sensor-log-panel p { color:var(--eco-muted); font-size:12px; margin-top:4px; }
+    #sensorLogTable { min-width:0; }
+    #sensorLogTable .eco-table-frame { max-height:460px; }
+    #sensorLogTable table { border-collapse:separate; border-spacing:0; }
+    #sensorLogTable thead { position:sticky; top:0; z-index:1; }
+    #sensorLogTable .eco-table-frame:focus-visible { outline:2px solid var(--eco-accent); outline-offset:-2px; }
+    .sensor-log-panel .sensor-pagination { margin-top:0; border-top:1px solid var(--eco-border); }
+    .sensor-log-empty { height:160px; padding:28px 20px!important; white-space:normal; text-align:left; }
+    .sensor-log-empty strong { display:block; font-size:14px; color:var(--eco-text); }
+    .sensor-log-empty p { font-size:12px; color:var(--eco-muted); white-space:normal; max-width:55ch; }
+    #sensorLogTable .eco-table-frame { container-type:inline-size; }
+    #sensorLogTable .sensor-log-empty { padding:0!important; height:280px; }
+    #sensorLogTable .sensor-log-empty-content { position:sticky; left:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; width:100cqi; max-width:100%; min-height:280px; padding:32px 20px; text-align:center; white-space:normal; }
+    #sensorLogTable .sensor-log-empty-icon { display:grid; place-items:center; width:56px; height:56px; border-radius:16px; color:var(--eco-accent); border:1px solid var(--eco-border); background:var(--eco-selected); }
+    #sensorLogTable .sensor-log-empty-content strong { font-size:14px; margin:0; }
+    #sensorLogTable .sensor-log-empty-content p { margin:0; max-width:440px; }
+    .sensor-export-status { margin:10px 0 0; }
+    .sensor-consumers-dialog { width:min(1000px,calc(100vw - 28px)); padding:0; }
+    .sensor-consumers-dialog form>h2 { padding:20px 24px; margin:0; background:var(--eco-selected); border-bottom:1px solid var(--eco-border); }
+    .sensor-consumers-dialog form>p { margin:14px 24px; }
+    .sensor-consumers-dialog .sensor-dialog-footer { padding:16px 24px; border-top:1px solid var(--eco-border); margin:20px 0 0; }
+    .sensor-consumer-scope { display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px; padding:14px; margin:16px 24px; border:1px solid var(--eco-border); border-radius:12px; color:var(--eco-secondary); font-size:12px; background:var(--eco-raised); }
+    .sensor-consumer-scope strong { color:var(--eco-text); }
+    .sensor-consumer-highlights { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; margin:20px 24px; }
+    .sensor-consumer-highlights>div { border:1px solid var(--eco-border); border-radius:12px; padding:14px; background:var(--eco-raised); min-width:0; }
+    .sensor-consumer-highlights span { display:block; font-size:10px; color:var(--eco-muted); text-transform:uppercase; font-weight:800; }
+    .sensor-consumer-highlights strong { display:block; margin-top:10px; color:var(--eco-text); font-size:13px; overflow-wrap:anywhere; }
+    .sensor-consumer-leaderboard { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin:20px 24px 12px; }
+    .sensor-consumer-leaderboard h3 { font-size:12px; text-transform:uppercase; color:var(--eco-secondary); font-weight:800; }
+    .sensor-consumer-tabs { display:flex; flex-wrap:wrap; padding:4px; gap:4px; border:1px solid var(--eco-border); border-radius:12px; background:var(--eco-raised); }
+    .sensor-consumer-tabs button { padding:7px 10px; border-radius:8px; background:transparent; color:var(--eco-secondary); border:1px solid transparent; font-size:12px; font-weight:700; cursor:pointer; }
+    html body.app-shell #sensorDialog .sensor-consumer-tabs button[aria-selected="true"] { background:var(--eco-action)!important; color:var(--eco-on-action,#fff)!important; border-color:var(--eco-action)!important; }
+    html body.app-shell #sensorDialog .sensor-consumer-tabs button[aria-selected="false"] { background:transparent!important; color:var(--eco-secondary)!important; border-color:transparent!important; }
+    .sensor-consumer-tabs button:focus-visible { outline:2px solid var(--eco-accent); outline-offset:2px; }
+    #sensorConsumerPanel { margin:0 24px; min-width:0; }
+    @container (min-width:1000px) and (max-width:1300px) {
+      .sensor-forecast-title { gap:7px; }
+      .sensor-forecast-title h1 { font-size:16px; }
+      .sensor-forecast-title .sensor-badge { font-size:9px; padding:3px 6px; }
+      .sensor-forecast-periods .header-period-btn { padding:0 8px; font-size:11px; gap:4px; }
+      .sensor-forecast-header-top { gap:8px; }
+      .sensor-forecast-actions { gap:6px; }
+      .sensor-forecast-actions .sensor-button { padding:0 10px; font-size:11px; gap:5px; }
+      .sensor-forecast-actions .sensor-forecast-refresh { padding:0; }
+    }
+    @container (min-width:761px) and (max-width:999px) {
+      .sensor-forecast-actions { width:100%; margin-left:0; justify-content:flex-start; }
+    }
+    @media(max-width:760px) {
+      .sensor-forecast-header { padding:12px 16px; }
+      .sensor-forecast-title { gap:8px; }
+      .sensor-forecast-title h1 { font-size:17px; }
+      .sensor-forecast-dot { display:none; }
+      .sensor-forecast-title .sensor-menu { width:34px; padding:0; }
+      .sensor-forecast-periods { width:100%; }
+      .sensor-forecast-periods .header-period-btn { flex:1; justify-content:center; }
+      .sensor-forecast-actions { width:100%; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) 38px; }
+      .sensor-forecast-tariff { grid-column:1/-1; justify-self:start; }
+      .sensor-forecast-actions .sensor-top-consumers { grid-column:1/-1; justify-self:start; }
+      .sensor-forecast-filters { gap:10px; }
+      .sensor-forecast-field { width:100%; display:grid; grid-template-columns:104px minmax(0,1fr); }
+      .sensor-forecast-header #sensorSelect,.sensor-forecast-header #sensorFrom,.sensor-forecast-header #sensorThrough,.sensor-forecast-header #sensorDateSelect { width:100%; min-width:0; }
+      .sensor-date-controls { display:grid; grid-template-columns:1fr; }
+      .sensor-forecast-header [data-select-id="sensorSelect"],.sensor-forecast-header [data-select-id="sensorDateSelect"] { width:100%; }
+      .sensor-time-field { grid-template-columns:64px minmax(0,1fr); }
+      .sensor-time-controls { width:100%; justify-content:space-between; }
+      .sensor-time-controls input { flex:1; width:68px; }
+      .sensor-forecast-meta { align-items:flex-start; margin:0; }
+      .sensor-consumer-highlights { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .sensor-consumers-dialog form>h2 { font-size:16px; padding:16px; }
+      .sensor-consumers-dialog form>p,.sensor-consumer-scope,.sensor-consumer-highlights,.sensor-consumer-leaderboard,#sensorConsumerPanel { margin-left:16px; margin-right:16px; }
+      .sensor-consumer-scope { flex-direction:column; }
+      .sensor-consumer-tabs { width:100%; }
+      .sensor-consumer-tabs button { flex:1; white-space:nowrap; }
+      .sensor-log-empty p { max-width:28ch; }
+    }
+
+    /* Custom Styling for Aircon Energy Analytics */
+    .analytics-glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+    }
+    .dark .analytics-glass-card {
+      background: #0c1328;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    .log-tab.active,
+    html:not(.dark) .log-tab.active {
+      background: var(--eco-action) !important;
+      background-color: var(--eco-action) !important;
+      color: #ffffff !important;
+      border: 2px solid var(--eco-action) !important;
+      box-shadow: none !important;
+    }
+
+    .log-tab.active *,
+    .log-tab.active .tab-label,
+    .log-tab.active svg {
+      color: #ffffff !important;
+      stroke: #ffffff !important;
+    }
+
+    .granularity-btn.active,
+    html:not(.dark) .granularity-btn.active {
+      background: var(--eco-action) !important;
+      color: #ffffff !important;
+      font-weight: 800 !important;
+      box-shadow: none !important;
+    }
+
+    #exportBtn,
+    html:not(.dark) #exportBtn {
+      background: var(--eco-action) !important;
+      background-color: var(--eco-action) !important;
+      color: #ffffff !important;
+      border: 2px solid var(--eco-action) !important;
+      box-shadow: none !important;
+    }
+
+    #exportBtn *,
+    html:not(.dark) #exportBtn * {
+      color: #ffffff !important;
+      stroke: #ffffff !important;
+    }
+
+    #exportExcelBtn,
+    html:not(.dark) #exportExcelBtn {
+      background: var(--eco-action) !important;
+      background-color: #059669 !important;
+      color: #ffffff !important;
+      border: 2px solid var(--eco-action) !important;
+      box-shadow: none !important;
+    }
+
+    #exportExcelBtn *,
+    html:not(.dark) #exportExcelBtn * {
+      color: #ffffff !important;
+      stroke: #ffffff !important;
+    }
+
+    /* Header Period Pills (Daily, Weekly, Monthly) */
+    .header-period-btn.active,
+    html:not(.dark) .header-period-btn.active {
+      background-color: var(--eco-action) !important;
+      color: #ffffff !important;
+      border: 1px solid var(--eco-action) !important;
+      box-shadow: none !important;
+    }
+    .header-period-btn.active svg,
+    .header-period-btn.active span {
+      color: #ffffff !important;
+      stroke: #ffffff !important;
+    }
+    .header-period-btn:not(.active) {
+      background-color: transparent !important;
+      border: 1px solid transparent !important;
+      box-shadow: none !important;
+    }
+    .dark .header-period-btn:not(.active) {
+      color: #94a3b8 !important;
+    }
+    html:not(.dark) .header-period-btn:not(.active) {
+      color: #475569 !important;
+    }
+    .header-period-btn:not(.active):hover {
+      background-color: rgba(16, 185, 129, 0.08) !important;
+      color: #10b981 !important;
+    }
+    .header-period-btn:not(.active):hover svg {
+      stroke: #10b981 !important;
+    }
+
+    /* Header Export Buttons */
+    #headerExportPdfBtn,
+    #headerExportExcelBtn,
+    html:not(.dark) #headerExportPdfBtn,
+    html:not(.dark) #headerExportExcelBtn {
+      background-color: var(--eco-action) !important;
+      color: #ffffff !important;
+      border: 1px solid var(--eco-action) !important;
+      box-shadow: none !important;
+    }
+    #headerExportPdfBtn *,
+    #headerExportExcelBtn *,
+    html:not(.dark) #headerExportPdfBtn *,
+    html:not(.dark) #headerExportExcelBtn * {
+      color: #ffffff !important;
+      stroke: #ffffff !important;
+    }
+    #headerExportPdfBtn:hover,
+    #headerExportExcelBtn:hover {
+      background-color: #059669 !important;
+      border-color: #059669 !important;
+    }
+
+    /* Header Global Filter Controls (Uniform 38px Emerald Border Pill style matching reference) */
+    .header-filter-pill-select {
+      height: 38px !important;
+      border: 1.5px solid #10b981 !important;
+      border-radius: 12px !important;
+      font-weight: 700 !important;
+      font-size: 0.75rem !important;
+      line-height: 38px !important;
+      padding: 0 2rem 0 0.85rem !important;
+      appearance: none !important;
+      -webkit-appearance: none !important;
+      -moz-appearance: none !important;
+      background-repeat: no-repeat !important;
+      background-position: right 0.75rem center !important;
+      cursor: pointer !important;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      box-sizing: border-box !important;
+    }
+
+    html:not(.dark) .header-filter-pill-select {
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%230f172a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+    }
+
+    .dark .header-filter-pill-select {
+      background-color: #0c1328 !important;
+      color: #ffffff !important;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+    }
+
+    .header-filter-pill-select:hover {
+      border-color: #34d399 !important;
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.25) !important;
+    }
+
+    .header-filter-pill-select:focus {
+      outline: none !important;
+      border-color: #10b981 !important;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.35) !important;
+    }
+
+    .dark .header-filter-pill-select option {
+      background-color: #0c1328 !important;
+      color: #f8fafc !important;
+    }
+
+    html:not(.dark) .header-filter-pill-select option {
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+    }
+
+    /* Time Filter Pill Container - Uniform 38px height and matching emerald border */
+    .header-time-pill {
+      height: 38px !important;
+      border: 1.5px solid #10b981 !important;
+      border-radius: 12px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 0.4rem !important;
+      padding: 0 0.75rem !important;
+      cursor: pointer !important;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+      box-sizing: border-box !important;
+    }
+
+    .dark .header-time-pill {
+      background-color: #0c1328 !important;
+      color: #ffffff !important;
+    }
+
+    html:not(.dark) .header-time-pill {
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+    }
+
+    .header-time-pill:hover {
+      border-color: #34d399 !important;
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.25) !important;
+    }
+
+    .header-time-pill:focus-within {
+      outline: none !important;
+      border-color: #10b981 !important;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.35) !important;
+    }
+
+    .header-time-pill input[type="time"],
+    html:not(.dark) .header-time-pill input[type="time"],
+    .dark .header-time-pill input[type="time"],
+    html:not(.dark) input[type="time"].header-time-input {
+      background: transparent !important;
+      background-color: transparent !important;
+      border: none !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      font-size: 0.78rem !important;
+      font-weight: 700 !important;
+      outline: none !important;
+      cursor: pointer !important;
+      padding: 0 2px !important;
+      margin: 0 !important;
+      height: 100% !important;
+      line-height: normal !important;
+      -webkit-appearance: none !important;
+      -moz-appearance: none !important;
+      appearance: none !important;
+    }
+
+    .header-time-pill input[type="time"]::-webkit-datetime-edit,
+    .header-time-pill input[type="time"]::-webkit-datetime-edit-fields-wrapper,
+    .header-time-pill input[type="time"]::-webkit-datetime-edit-text,
+    .header-time-pill input[type="time"]::-webkit-datetime-edit-hour-field,
+    .header-time-pill input[type="time"]::-webkit-datetime-edit-minute-field,
+    .header-time-pill input[type="time"]::-webkit-datetime-edit-ampm-field {
+      background: transparent !important;
+      background-color: transparent !important;
+      border: none !important;
+      outline: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    .dark .header-time-pill input[type="time"] {
+      color: #f8fafc !important;
+      color-scheme: dark;
+    }
+
+    html:not(.dark) .header-time-pill input[type="time"] {
+      color: #0f172a !important;
+      color-scheme: light;
+    }
+
+    .header-time-pill input[type="time"]::-webkit-calendar-picker-indicator,
+    #startTimeFilter::-webkit-calendar-picker-indicator,
+    #endTimeFilter::-webkit-calendar-picker-indicator {
+      cursor: pointer !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      margin-left: 2px !important;
+      filter: invert(56%) sepia(85%) saturate(415%) hue-rotate(114deg) brightness(92%) contrast(92%) !important;
+    }
+
+    /* Modal Animation */
+    .modal-pop {
+      animation: modalPopAnim 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes modalPopAnim {
+      0% { opacity: 0; transform: scale(0.95) translateY(8px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* Top Consumers Modal Tab Buttons */
+    .consumer-tab-btn.active {
+      background-color: var(--eco-action) !important;
+      color: #ffffff !important;
+      box-shadow: none !important;
+    }
+  
+
+
+#sensorDialog.sensor-reference-consumers #topConsumersTableBody td{padding:12px 16px;line-height:1.5;vertical-align:middle;overflow-wrap:anywhere}
+
+.sensor-forecast-empty { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:24px; text-align:center; border:1px dashed var(--eco-border); border-radius:12px; background:var(--eco-surface); }
+.sensor-forecast-empty strong { color:var(--eco-text); font-size:14px; }
+.sensor-forecast-empty span { max-width:36ch; color:var(--eco-muted); font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
+.sensor-chart-legend { flex-wrap:wrap; }
+.sensor-cost-heading { flex-wrap:wrap; }
+.sensor-cost-heading>div { min-width:0; }

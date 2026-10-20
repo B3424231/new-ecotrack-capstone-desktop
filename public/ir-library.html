@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+  <script src="./js/app-mode.js?v=6"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Universal AC Protocol Studio - EcoTrack Aircon IoT</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              500: '#10b981',
+              600: '#059669',
+              900: '#064e3b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="./styles.css?v=62">
+  <script src="./js/supabase.umd.js"></script>
+  <script src="./js/supabase-client.js"></script>
+  <script src="./js/hardware-cloud.js?v=11"></script>
+  <script src="./js/sidebar.js"></script>
+  <script src="./js/sidebar-loader.js?v=25"></script>
+  <script src="./js/icons.js"></script>
+  <script src="./js/eco-network.js"></script>
+  <script src="./js/eco-data-bus.js"></script>
+  <script src="./js/aircon-system.js?v=23"></script>
+</head>
+
+<body class="app-shell bg-gray-50 dark:bg-[#0a0f1d] text-slate-800 dark:text-slate-100 transition-colors duration-200">
+  <div class="flex h-screen">
+    <!-- Sidebar injected by sidebar-loader.js -->
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+      <!-- HEADER -->
+      <header class="bg-white dark:bg-[#0c1328] border-b border-gray-200 dark:border-white/5 px-6 py-3.5 flex justify-between items-center z-10 shadow-sm flex-shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+              <line x1="8" y1="6" x2="16" y2="6" />
+              <line x1="8" y1="10" x2="14" y2="10" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="eco-primary-text text-xl font-extrabold text-[#18392B] dark:text-white tracking-tight">Universal AC Protocol Studio</h1>
+            <p class="text-[11px] font-medium text-gray-500 dark:text-gray-400">Standardized Climate IR Protocols & Dynamic State Generation</p>
+          </div>
+        </div>
+
+      </header>
+
+      <!-- SCROLLABLE WORKSPACE -->
+      <div class="flex-1 overflow-auto p-6 space-y-6">
+        <!-- Toast Notification Area -->
+        <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+        
+        <!-- WIZARD CONTAINER -->
+        <div class="glass-panel bg-white dark:bg-[#0c1328] rounded-2xl p-6 lg:p-8 border border-teal-500/30 w-full max-w-[1400px] mx-auto shadow-sm space-y-6">
+          
+          <!-- STEP 1: TARGET UNIT & HARDWARE NODE SELECTION -->
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-5 border-b border-slate-200 dark:border-white/10">
+            <div class="flex-1 max-w-xl">
+              <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-gray-400 mb-1.5">Target Air Conditioner Unit</label>
+              <select id="targetDeviceSelect" class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-300 dark:border-white/20 text-slate-900 dark:text-white font-bold text-sm focus:outline-none focus:border-teal-500 cursor-pointer shadow-sm">
+                <!-- Dynamically populated -->
+              </select>
+            </div>
+
+            <div class="flex items-center gap-4 text-xs text-right">
+              <div>
+                <span class="text-[10px] text-slate-500 dark:text-gray-400 uppercase font-semibold block">Bound Hardware Node</span>
+                <span id="targetNodeBadge" class="font-bold text-teal-700 dark:text-teal-300 font-mono text-sm">NODE-01</span>
+              </div>
+              <div class="border-l border-slate-200 dark:border-white/10 pl-4">
+                <span class="text-[10px] text-slate-500 dark:text-gray-400 uppercase font-semibold block">Active Protocol</span>
+                <span id="targetProtocolBadge" class="font-bold text-cyan-700 dark:text-cyan-300 font-mono text-sm">midea_ir</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- STEP 2: PROTOCOL SELECTION & REMOTE AUTO-DETECT -->
+          <div class="bg-slate-50 dark:bg-black/30 rounded-2xl p-6 border border-slate-200 dark:border-white/10 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 class="eco-primary-text text-base font-bold text-slate-900 dark:text-white">Climate IR Protocol Library</h3>
+                <p class="text-xs text-slate-500 dark:text-gray-400">Choose a supported protocol or capture a button from the AC remote.</p>
+              </div>
+
+              <!-- AUTO-DETECT BUTTON -->
+              <button 
+                id="autoDetectBtn"
+                class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-white font-bold text-xs flex items-center gap-2 shadow-md transition-all hover:scale-105 cursor-pointer border-0"
+              >
+                <svg id="sniffIcon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M4.93 4.93a10 10 0 0 1 14.14 0" />
+                  <circle cx="12" cy="12" r="2" />
+                  <path d="M7.76 16.24a6 6 0 0 0 8.48 0" />
+                </svg>
+                <svg id="sniffSpinner" class="hidden animate-spin" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
+                  <path d="M12 2a10 10 0 0 1 10 10" />
+                </svg>
+                <span id="sniffLabel">Auto-Detect via Remote</span>
+              </button>
+            </div>
+
+            <!-- PROTOCOL DROPDOWN -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+              <div class="md:col-span-2">
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-gray-400 mb-1">Select Protocol Platform</label>
+                <select id="protocolSelect" class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0c1328] border border-slate-300 dark:border-white/20 text-slate-900 dark:text-white font-bold text-sm focus:outline-none focus:border-teal-500 cursor-pointer shadow-sm">
+                  <!-- Injected dynamically -->
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-gray-400 mb-1">State Encoding Library</label>
+                <div class="px-4 py-3 rounded-xl bg-white dark:bg-[#0c1328] border border-slate-300 dark:border-white/20 text-slate-700 dark:text-gray-300 text-xs font-mono font-semibold flex items-center justify-between">
+                  <span id="libraryBadge">IRremoteESP8266 / climate_ir</span>
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                </div>
+              </div>
+            </div>
+
+            <button id="latestLearnedFrameBtn" class="text-xs font-semibold text-teal-600 dark:text-teal-400 hover:underline cursor-pointer">Get latest captured frame</button>
+            <div class="space-y-2">
+              <label for="savedCodeSelect" class="block text-xs font-semibold text-slate-700 dark:text-gray-200">Saved IR codes</label>
+              <select id="savedCodeSelect" class="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#0c1328] border border-slate-300 dark:border-white/20 text-slate-900 dark:text-white text-xs">
+                <option value="">Select a saved capture</option>
+              </select>
+              <p id="savedCodeStatus" role="status" class="text-xs text-slate-500 dark:text-gray-400">Select an AC to view its saved captures.</p>
+            </div>
+            <div id="learnedFramePanel" class="hidden space-y-2">
+              <p id="learnedFrameSummary" class="text-xs font-semibold text-slate-700 dark:text-gray-200"></p>
+              <label for="learnedFrameRaw" class="block text-xs text-slate-500 dark:text-gray-400">Captured remote timings (microseconds)</label>
+              <textarea id="learnedFrameRaw" readonly rows="3" class="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/40 p-3 text-xs font-mono text-slate-700 dark:text-gray-200"></textarea>
+              <label for="learnedCommandName" class="block text-xs text-slate-500 dark:text-gray-400">Command name</label>
+              <input id="learnedCommandName" value="REMOTE_CAPTURE" maxlength="64" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-white/20 bg-white dark:bg-[#0c1328] text-xs text-slate-900 dark:text-white" />
+              <button id="saveCapturedCodeBtn" type="button" disabled class="px-3 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white text-xs font-bold">Save captured code</button>
+            </div>
+
+            <!-- DYNAMIC CAPABILITY TAGS -->
+            <div class="pt-2">
+              <span class="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-gray-400 block mb-2">
+                Locked-in Capabilities & Brand Temperature Limits:
+              </span>
+              <div id="dynamicCapabilityTags" class="flex flex-wrap gap-2 text-xs">
+                <!-- Dynamically rendered -->
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const { AirconProfileManager, CapabilityEngine, ProtocolAdapter, AirconEvents, NodeService } = window.EcoTrackAirconSystem || {};
+
+      let currentDevice = null;
+      let selectedDeviceId = new URLSearchParams(window.location.search).get('id') || '';
+      let studioDirty = false;
+      let learnedFrame = null;
+      let captureDeviceId = '';
+      let savingCapture = false;
+      let selectedSavedCodeId = '';
+      let captureContext = '';
+
+      const selectedProtocol = () => document.getElementById('protocolSelect').value.trim().toUpperCase();
+      const matchingSavedCodes = () => currentDevice
+        ? ProtocolAdapter.getCommandsForDevice(currentDevice.device_id).filter(code => String(code.protocol || '').trim().toUpperCase() === selectedProtocol())
+        : [];
+
+      function clearCapturedFrame() {
+        learnedFrame = null;
+        captureDeviceId = '';
+        selectedSavedCodeId = '';
+        document.getElementById('savedCodeSelect').value = '';
+        document.getElementById('learnedFramePanel').classList.add('hidden');
+        document.getElementById('learnedFrameRaw').value = '';
+        document.getElementById('learnedFrameRaw').placeholder = '';
+        document.getElementById('learnedFrameSummary').textContent = '';
+        document.getElementById('learnedCommandName').value = 'REMOTE_CAPTURE';
+        document.getElementById('saveCapturedCodeBtn').disabled = true;
+      }
+
+      function showSavedCode(code, preserveName = false) {
+        const name = document.getElementById('learnedCommandName').value;
+        const frame = { ...(code.capture || {}), protocol: code.protocol, raw_data: code.raw_data };
+        showCapturedFrame(frame, currentDevice,
+          `${code.command_type} · ${code.protocol}${frame.hex ? ` · ${frame.hex}` : ''} · ${code.local_only ? 'Saved on this desktop' : 'Shared saved capture'}`);
+        selectedSavedCodeId = code.id;
+        document.getElementById('savedCodeSelect').value = code.id;
+        document.getElementById('learnedCommandName').value = preserveName ? name : code.command_type;
+      }
+
+      function renderSavedCodes() {
+        const select = document.getElementById('savedCodeSelect');
+        const status = document.getElementById('savedCodeStatus');
+        if (!select || !status) return;
+        const context = JSON.stringify([currentDevice?.device_id || '', selectedProtocol()]);
+        if (context !== captureContext) {
+          clearCapturedFrame();
+          captureContext = context;
+        }
+        select.innerHTML = '';
+        const empty = document.createElement('option');
+        empty.value = ''; empty.textContent = 'Select a saved capture'; select.appendChild(empty);
+        const codes = matchingSavedCodes();
+        for (const code of codes) {
+          const option = document.createElement('option');
+          option.value = code.id;
+          option.textContent = `${code.command_type} · ${code.protocol} · ${code.local_only ? 'This desktop only' : code.source_platform === 'mobile' ? 'Mobile' : 'Desktop'}`;
+          select.appendChild(option);
+        }
+        const storage = ProtocolAdapter.getStorageStatus();
+        select.disabled = !currentDevice || !storage.ready || !!storage.error || !codes.length;
+        const sharedCount = codes.filter(code => !code.local_only).length;
+        const localCount = codes.length - sharedCount;
+        status.textContent = !currentDevice ? 'Select an AC to view its saved captures.' : storage.error ||
+          (!storage.ready ? 'Loading shared IR codes…' : !codes.length ? `No saved IR codes for ${selectedProtocol()}.` :
+            `${sharedCount} shared IR ${sharedCount === 1 ? 'code' : 'codes'} saved for this AC · ${selectedProtocol()}${localCount ? ` · ${localCount} saved on this desktop only` : ''}.`);
+        if (!currentDevice || !storage.ready || storage.error) {
+          if (!currentDevice || selectedSavedCodeId) clearCapturedFrame();
+          return;
+        }
+        const previous = codes.find(code => code.id === selectedSavedCodeId);
+        if (previous) { showSavedCode(previous, true); return; }
+        if (selectedSavedCodeId) clearCapturedFrame();
+        // Keep a new capture and its typed command name during background refresh.
+        if (learnedFrame && captureDeviceId === currentDevice.device_id) return;
+        if (codes.length === 1) showSavedCode(codes[0]);
+      }
+
+      function showCapturedFrame(frame, device, summary) {
+        learnedFrame = frame;
+        captureDeviceId = device.device_id;
+        selectedSavedCodeId = '';
+        document.getElementById('savedCodeSelect').value = '';
+        document.getElementById('learnedCommandName').value = 'REMOTE_CAPTURE';
+        document.getElementById('learnedFramePanel').classList.remove('hidden');
+        document.getElementById('learnedFrameRaw').value = frame.raw_data || '';
+        document.getElementById('learnedFrameRaw').placeholder = '';
+        document.getElementById('learnedFrameSummary').textContent = summary;
+        document.getElementById('saveCapturedCodeBtn').disabled = !frame.raw_data || savingCapture;
+      }
+
+      function selectCapturedProtocol(frame) {
+        const proto = String(frame.protocol || frame.raw_type || '').trim().toUpperCase();
+        if (!proto) return;
+        const select = document.getElementById('protocolSelect');
+        if (![...select.options].some(option => option.value === proto)) {
+          const option = document.createElement('option'); option.value = proto; option.textContent = `Captured ${proto}`; select.appendChild(option);
+        }
+        select.value = proto;
+        studioDirty = true;
+        document.getElementById('targetProtocolBadge').textContent = proto;
+        renderCapabilities(proto);
+        renderSavedCodes();
+      }
+
+      function showToast(message, type = 'success') {
+        const toastContainer = document.getElementById('toastContainer');
+        if (!toastContainer) return;
+        const toast = document.createElement('div');
+        const isSuccess = type === 'success';
+        toast.className = `px-4 py-3 rounded-xl shadow-lg border text-xs font-bold transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto flex items-center gap-2.5 ${
+          isSuccess 
+            ? 'bg-emerald-950/90 text-emerald-200 border-emerald-500/40 backdrop-blur-md' 
+            : 'bg-rose-950/90 text-rose-200 border-rose-500/40 backdrop-blur-md'
+        }`;
+        toast.innerHTML = `
+          <span>${isSuccess ? '⚡' : '⚠️'}</span>
+          <span>${message}</span>
+        `;
+        toastContainer.appendChild(toast);
+        requestAnimationFrame(() => {
+          toast.classList.remove('translate-y-2', 'opacity-0');
+        });
+        setTimeout(() => {
+          toast.classList.add('translate-y-2', 'opacity-0');
+          setTimeout(() => toast.remove(), 300);
+        }, 3500);
+      }
+
+      function initProtocols() {
+        const pSelect = document.getElementById('protocolSelect');
+        if (!pSelect || !CapabilityEngine) return;
+        const list = CapabilityEngine.getSupportedProtocols();
+        pSelect.innerHTML = list.map(p => `
+          <option value="${p.protocol_name}">${p.label || p.protocol_name}</option>
+        `).join('');
+      }
+
+      function initDeviceSelect() {
+        const select = document.getElementById('targetDeviceSelect');
+        if (!select || !AirconProfileManager) return;
+        const aircons = AirconProfileManager.getAll();
+        const controllers = NodeService?.getNodes?.() || [];
+        const findController = identity => {
+          if (!identity) return null;
+          const databaseMatches = controllers.filter(node => node.db_id === identity);
+          if (databaseMatches.length) return databaseMatches.length === 1 ? databaseMatches[0] : null;
+          const hardwareMatches = controllers.filter(node => node.node_id === identity);
+          return hardwareMatches.length === 1 ? hardwareMatches[0] : null;
+        };
+        const requested = selectedDeviceId || currentDevice?.device_id || aircons[0]?.device_id || '';
+        const target = aircons.find(ac => ac.device_id === requested || ac.aircon_id === requested || ac.node_id === requested);
+        select.innerHTML = '';
+        if (!target) {
+          const empty = document.createElement('option');
+          empty.value = '';
+          empty.textContent = aircons.length ? 'Requested AC is unavailable. Select another unit.' : 'No registered AC units';
+          select.appendChild(empty);
+        }
+        aircons.forEach(ac => {
+          const option = document.createElement('option');
+          option.value = ac.device_id;
+          const controller = findController(ac.controller_node_id) || findController(ac.node_id);
+          const controllerName = controller?.name?.trim() || 'Unnamed controller';
+          const controllerId = controller?.cloud_state?.device_id || controller?.node_id || 'Unavailable';
+          const unitName = ac.name?.trim() || 'Unnamed AC unit';
+          option.textContent = `${controllerName} | Controller ID: ${controllerId} | AC unit: ${unitName}`;
+          select.appendChild(option);
+        });
+        select.value = target?.device_id || '';
+        if (!target) {
+          currentDevice = null;
+          studioDirty = false;
+          document.getElementById('targetNodeBadge').textContent = 'No controller';
+          document.getElementById('targetProtocolBadge').textContent = '--';
+          clearCapturedFrame();
+        } else if (!studioDirty || currentDevice?.device_id !== target.device_id) loadDevice(target.device_id);
+        else currentDevice = target;
+        renderSavedCodes();
+        ['autoDetectBtn', 'latestLearnedFrameBtn'].forEach(id => {
+          const button = document.getElementById(id);
+          if (button) button.disabled = !currentDevice || (['autoDetectBtn', 'latestLearnedFrameBtn'].includes(id) && !currentDevice.node_id);
+        });
+      }
+
+      function loadDevice(deviceId) {
+        if (!AirconProfileManager) return;
+        const device = AirconProfileManager.getById(deviceId);
+        if (!device) {
+          currentDevice = null;
+          const nodeBadge = document.getElementById('targetNodeBadge');
+          const protoBadge = document.getElementById('targetProtocolBadge');
+          if (nodeBadge) nodeBadge.textContent = 'N/A';
+          if (protoBadge) protoBadge.textContent = 'None';
+          const capsContainer = document.getElementById('dynamicCapabilityTags');
+          if (capsContainer) capsContainer.innerHTML = '<span class="text-xs text-slate-400">No air conditioner registered</span>';
+          return;
+        }
+        const changed = currentDevice?.device_id !== device.device_id;
+        currentDevice = device;
+        selectedDeviceId = device.device_id;
+        studioDirty = false;
+        if (changed) {
+          clearCapturedFrame();
+        }
+        document.getElementById('targetNodeBadge').textContent = device.node_id || 'No controller';
+        const proto = device.protocol_name || device.protocol || CapabilityEngine.resolveProtocolName(device);
+        document.getElementById('targetProtocolBadge').textContent = proto;
+
+        const pSelect = document.getElementById('protocolSelect');
+        if (pSelect) {
+          if (![...pSelect.options].some(option => option.value === proto)) {
+            const option = document.createElement('option'); option.value = proto; option.textContent = `Captured ${proto}`; pSelect.appendChild(option);
+          }
+          pSelect.value = proto;
+        }
+
+        renderCapabilities(proto);
+        renderSavedCodes();
+      }
+
+      function renderCapabilities(proto) {
+        const container = document.getElementById('dynamicCapabilityTags');
+        if (!container || !CapabilityEngine) return;
+        const caps = CapabilityEngine.getCapabilities({...currentDevice,protocol_name:proto,protocol:proto});
+
+        container.innerHTML = '';
+
+        // Temp Tag
+        const tempTag = document.createElement('span');
+        tempTag.className = 'px-2.5 py-1 rounded-lg font-mono font-bold bg-teal-50 text-teal-800 border border-teal-200 dark:bg-teal-500/15 dark:text-teal-300 dark:border-teal-500/30';
+        tempTag.textContent = caps.temperature_step ? `Range: ${caps.min_temp}°C — ${caps.max_temp}°C · ${caps.temperature_step}° steps` : '—';
+        container.appendChild(tempTag);
+
+        // Modes
+        if (Array.isArray(caps.modes)) {
+          caps.modes.forEach(m => {
+            const tag = document.createElement('span');
+            tag.className = 'px-2.5 py-1 rounded-lg font-semibold bg-cyan-50 text-cyan-800 border border-cyan-200 dark:bg-cyan-500/15 dark:text-cyan-300 dark:border-cyan-500/30 uppercase text-[11px]';
+            tag.textContent = `Mode: ${m}`;
+            container.appendChild(tag);
+          });
+        }
+
+        // Features
+        ['turbo', 'eco', 'swing', 'sleep', 'timer'].forEach(feat => {
+          if (caps[feat]) {
+            const tag = document.createElement('span');
+            tag.className = 'px-2.5 py-1 rounded-lg font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/25 text-[11px]';
+            tag.textContent = `[${feat.toUpperCase()}]`;
+            container.appendChild(tag);
+          }
+        });
+
+        // Fans
+        if (Array.isArray(caps.fans)) {
+          const fanTag = document.createElement('span');
+          fanTag.className = 'px-2.5 py-1 rounded-lg font-medium bg-slate-100 text-slate-700 border border-slate-200 dark:bg-white/5 dark:text-gray-300 dark:border-white/10 text-[11px]';
+          fanTag.textContent = `Fan Speeds: ${caps.fans.join(', ')}`;
+          container.appendChild(fanTag);
+        }
+      }
+
+      // Event Handlers
+      document.getElementById('targetDeviceSelect')?.addEventListener('change', (e) => {
+        selectedDeviceId = e.target.value;
+        studioDirty = false;
+        loadDevice(selectedDeviceId);
+        initDeviceSelect();
+      });
+
+      document.getElementById('protocolSelect')?.addEventListener('change', (e) => {
+        studioDirty = true;
+        const proto = e.target.value;
+        document.getElementById('targetProtocolBadge').textContent = proto;
+        renderCapabilities(proto);
+        renderSavedCodes();
+      });
+
+      document.getElementById('latestLearnedFrameBtn')?.addEventListener('click', async () => {
+        if (!currentDevice) return;
+        const target = currentDevice;
+        const requestedProtocol = selectedProtocol();
+        const frame = await ProtocolAdapter.getLatestLearned(target.node_id);
+        if (currentDevice?.device_id !== target.device_id || selectedProtocol() !== requestedProtocol) return;
+        if (!frame.success) { showToast(frame.message || 'No captured frame is available.', 'warning'); return; }
+        selectCapturedProtocol(frame);
+        showCapturedFrame(frame, target, `Captured ${frame.raw_type || frame.protocol || 'unrecognized signal'} remote frame • ${frame.hex || 'raw timings'}`);
+        document.getElementById('learnedFrameRaw').placeholder = frame.raw_data ? '' : 'Decoded state received. Use Auto-Detect to capture raw timings for learning.';
+      });
+
+      document.getElementById('savedCodeSelect')?.addEventListener('change', event => {
+        if (!currentDevice) return;
+        const storage = ProtocolAdapter.getStorageStatus();
+        const code = storage.ready && !storage.error && matchingSavedCodes().find(row => row.id === event.target.value);
+        if (!code) { clearCapturedFrame(); return; }
+        showSavedCode(code);
+      });
+
+      document.getElementById('saveCapturedCodeBtn')?.addEventListener('click', async () => {
+        if (savingCapture || !currentDevice || !learnedFrame?.raw_data || captureDeviceId !== currentDevice.device_id) return;
+        const target = currentDevice, frame = learnedFrame;
+        const commandType = document.getElementById('learnedCommandName').value;
+        savingCapture = true;
+        const button = document.getElementById('saveCapturedCodeBtn'); button.disabled = true;
+        try {
+          await ProtocolAdapter.saveCommand({ device_id: target.device_id, command_type: commandType,
+            protocol: frame.protocol || frame.raw_type, raw_data: frame.raw_data, capture: frame });
+          if (currentDevice?.device_id === target.device_id) renderSavedCodes();
+          showToast('Captured IR code saved and shared.', 'success');
+        } catch (error) { showToast(error.message || 'The IR code was not saved.', 'error'); }
+        finally { savingCapture = false; button.disabled = !currentDevice || !learnedFrame?.raw_data || captureDeviceId !== currentDevice.device_id; }
+      });
+
+      // Auto-Detect via Remote button
+      document.getElementById('autoDetectBtn')?.addEventListener('click', async () => {
+        if (!currentDevice) return;
+        const btn = document.getElementById('autoDetectBtn');
+        const icon = document.getElementById('sniffIcon');
+        const spinner = document.getElementById('sniffSpinner');
+        const label = document.getElementById('sniffLabel');
+
+        btn.disabled = true;
+        icon?.classList.add('hidden');
+        spinner?.classList.remove('hidden');
+        label.textContent = 'Listening on node...';
+
+        try {
+          const target = currentDevice;
+          const requestedProtocol = selectedProtocol();
+          const res = await ProtocolAdapter.sniffProtocol(target.node_id);
+          if (currentDevice?.device_id !== target.device_id || selectedProtocol() !== requestedProtocol) return;
+          if (res?.success) selectCapturedProtocol(res);
+          if (res?.success && res.raw_data) {
+            showCapturedFrame(res, target, `Captured ${res.raw_type || res.protocol || 'unrecognized signal'} remote frame • ${res.hex || 'raw timings'}`);
+          }
+          if (res && res.success && res.protocol) {
+            showToast(`Auto-detected remote protocol: ${res.brand || res.protocol}!`, 'success');
+          } else {
+            showToast(res?.raw_data ? 'Frame captured; its protocol was not recognized. Raw timings are available below.' : (res?.message || 'No remote pulse received during scan window.'), 'warning');
+          }
+        } catch (err) {
+          showToast('Error during remote auto-detection.', 'error');
+        } finally {
+          btn.disabled = !currentDevice?.node_id;
+          icon?.classList.remove('hidden');
+          spinner?.classList.add('hidden');
+          label.textContent = 'Auto-Detect via Remote';
+        }
+      });
+
+      ['hardware:updated', 'aircon:saved', 'aircon:deleted', 'aircon:updated', 'aircons:synced', 'devices:synced', 'node:updated'].forEach(event => AirconEvents?.on(event, initDeviceSelect));
+      AirconEvents?.on('ir:updated', renderSavedCodes);
+      window.addEventListener('storage', event => { if (['ecoTrack_nodes', 'ecoTrack_aircons'].includes(event.key)) initDeviceSelect(); });
+      initProtocols();
+      initDeviceSelect();
+    });
+  </script>
+</body>
+</html>

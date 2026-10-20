@@ -1,0 +1,111 @@
+{
+  "model": "hist_gradient_boosting",
+  "algorithm": "HistGradientBoostingRegressor",
+  "reference_model": "Haier AS35XCAHRA / 1U35S2SM1FA-2",
+  "trained_utc": "2026-10-18T11:34:07.300710+00:00",
+  "python_version": "3.14.7",
+  "versions": {
+    "scikit-learn": "1.9.0",
+    "joblib": "1.5.3",
+    "numpy": "2.5.2",
+    "scipy": "1.18.1",
+    "pandas": "3.0.5"
+  },
+  "features": [
+    "setpoint_c",
+    "fan_command",
+    "operating_mode",
+    "eco",
+    "turbo",
+    "swing",
+    "quiet",
+    "horizontal_swing",
+    "display"
+  ],
+  "control_features": [
+    "setpoint_c",
+    "fan_command",
+    "operating_mode",
+    "eco",
+    "turbo",
+    "swing",
+    "quiet",
+    "horizontal_swing",
+    "display"
+  ],
+  "output_unit": "kWh",
+  "horizon_hours": 1,
+  "training_data_type": "research_informed_estimates",
+  "evaluation_kind": "held_out_generated_formula_targets",
+  "physical_accuracy_validated": false,
+  "measured_validation_hours": 0,
+  "environment_source": "not_used",
+  "environment_scenarios": [],
+  "limitations": [
+    "No measured or assumed indoor/outdoor temperature or humidity is a model input. Energy still varies with those unobserved conditions, so controls alone cannot establish exact physical consumption.",
+    "Room/load evolution and compressor cycling are not simulated; one-hour labels are model estimates.",
+    "Eco energy/duration anchors derive from original shorter/longer experiments, not measured next-hour energy.",
+    "Eco Gear is distinct from Eco Sensor. ESPHome IR support and firmware equivalence remain unverified.",
+    "Motor rated output is not measured electrical input; efficiency and affinity-law application are assumptions.",
+    "Numerical Turbo, Quiet, Swing, Display, Dry and new-condition effects are not verified by measured energy comparisons.",
+    "Pairwise/compound function compatibility is a conservative modeling policy unless a rule is cited explicitly.",
+    "Filter is not verified as an independently toggled energy function; it remains not applicable, not OFF.",
+    "Other device features such as Self-Clean, UV/Health, Sleep and timers require separate operating models and are outside the panel subset."
+  ],
+  "selection_metric": "validation_mae",
+  "validation_candidates": [
+    {
+      "configuration": {
+        "max_leaf_nodes": 15
+      },
+      "validation_mae_kwh": 0.33410853164928694,
+      "best_iteration_count": null,
+      "fit_seconds": 1.1980451999988873
+    },
+    {
+      "configuration": {
+        "max_leaf_nodes": 31
+      },
+      "validation_mae_kwh": 0.334073365767821,
+      "best_iteration_count": null,
+      "fit_seconds": 0.8678366999956779
+    }
+  ],
+  "validation_mae_kwh": 0.334073365767821,
+  "train_rows": 12320,
+  "validation_rows": 2464,
+  "test_rows": 3712,
+  "validation_setpoints_c": [
+    20,
+    26
+  ],
+  "test_setpoints_c": [
+    21,
+    24,
+    27
+  ],
+  "test_metrics": {
+    "mae": 0.34816879103132214,
+    "mse": 0.1869576449919475,
+    "rmse": 0.4323859907443204,
+    "r2": 0.3998948810777212
+  },
+  "mean_baseline_test_mae_kwh": 0.4914667173437049,
+  "dataset_sha256": "ff6dd1a862058e02f84a75a59735ea27808bd3b3be280bc9fb35c19c2aaf8d54",
+  "artifacts": {
+    "model.joblib": "af1fc379dd21584bc2ccddac2d6de57c0b13795400366d3ffded45006e124dd0",
+    "supported_inputs.json.gz": "7f465557b3d8d06ea1fd1b3fbdd7fa6fc8b7493ca3344b44007c7f8786f80586",
+    "assumptions.json": "222cb9694a69cf89459869b2ea9391c3deea3d174f29f0367bc8fae1e5b4c9bb"
+  },
+  "report_artifacts": {
+    "held_out_predictions.csv": "81cc7e17d613ee22aead9a24f707540d91c0404fdf51479e75e9da9f622f929a",
+    "control_test_inputs.csv": "ae2fb7024ea6a99d5ea2a3d579017e57e174167823d4e92de16973fc961a59db"
+  },
+  "input_scope": "controls_only",
+  "sensor_features": [],
+  "source_pipeline_sha256": "7a8f36b5d4d028463830250b244f8dadd388e0d1acfac6eaa2136f34cc973980",
+  "source_pipeline": "C:\\Users\\reygay\\Desktop\\EcoTrackAppMobileNew-master-control\\artifacts\\control-only-prediction\\benchmark\\research_controls\\hist_gradient_boosting.joblib",
+  "selected_configuration": {
+    "max_leaf_nodes": 31
+  }
+}

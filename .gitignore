@@ -1,0 +1,85 @@
+﻿# Dependencies
+node_modules/
+
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+.venv/
+env/
+venv/
+ENV/
+*.egg-info/
+
+# Environment Variables & Private Secrets
+.env
+.env*
+.env.*
+*.env
+backend/.env
+!.env.example
+*.pem
+*.key
+*.crt
+*.cer
+*.pfx
+*.p12
+credentials.json
+serviceAccount*.json
+service-account*.json
+
+# Databases & Runtime Data
+*.db
+*.sqlite
+*.sqlite3
+backend/*.db
+backend/*.sqlite
+backend/*.sqlite3
+pb_data/
+
+# Binaries & Executables
+*.exe
+pocketbase.exe
+
+# Scratch & Temporary Testing Scripts
+scratch/
+*.log
+npm-debug.*
+yarn-debug.*
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Electron Build Artifacts
+dist/
+out/
+
+# OS Specific
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Private firmware configuration and browser session caches
+firmware/**/wifi-secrets.h
+**/browser-profile/
+**/browser-profile-*/
+**/.ecotrack-*.key
+supabase/.temp/
